@@ -1,0 +1,11 @@
+*.gch
+*.o
+build
+tags
+.editorconfig
+doc/_build/
+tests/tester
+examples/simple_filter
+examples/simple_filter_steps
+examples/tcflower2json
+examples/json2c
