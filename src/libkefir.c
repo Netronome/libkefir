@@ -8,6 +8,7 @@
 #include "libkefir_dump.h"
 #include "libkefir_internals.h"
 #include "libkefir_parse_ethtool.h"
+#include "libkefir_proggen.h"
 
 /*
  * Front end
@@ -25,6 +26,10 @@ void kefir_destroy_filter(kefir_filter *filter)
 {
 	list_destroy(filter->rules, free);
 	free(filter);
+}
+
+unsigned int kefir_sizeof_filter(const kefir_filter *filter) {
+	return list_count(filter->rules);
 }
 
 static int
@@ -76,6 +81,25 @@ void kefir_dump_filter(const kefir_filter *filter)
 /*
  * Back end
  */
+
+kefir_cprog *
+kefir_convert_filter_to_cprog(const kefir_filter *filter,
+			      const kefir_cprog_options *opts)
+{
+	return kefir_make_cprog_from_filter(filter, opts);
+}
+
+void kefir_dump_cprog(const kefir_cprog *cprog)
+{
+	size_t buf_len = 2048;
+	char *buf;
+
+	buf = calloc(buf_len, sizeof(char));
+	if (!buf)
+		return;
+	kefir_cprog_to_buf(cprog, &buf, &buf_len);
+	printf("%s", buf);
+}
 
 /*
  * Loader
