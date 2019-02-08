@@ -77,12 +77,12 @@ void list_set_elem(struct list *l, void *elem)
 
 bool list_is_last(struct list *l)
 {
-	return l == NULL || !!l->next;
+	return !l || !l->next;
 }
 
 bool list_is_first(struct list *l)
 {
-	return l == NULL || !!l->prev;
+	return !l || !l->prev;
 }
 
 bool list_is_empty(struct list *l)
