@@ -271,7 +271,7 @@ tcflower_parse_action(const char ***argv, unsigned int *argc,
 }
 
 static struct kefir_rule *
-tcflower_compose_rule(struct kefir_match match, enum action_code action_code)
+tcflower_compose_rule(struct kefir_match *matches, enum action_code action_code)
 {
 	struct kefir_rule *rule;
 
@@ -281,7 +281,7 @@ tcflower_compose_rule(struct kefir_match match, enum action_code action_code)
 		return NULL;
 	}
 
-	rule->match = match;
+	memcpy(rule->matches, matches, sizeof(rule->matches));
 	rule->action = action_code;
 
 	return rule;
@@ -291,9 +291,10 @@ struct kefir_rule *
 kefir_parse_rule_tcflower(const char **user_rule, size_t rule_size)
 {
 	enum ether_proto_type ethtype = TCFLOWER_ETH_PROTO_UNSPEC;
-	struct kefir_match match = {0};
+	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE] = {{0}};
 	enum action_code action_code;
 	struct kefir_rule *rule;
+	size_t match_index = 0;
 	unsigned int argc;
 	const char **argv;
 
@@ -320,16 +321,16 @@ kefir_parse_rule_tcflower(const char **user_rule, size_t rule_size)
 		argc -= 1;
 	}
 
-	while (argc > 2) {
-		if (tcflower_parse_match(&argv, &argc, ethtype, &match))
+	while (argc > 2 && match_index < KEFIR_MAX_MATCH_PER_RULE) {
+		if (tcflower_parse_match(&argv, &argc, ethtype,
+					 &matches[match_index++]))
 			return NULL;
-		break; // BECAUSE WE SUPPORT JUST ONE MATCH FOR NOW
 	}
 
 	if (tcflower_parse_action(&argv, &argc, &action_code))
 		return NULL;
 
-	rule = tcflower_compose_rule(match, action_code);
+	rule = tcflower_compose_rule(matches, action_code);
 
 	return rule;
 }

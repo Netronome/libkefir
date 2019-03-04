@@ -408,7 +408,7 @@ ethtool_compose_rule(enum ethtool_val_type val_type, struct kefir_value value,
 		return NULL;
 	}
 
-	rule->match = match;
+	rule->matches[0] = match;	/* ethtool allows for only 1 match */
 	rule->action = action_code;
 
 	return rule;

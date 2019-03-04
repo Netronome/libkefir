@@ -18,14 +18,24 @@
 
 
 /* As used in the BPF program, see libkefir_proggen.c */
-struct bpf_map_filter_rule {
+struct bpf_map_match {
 	enum match_type		match_type;
 	enum comp_operator	comp_operator;
 	union {
 		__u8	u8[16];
 		__u64	u64[2];
 	} value;
+};
+
+/*
+ * The action code and matches in use must correspond to the struct used in the
+ * BPF program (see libkefir_proggen.c), where the number of matches is lower
+ * or equal to KEFIR_MAX_MATCH_PER_RULE. So it is mandatory to keep "matches"
+ * at the END of the current struct.
+ */
+struct bpf_map_filter_rule {
 	enum action_code	action_code;
+	struct bpf_map_match	matches[KEFIR_MAX_MATCH_PER_RULE];
 };
 
 static void ret0 (__attribute__((unused)) int sig)
@@ -126,21 +136,28 @@ err_free_objfile:
 
 /*
  * Should be called as
- * void fill_one_rule(void *rule_ptr, int map_fd, int *index);
+ * int fill_one_rule(void *rule_ptr, int map_fd, int *index, unsigned int nb_matches);
  */
 static int fill_one_rule(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
 	struct bpf_map_filter_rule rule_entry;
 	int map_fd, *index;
+	unsigned int nb_matches;
+	size_t i;
 
 	map_fd = va_arg(ap, int);
 	index = va_arg(ap, int *);
+	nb_matches = va_arg(ap, unsigned int);
 
-	rule_entry.match_type = rule->match.match_type;
-	rule_entry.comp_operator = rule->match.comp_operator;
-	memcpy(rule_entry.value.u8, rule->match.value.data.raw,
-	       sizeof(rule_entry.value));
+	for (i = 0; i < nb_matches; i++) {
+		struct bpf_map_match *match = &rule_entry.matches[i];
+
+		match->match_type = rule->matches[i].match_type;
+		match->comp_operator = rule->matches[i].comp_operator;
+		memcpy(match->value.u8, rule->matches[i].value.data.raw,
+		       sizeof(match->value));
+	}
 	rule_entry.action_code = rule->action;
 
 	if (bpf_map_update_elem(map_fd, index, &rule_entry, BPF_ANY))
@@ -204,7 +221,8 @@ int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 		return -1;
 	// TODO: return value
 	if (list_for_each((struct list *)cprog->filter->rules,
-			  fill_one_rule, rule_map_fd, &index))
+			  fill_one_rule, rule_map_fd, &index,
+			  cprog->options.nb_matches))
 		return -1;
 
 	return 0;

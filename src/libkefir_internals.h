@@ -14,7 +14,8 @@
 #include "list.h"
 #include "libkefir_error.h"
 
-#define KEFIR_CPROG_INIT_BUFLEN	8192
+#define KEFIR_MAX_MATCH_PER_RULE	5
+#define KEFIR_CPROG_INIT_BUFLEN		8192
 
 enum comp_operator {
 	OPER_EQUAL,
@@ -33,6 +34,8 @@ enum action_code {
 #define KEFIR_MATCH_FLAG_IPV6	1 << 1
 
 enum match_type {
+	KEFIR_MATCH_TYPE_UNSPEC = 0,
+
 	KEFIR_MATCH_TYPE_ETHER_SRC,
 	KEFIR_MATCH_TYPE_ETHER_DST,
 	KEFIR_MATCH_TYPE_ETHER_ANY,	/* Either source or destination */
@@ -158,7 +161,7 @@ struct kefir_action {
 */
 
 struct kefir_rule {
-	struct kefir_match match;
+	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE];
 //	struct kefir_action action;
 	enum action_code action;
 };
@@ -182,6 +185,7 @@ struct kefir_filter {
 
 struct kefir_cprog_options {
 	uint64_t		flags;
+	unsigned int		nb_matches;
 	enum kefir_cprog_target	target;
 	uint8_t	req_helpers[__BPF_FUNC_MAX_ID / 8 + 1];
 };

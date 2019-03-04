@@ -224,16 +224,20 @@ static int dump_rule(void *rule_ptr, va_list ap)
 	char strval[strval_len];
 	size_t *buf_len;
 	char **buf_ptr;
+	size_t i;
 
 	buf_ptr = va_arg(ap, char **);
 	buf_len = va_arg(ap, size_t *);
 
-	append(buf_ptr, buf_len, "match: %s\t| ",
-	       match_type_str(rule->match.match_type));
-	append(buf_ptr, buf_len, "operator: %s | ",
-	       comp_operator_str(rule->match.comp_operator));
-	value_str(rule->match.value, strval, strval_len);
-	append(buf_ptr, buf_len, "value: %s\t| ", strval);
+	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
+	     rule->matches[i].match_type != KEFIR_MATCH_TYPE_UNSPEC; i++) {
+		append(buf_ptr, buf_len, "match %zd: %s\t| ", i,
+		       match_type_str(rule->matches[i].match_type));
+		append(buf_ptr, buf_len, "operator %zd: %s | ", i,
+		       comp_operator_str(rule->matches[i].comp_operator));
+		value_str(rule->matches[i].value, strval, strval_len);
+		append(buf_ptr, buf_len, "value %zd: %s\t| ", i, strval);
+	}
 	append(buf_ptr, buf_len, "action: %s | ",
 	       action_str(rule->action));
 
