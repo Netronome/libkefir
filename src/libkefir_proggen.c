@@ -25,6 +25,10 @@ static void err_fail(const char *format, ...)
 	va_end(ap);
 }
 
+static char cprog_attr_func_static_inline[] = ""
+	"static __attribute__((always_inline))\n"
+	"";
+
 static const char *cprog_header = ""
 	"/*\n"
 	" * This program was automatically generated with libkefir.\n"
@@ -503,15 +507,14 @@ cprog_func_process_l4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		return 0;
 
 	if (buf_append(buf, buf_len, ""
-		       "static __attribute__((always_inline))\n"
-		       "int process_l4(void *data, void *data_end, __u32 l4_off, struct filter_key *key)\n"
+		       "%sint process_l4(void *data, void *data_end, __u32 l4_off, struct filter_key *key)\n"
 		       "{\n"
 		       "	struct tcphdr *tcph = data + l4_off;\n"
 		       "\n"
 		       "	if ((void *)tcph + sizeof(tcph) > data_end)\n"
 		       "		return -1;\n"
 		       "\n"
-		       ""))
+		       "", cprog_attr_func_static_inline))
 		return -1;
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_L4_PORT_SRC) ||
@@ -543,8 +546,7 @@ cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		return 0;
 
 	if (buf_append(buf, buf_len, ""
-		       "static __attribute__((always_inline))\n"
-		       "int process_ipv4(void *data, void *data_end, __u32 nh_off,\n"
+		       "%sint process_ipv4(void *data, void *data_end, __u32 nh_off,\n"
 		       "		 struct filter_key *key)\n"
 		       "{\n"
 		       "	struct iphdr *iph = data + nh_off;\n"
@@ -554,7 +556,7 @@ cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "	if ((void *)iph + 4 * iph->ihl > data_end)\n"
 		       "		return -1;\n"
 		       "\n"
-		       ""))
+		       "", cprog_attr_func_static_inline))
 		return -1;
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_SRC) ||
@@ -605,8 +607,7 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		return 0;
 
 	if (buf_append(buf, buf_len, ""
-		       "static __attribute__((always_inline))\n"
-		       "int process_ipv6(void *data, void *data_end, __u32 nh_off,\n"
+		       "%sint process_ipv6(void *data, void *data_end, __u32 nh_off,\n"
 		       "		 struct filter_key *key)\n"
 		       "{\n"
 		       "	struct ipv6hdr *ip6h = data + nh_off;\n"
@@ -614,7 +615,7 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "	if ((void *)(ip6h + 1) > data_end)\n"
 		       "		return -1;\n"
 		       "\n"
-		       ""))
+		       "", cprog_attr_func_static_inline))
 		return -1;
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_SRC) ||
@@ -678,8 +679,7 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	bool need_ipv6 = prog->options.flags & OPT_FLAGS_NEED_IPV6;
 
 	if (buf_append(buf, buf_len, ""
-		       "static __attribute__((always_inline))\n"
-		       "int extract_key(void *data, void *data_end, struct filter_key *key)\n"
+		       "%sint extract_key(void *data, void *data_end, struct filter_key *key)\n"
 		       "{\n"
 		       "	struct ethhdr *eth = data;\n"
 		       "	__u32 eth_proto;\n"
@@ -690,7 +690,7 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "		return -1;\n"
 		       "	eth_proto = eth->h_proto;\n"
 		       "\n"
-		       ""))
+		       "", cprog_attr_func_static_inline))
 		return -1;
 
 	if (need_ether)
@@ -750,11 +750,10 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	bool only_equal = false; // TODO: optim does not work with offload (only 15 unroll work) + much more insns
 
 	if (buf_append(buf, buf_len, ""
-		       "static __attribute__((always_inline))\n"
-		       "bool check_match(void *matchval, size_t matchlen, struct filter_rule *rule)\n"
+		       "%sbool check_match(void *matchval, size_t matchlen, struct filter_rule *rule)\n"
 		       "{\n"
 		       "	size_t i;\n"
-		       ""))
+		       "", cprog_attr_func_static_inline))
 		return -1;
 
 	if (only_equal) {
@@ -838,8 +837,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	if (buf_append(buf, buf_len, ""
 		       "}\n"
 		       "\n"
-		       "static __attribute__((always_inline))\n"
-		       "int get_retval(enum action_code code)\n"
+		       "%sint get_retval(enum action_code code)\n"
 		       "{\n"
 		       "	switch (code) {\n"
 		       "	case ACTION_CODE_DROP:\n"
@@ -851,8 +849,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "	}\n"
 		       "}\n"
 		       "\n"
-		       "static __attribute__((always_inline))\n"
-		       "int check_nth_rule(struct filter_key *key, int n, int *res)\n"
+		       "%sint check_nth_rule(struct filter_key *key, int n, int *res)\n"
 		       "{\n"
 		       "	struct filter_rule *rule;\n"
 		       "\n"
@@ -861,7 +858,8 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "		return 0;\n"
 		       "\n"
 		       "	switch (rule->match_type) {\n"
-		       ""))
+		       "", cprog_attr_func_static_inline,
+		       cprog_attr_func_static_inline))
 		return -1;
 
 	// We should have the type (IPv4/IPv6) of packet by now, no need to
@@ -1351,6 +1349,12 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		err_fail("cannot dump empty C prog object");
 		return -1;
 	}
+
+	/* Deactivate inlining */
+	// TODO: add a switch to trigger this
+	if (false)
+		snprintf(cprog_attr_func_static_inline,
+			 sizeof(cprog_attr_func_static_inline), "static ");
 
 	if (buf_append(buf, buf_len, "%s", cprog_header))
 		return -1;
