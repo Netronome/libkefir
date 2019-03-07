@@ -53,6 +53,15 @@ static const char *cprog_header = ""
 	"#define bpf_ntohs(x) (x)\n"
 	"#endif\n"
 	"\n"
+	"#define BPF_ANNOTATE_KV_PAIR(name, type_key, type_val)		\\\n"
+	"	struct ____btf_map_##name {				\\\n"
+	"		type_key key;					\\\n"
+	"		type_val value;					\\\n"
+	"	};							\\\n"
+	"	struct ____btf_map_##name				\\\n"
+	"	__attribute__ ((section(\".maps.\" #name), used))		\\\n"
+	"		____btf_map_##name = { }\n"
+	"\n"
 	"";
 
 static const char *cprog_license = ""
@@ -493,6 +502,7 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "	.size_value	= sizeof(struct filter_rule),\n"
 		       "	.max_elem	= %zd\n"
 		       "};\n"
+		       "BPF_ANNOTATE_KV_PAIR(rules, __u32, struct filter_rule);\n"
 		       "\n"
 		       "", list_count(prog->filter->rules)))
 		return -1;
