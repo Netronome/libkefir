@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <bpf/libbpf.h>
+#include <linux/if_link.h>
+
 #include "libkefir.h"
 #include "libkefir_compile.h"
 #include "libkefir_dump.h"
@@ -158,4 +161,40 @@ int kefir_compile_to_bpf(const char *c_file, const char *opt_object_file,
 {
 	return compile_cfile_to_bpf(c_file, opt_object_file, opt_ll_file,
 				    opt_clang_bin, opt_llc_bin);
+}
+
+int kefir_load_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
+				  int ifindex)
+{
+	struct bpf_object *bpf_obj;
+	int prog_fd;
+
+	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, ifindex);
+	if (prog_fd < 0)
+		return -1;
+
+	bpf_object__close(bpf_obj);
+
+	return prog_fd;
+}
+
+int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
+				    const char *objfile, int ifindex,
+				    unsigned int flags)
+{
+	struct bpf_object *bpf_obj;
+	int prog_fd, load_ifindex;
+
+	load_ifindex = flags && XDP_FLAGS_HW_MODE ? ifindex : 0;
+	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj,
+					    load_ifindex);
+	if (prog_fd < 0)
+		return -1;
+
+	if (compile_attach_program(cprog, bpf_obj, prog_fd, ifindex, flags))
+		return -1;
+
+	bpf_object__close(bpf_obj);
+
+	return prog_fd;
 }

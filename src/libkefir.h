@@ -193,6 +193,34 @@ int kefir_compile_to_bpf(const char *c_file,
 			 const char *opt_llc_bin);
 
 /**
+ * Load the BPF program associated to a C program object into the kernel.
+ * @cprog cprog used to generate the BPF program
+ * @objfile name of ELF object file containing the BPF program generated from
+ *          the filter
+ * @ifindex interface index, for BPF hardware offload only; should be left at 0
+ *          if offload is not desired
+ * @return file descriptor to the BPF program, or negative error
+ */
+int kefir_load_cprog_from_objfile(const kefir_cprog *cprog,
+				  const char *objfile, int ifindex);
+
+/**
+ * Load the BPF program associated to a C program object into the kernel, then
+ * immediately attach it to a given interface.
+ * @cprog cprog used to generate the BPF program
+ * @objfile name of ELF object file containing the BPF program generated from
+ *          the filter
+ * @ifindex interface index to which the program should be attached
+ * @flags for XDP: passed to netlink to set XDP mode (socket buffer, driver,
+ *        hardware) (see <linux/if_link.h>)
+ *        for TC: TODO
+ * @return file descriptor to the BPF program, or negative error
+ */
+int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
+				    const char *objfile, int ifindex,
+				    unsigned int flags);
+
+/**
  * Convert a C program into eBPF bytecode.
  * @cprog C program to convert
  * @bpfprog pointer to the eBPF program to create; if NULL, will be malloc()'ed

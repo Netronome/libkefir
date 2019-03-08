@@ -1,12 +1,32 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include <unistd.h>
-#include <signal.h>
+
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
+#include <linux/bpf.h>
+#include <linux/if_link.h>
+
+#include "libkefir.h"
+#include "libkefir_internals.h"
+#include "list.h"
+
+
+/* As used in the BPF program, see libkefir_proggen.c */
+struct bpf_map_filter_rule {
+	enum match_type		match_type;
+	enum comp_operator	comp_operator;
+	union {
+		__u8	u8[16];
+		__u64	u64[2];
+	} value;
+	enum action_code	action_code;
+};
 
 static void ret0 (__attribute__((unused)) int sig)
 {
@@ -102,4 +122,90 @@ err_free_objfile:
 		free(objfile);
 
 	return -1;
+}
+
+/*
+ * Should be called as
+ * void fill_one_rule(void *rule_ptr, int map_fd, int *index);
+ */
+static int fill_one_rule(void *rule_ptr, va_list ap)
+{
+	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
+	struct bpf_map_filter_rule rule_entry;
+	int map_fd, *index;
+
+	map_fd = va_arg(ap, int);
+	index = va_arg(ap, int *);
+
+	rule_entry.match_type = rule->match.match_type;
+	rule_entry.comp_operator = rule->match.comp_operator;
+	memcpy(rule_entry.value.u8, rule->match.value.data.raw,
+	       sizeof(rule_entry.value));
+	rule_entry.action_code = rule->action;
+
+	if (bpf_map_update_elem(map_fd, index, &rule_entry, BPF_ANY))
+		return -1;
+
+	*index += 1;
+
+	return 0;
+}
+
+int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
+			      struct bpf_object **bpf_obj, int ifindex)
+{
+	struct bpf_prog_load_attr load_attr = {0};
+	int prog_fd;
+
+	load_attr.file = objfile;
+	load_attr.ifindex = ifindex;
+	switch (cprog->options.target) {
+	case KEFIR_CPROG_TARGET_XDP:
+		load_attr.prog_type = BPF_PROG_TYPE_XDP;
+		break;
+	case KEFIR_CPROG_TARGET_TC:
+		load_attr.prog_type = BPF_PROG_TYPE_SCHED_CLS;
+		break;
+	default:
+		return -1;
+	}
+
+	/* Load BPF program */
+	if (bpf_prog_load_xattr(&load_attr, bpf_obj, &prog_fd))
+		return -1;
+
+	return prog_fd;
+}
+
+int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
+			   int prog_fd, int ifindex, uint32_t flags)
+{
+	struct bpf_map *rule_map;
+	int rule_map_fd;
+	int index = 0;
+
+	switch (cprog->options.target) {
+	case KEFIR_CPROG_TARGET_XDP:
+		if (bpf_set_link_xdp_fd(ifindex, prog_fd, flags))
+			return -1;
+		break;
+	case KEFIR_CPROG_TARGET_TC:
+		// TODO
+	default:
+		return -1;
+	}
+
+	/* Fill map */
+	rule_map = bpf_object__find_map_by_name(bpf_obj, "rules");
+	if (!rule_map)
+		return -1;
+	rule_map_fd = bpf_map__fd(rule_map);
+	if (rule_map_fd < 0)
+		return -1;
+	// TODO: return value
+	if (list_for_each((struct list *)cprog->filter->rules,
+			  fill_one_rule, rule_map_fd, &index))
+		return -1;
+
+	return 0;
 }
