@@ -13,22 +13,6 @@
 
 DEFINE_ERR_FUNCTIONS("ethtool")
 
-enum ethtool_flow_type {
-	ETHTOOL_FLOW_TYPE_ETHER,
-	ETHTOOL_FLOW_TYPE_IPV4,
-	ETHTOOL_FLOW_TYPE_TCP4,
-	ETHTOOL_FLOW_TYPE_UDP4,
-	ETHTOOL_FLOW_TYPE_SCTP4,
-	ETHTOOL_FLOW_TYPE_AH4,
-	ETHTOOL_FLOW_TYPE_ESP4,
-	ETHTOOL_FLOW_TYPE_IPV6,
-	ETHTOOL_FLOW_TYPE_TCP6,
-	ETHTOOL_FLOW_TYPE_UDP6,
-	ETHTOOL_FLOW_TYPE_SCTP6,
-	ETHTOOL_FLOW_TYPE_AH6,
-	ETHTOOL_FLOW_TYPE_ESP6,
-};
-
 enum ethtool_val_type {
 	ETHTOOL_VAL_TYPE_ETHER_SRC,
 	ETHTOOL_VAL_TYPE_ETHER_DST,
@@ -233,88 +217,41 @@ static ethtool_opts_t ethtool_esp6_opts[] = {
 	&opt_dst_mac,
 };
 
-static int get_flow_type(const char *input, enum ethtool_flow_type *output)
-{
-	enum ethtool_flow_type flow_type;
-
-	if (!strcmp(input, "ether")) {
-		flow_type = ETHTOOL_FLOW_TYPE_ETHER;
-	} else if (!strcmp(input, "ip4")) {
-		flow_type = ETHTOOL_FLOW_TYPE_IPV4;
-	} else if (!strcmp(input, "tcp4")) {
-		flow_type = ETHTOOL_FLOW_TYPE_TCP4;
-	} else if (!strcmp(input, "udp4")) {
-		flow_type = ETHTOOL_FLOW_TYPE_UDP4;
-	} else if (!strcmp(input, "sctp4")) {
-		flow_type = ETHTOOL_FLOW_TYPE_SCTP4;
-	} else if (!strcmp(input, "ah4")) {
-		flow_type = ETHTOOL_FLOW_TYPE_AH4;
-	} else if (!strcmp(input, "esp4")) {
-		flow_type = ETHTOOL_FLOW_TYPE_ESP4;
-	} else if (!strcmp(input, "ip6")) {
-		flow_type = ETHTOOL_FLOW_TYPE_IPV6;
-	} else if (!strcmp(input, "tcp6")) {
-		flow_type = ETHTOOL_FLOW_TYPE_TCP6;
-	} else if (!strcmp(input, "udp6")) {
-		flow_type = ETHTOOL_FLOW_TYPE_UDP6;
-	} else if (!strcmp(input, "sctp6")) {
-		flow_type = ETHTOOL_FLOW_TYPE_SCTP6;
-	} else if (!strcmp(input, "ah6")) {
-		flow_type = ETHTOOL_FLOW_TYPE_AH6;
-	} else if (!strcmp(input, "esp6")) {
-		flow_type = ETHTOOL_FLOW_TYPE_ESP6;
-	} else {
-		err_bug("unknown flow type %s", input);
-		return -1;
-	}
-
-	*output = flow_type;
-	return 0;
-}
-
 static int
-get_flow_opts(enum ethtool_flow_type flow_type, ethtool_opts_t **opts_res,
+get_flow_opts(const char *input, ethtool_opts_t **opts_res,
 	      size_t *opts_len_res)
 {
 	ethtool_opts_t *flow_opts;
 	size_t flow_opts_len;
 
-	switch (flow_type) {
-	case ETHTOOL_FLOW_TYPE_ETHER:
+	if (!strcmp(input, "ether")) {
 		flow_opts = ethtool_ether_opts;
 		flow_opts_len = ARRAY_SIZE(ethtool_ether_opts);
-		break;
-	case ETHTOOL_FLOW_TYPE_IPV4:
+	} else if (!strcmp(input, "ip4")) {
 		flow_opts = ethtool_ip4_opts;
 		flow_opts_len = ARRAY_SIZE(ethtool_ip4_opts);
-		break;
-	case ETHTOOL_FLOW_TYPE_TCP4:
-	case ETHTOOL_FLOW_TYPE_UDP4:
-	case ETHTOOL_FLOW_TYPE_SCTP4:
+	} else if (!strcmp(input, "tcp4") ||
+		   !strcmp(input, "udp4") ||
+		   !strcmp(input, "sctp4")) {
 		flow_opts = ethtool_tcp4_opts;
 		flow_opts_len = ARRAY_SIZE(ethtool_tcp4_opts);
-		break;
-	case ETHTOOL_FLOW_TYPE_AH4:
-	case ETHTOOL_FLOW_TYPE_ESP4:
+	} else if (!strcmp(input, "ah4") ||
+		   !strcmp(input, "exp4")) {
 		flow_opts = ethtool_esp4_opts;
 		flow_opts_len = ARRAY_SIZE(ethtool_esp4_opts);
-		break;
-	case ETHTOOL_FLOW_TYPE_IPV6:
+	} else if (!strcmp(input, "ip6")) {
 		flow_opts = ethtool_ip6_opts;
 		flow_opts_len = ARRAY_SIZE(ethtool_ip6_opts);
-		break;
-	case ETHTOOL_FLOW_TYPE_TCP6:
-	case ETHTOOL_FLOW_TYPE_UDP6:
-	case ETHTOOL_FLOW_TYPE_SCTP6:
+	} else if (!strcmp(input, "tcp6") ||
+		   !strcmp(input, "udp6") ||
+		   !strcmp(input, "sctp6")) {
 		flow_opts = ethtool_tcp6_opts;
 		flow_opts_len = ARRAY_SIZE(ethtool_tcp6_opts);
-		break;
-	case ETHTOOL_FLOW_TYPE_AH6:
-	case ETHTOOL_FLOW_TYPE_ESP6:
+	} else if (!strcmp(input, "ah4") ||
+		   !strcmp(input, "exp4")) {
 		flow_opts = ethtool_esp6_opts;
 		flow_opts_len = ARRAY_SIZE(ethtool_esp6_opts);
-		break;
-	default:
+	} else {
 		err_bug("unknown enum value for flow type");
 		return -1;
 	}
@@ -399,140 +336,57 @@ static int get_action_code(const char *input, enum action_code *action)
 }
 
 static struct kefir_rule *
-ethtool_compose_rule(enum ethtool_flow_type flow_type,
-		     enum ethtool_val_type val_type, struct kefir_value value,
+ethtool_compose_rule(enum ethtool_val_type val_type, struct kefir_value value,
 		     enum action_code action_code)
 {
 	struct kefir_match match = {0};
 	struct kefir_rule *rule;
 	bool ipv6_flow = false;
 
-	switch (flow_type) {
-	case ETHTOOL_FLOW_TYPE_ETHER:
-		match.header_type = HDR_TYPE_ETHERNET;
-		break;
-	case ETHTOOL_FLOW_TYPE_IPV4:
-		match.header_type = HDR_TYPE_IP;
-		match.flags = KEFIR_MATCH_FLAG_IPV4;
-		break;
-	case ETHTOOL_FLOW_TYPE_TCP4:
-		match.header_type = HDR_TYPE_TCP;
-		match.flags = KEFIR_MATCH_FLAG_IPV4;
-		break;
-	case ETHTOOL_FLOW_TYPE_UDP4:
-		match.header_type = HDR_TYPE_UDP;
-		match.flags = KEFIR_MATCH_FLAG_IPV4;
-		break;
-	case ETHTOOL_FLOW_TYPE_SCTP4:
-		match.header_type = HDR_TYPE_SCTP;
-		match.flags = KEFIR_MATCH_FLAG_IPV4;
-		break;
-	case ETHTOOL_FLOW_TYPE_AH4:
-		match.header_type = HDR_TYPE_IPSEC;
-		match.flags = KEFIR_MATCH_FLAG_IPV4;
-		break;
-	case ETHTOOL_FLOW_TYPE_ESP4:
-		match.header_type = HDR_TYPE_IPSEC;
-		match.flags = KEFIR_MATCH_FLAG_IPV4;
-		break;
-	case ETHTOOL_FLOW_TYPE_IPV6:
-		match.header_type = HDR_TYPE_IP;
-		match.flags = KEFIR_MATCH_FLAG_IPV6;
-		ipv6_flow = true;
-		break;
-	case ETHTOOL_FLOW_TYPE_TCP6:
-		match.header_type = HDR_TYPE_TCP;
-		match.flags = KEFIR_MATCH_FLAG_IPV6;
-		ipv6_flow = true;
-		break;
-	case ETHTOOL_FLOW_TYPE_UDP6:
-		match.header_type = HDR_TYPE_UDP;
-		match.flags = KEFIR_MATCH_FLAG_IPV6;
-		ipv6_flow = true;
-		break;
-	case ETHTOOL_FLOW_TYPE_SCTP6:
-		match.header_type = HDR_TYPE_SCTP;
-		match.flags = KEFIR_MATCH_FLAG_IPV6;
-		ipv6_flow = true;
-		break;
-	case ETHTOOL_FLOW_TYPE_AH6:
-		match.header_type = HDR_TYPE_IPSEC;
-		match.flags = KEFIR_MATCH_FLAG_IPV6;
-		ipv6_flow = true;
-		break;
-	case ETHTOOL_FLOW_TYPE_ESP6:
-		match.header_type = HDR_TYPE_IPSEC;
-		match.flags = KEFIR_MATCH_FLAG_IPV6;
-		ipv6_flow = true;
-		break;
-	default:
-		err_bug("unknown enum value for flow type");
-		return NULL;
-	}
-
 	switch (val_type) {
 	case ETHTOOL_VAL_TYPE_ETHER_SRC:
-		match.match_offset = offsetof(struct ethhdr, h_dest);
-		match.match_length = ETH_ALEN;
+		match.match_type = KEFIR_MATCH_TYPE_ETHER_SRC;
 		break;
 	case ETHTOOL_VAL_TYPE_ETHER_DST:
-		match.match_offset = offsetof(struct ethhdr, h_source);
-		match.match_length = ETH_ALEN;
+		match.match_type = KEFIR_MATCH_TYPE_ETHER_DST;
 		break;
 	case ETHTOOL_VAL_TYPE_ETHER_PROTO:
-		match.match_offset = offsetof(struct ethhdr, h_proto);
-		match.match_length = sizeof_member(struct ethhdr, h_proto);
+		match.match_type = KEFIR_MATCH_TYPE_ETHER_PROTO;
 		break;
 	case ETHTOOL_VAL_TYPE_IP_SRC:
-		if (ipv6_flow) {
-			match.match_offset = offsetof(struct ip6_hdr, ip6_src);
-			match.match_length = sizeof(struct in6_addr);
-		} else {
-			match.match_offset = offsetof(struct iphdr, saddr);
-			match.match_length = sizeof(struct in_addr);
-		}
+		if (ipv6_flow)
+			match.match_type = KEFIR_MATCH_TYPE_IP_6_SRC;
+		else
+			match.match_type = KEFIR_MATCH_TYPE_IP_4_SRC;
 		break;
 	case ETHTOOL_VAL_TYPE_IP_DST:
-		if (ipv6_flow) {
-			match.match_offset = offsetof(struct ip6_hdr, ip6_dst);
-			match.match_length = sizeof(struct in6_addr);
-		} else {
-			match.match_offset = offsetof(struct iphdr, daddr);
-			match.match_length = sizeof(struct in_addr);
-		}
+		if (ipv6_flow)
+			match.match_type = KEFIR_MATCH_TYPE_IP_6_DST;
+		else
+			match.match_type = KEFIR_MATCH_TYPE_IP_4_DST;
 		break;
 	case ETHTOOL_VAL_TYPE_IPV4_TOS:
-		match.match_offset = offsetof(struct iphdr, tos);
-		match.match_length = sizeof_member(struct iphdr, tos);
+		match.match_type = KEFIR_MATCH_TYPE_IP_4_TOS;
 		break;
 	case ETHTOOL_VAL_TYPE_IPV6_TCLASS:
-		match.match_offset = 0;
 		match.mask[1] &= 0x0f;
 		match.mask[0] &= 0xf0;
-		match.match_length = 2;
+		match.match_type = KEFIR_MATCH_TYPE_IP_6_TOS;
 		break;
 	case ETHTOOL_VAL_TYPE_IP_L4PROTO:
-		if (ipv6_flow) {
-			match.match_offset = offsetof(struct ip6_hdr,
-						      ip6_ctlun.ip6_un1.ip6_un1_nxt);
-			match.match_length = 1;
-		} else {
-			match.match_offset = offsetof(struct iphdr, protocol);
-			match.match_length = sizeof_member(struct iphdr,
-							   protocol);
-		}
+		if (ipv6_flow)
+			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4PROTO;
+		else
+			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4PROTO;
 		break;
 	case ETHTOOL_VAL_TYPE_L4_PORT_SRC:
-		match.match_offset = offsetof(struct tcphdr, th_sport);
-		match.match_length = sizeof_member(struct tcphdr, th_sport);
+		match.match_type = KEFIR_MATCH_TYPE_L4_PORT_SRC;
 		break;
 	case ETHTOOL_VAL_TYPE_L4_PORT_DST:
-		match.match_offset = offsetof(struct tcphdr, th_dport);
-		match.match_length = sizeof_member(struct tcphdr, th_dport);
+		match.match_type = KEFIR_MATCH_TYPE_L4_PORT_DST;
 		break;
 	case ETHTOOL_VAL_TYPE_IP_L4DATA:
-		match.match_offset = sizeof(struct tcphdr);
-		match.match_length = 4;
+		match.match_type = KEFIR_MATCH_TYPE_IP_ANY_L4DATA;
 		break;
 	case ETHTOOL_VAL_TYPE_IP_SPI:
 		// TODO: needs two matchs, one on SPI, one on flow type
@@ -565,7 +419,6 @@ kefir_parse_rule_ethtool(const char **user_rule, size_t rule_size)
 {
 	struct ethtool_option current_opt = { .name = "" };
 	struct kefir_value match_val = {0};
-	enum ethtool_flow_type flow_type;
 	enum action_code action_code;
 	ethtool_opts_t *flow_opts;
 	struct kefir_rule *rule;
@@ -585,12 +438,10 @@ kefir_parse_rule_ethtool(const char **user_rule, size_t rule_size)
 	}
 	user_rule++;
 
-	if (get_flow_type(*user_rule, &flow_type))
+	if (get_flow_opts(*user_rule, &flow_opts, &flow_opts_len))
 		return NULL;
 	user_rule++;
 
-	if (get_flow_opts(flow_type, &flow_opts, &flow_opts_len))
-		return NULL;
 	for (i = 0; i < flow_opts_len; i++) {
 		if (strcmp(*user_rule, flow_opts[i]->name))
 			continue;
@@ -616,8 +467,7 @@ kefir_parse_rule_ethtool(const char **user_rule, size_t rule_size)
 	if (get_action_code(*user_rule, &action_code))
 		return NULL;
 
-	rule = ethtool_compose_rule(flow_type, current_opt.type, match_val,
-				    action_code);
+	rule = ethtool_compose_rule(current_opt.type, match_val, action_code);
 
 	return rule;
 }

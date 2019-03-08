@@ -41,6 +41,80 @@ enum action_code {
 #define KEFIR_MATCH_FLAG_IPV4	1 << 0
 #define KEFIR_MATCH_FLAG_IPV6	1 << 1
 
+enum match_type {
+	KEFIR_MATCH_TYPE_ETHER_SRC,
+	KEFIR_MATCH_TYPE_ETHER_DST,
+	KEFIR_MATCH_TYPE_ETHER_ANY,	/* Either source or destination */
+	KEFIR_MATCH_TYPE_ETHER_PROTO,
+
+	KEFIR_MATCH_TYPE_IP_4_SRC,
+	KEFIR_MATCH_TYPE_IP_4_DST,
+	KEFIR_MATCH_TYPE_IP_4_ANY,	/* Either source or destination */
+	KEFIR_MATCH_TYPE_IP_4_TOS,
+	KEFIR_MATCH_TYPE_IP_4_TTL,
+	KEFIR_MATCH_TYPE_IP_4_FLAGS,
+	KEFIR_MATCH_TYPE_IP_4_L4PROTO,
+	KEFIR_MATCH_TYPE_IP_4_L4DATA,
+	KEFIR_MATCH_TYPE_IP_4_SPI,
+
+	KEFIR_MATCH_TYPE_IP_6_SRC,
+	KEFIR_MATCH_TYPE_IP_6_DST,
+	KEFIR_MATCH_TYPE_IP_6_ANY,	/* Either source or destination */
+	KEFIR_MATCH_TYPE_IP_6_TOS,	/* Actually TCLASS, traffic class */
+	KEFIR_MATCH_TYPE_IP_6_TTL,
+	KEFIR_MATCH_TYPE_IP_6_FLAGS,
+	KEFIR_MATCH_TYPE_IP_6_L4PROTO,
+	KEFIR_MATCH_TYPE_IP_6_L4DATA,
+	KEFIR_MATCH_TYPE_IP_6_SPI,
+
+	KEFIR_MATCH_TYPE_IP_ANY_SRC,
+	KEFIR_MATCH_TYPE_IP_ANY_DST,
+	KEFIR_MATCH_TYPE_IP_ANY_ANY,	/* Either source or destination */
+	KEFIR_MATCH_TYPE_IP_ANY_TOS,
+	KEFIR_MATCH_TYPE_IP_ANY_TTL,
+	KEFIR_MATCH_TYPE_IP_ANY_FLAGS,
+	KEFIR_MATCH_TYPE_IP_ANY_L4PROTO,
+	KEFIR_MATCH_TYPE_IP_ANY_L4DATA,
+	KEFIR_MATCH_TYPE_IP_ANY_SPI,
+
+	KEFIR_MATCH_TYPE_L4_PORT_SRC,
+	KEFIR_MATCH_TYPE_L4_PORT_DST,
+	KEFIR_MATCH_TYPE_L4_PORT_ANY,	/* Either source or destination */
+
+	KEFIR_MATCH_TYPE_TCP_FLAGS,
+
+	KEFIR_MATCH_TYPE_VLAN_ID,
+	KEFIR_MATCH_TYPE_VLAN_PRIO,
+	KEFIR_MATCH_TYPE_VLAN_ETHERTYPE,
+
+	KEFIR_MATCH_TYPE_CVLAN_ID,
+	KEFIR_MATCH_TYPE_CVLAN_PRIO,
+	KEFIR_MATCH_TYPE_CVLAN_ETHERTYPE,
+
+	KEFIR_MATCH_TYPE_MPLS_LABEL,
+	KEFIR_MATCH_TYPE_MPLS_TC,
+	KEFIR_MATCH_TYPE_MPLS_BOS,
+	KEFIR_MATCH_TYPE_MPLS_TTL,
+
+	KEFIR_MATCH_TYPE_ICMP_TYPE,
+	KEFIR_MATCH_TYPE_ICMP_CODE,
+
+	KEFIR_MATCH_TYPE_ARP_TIP,
+	KEFIR_MATCH_TYPE_ARP_SIP,
+	KEFIR_MATCH_TYPE_ARP_OP,
+	KEFIR_MATCH_TYPE_ARP_THA,
+	KEFIR_MATCH_TYPE_ARP_SHA,
+
+	KEFIR_MATCH_TYPE_ENC_KEY_ID,
+	KEFIR_MATCH_TYPE_ENC_DST_ID,
+	KEFIR_MATCH_TYPE_ENC_SRC_ID,
+	KEFIR_MATCH_TYPE_ENC_DST_PORT,
+	KEFIR_MATCH_TYPE_ENC_TOS,
+	KEFIR_MATCH_TYPE_ENC_TTL,
+
+	KEFIR_MATCH_TYPE_GENEVE_OPTIONS,
+};
+
 enum value_format {
 	KEFIR_VAL_FMT_BIT,	/* MPLS BoS */
 	KEFIR_VAL_FMT_UINT3,	/* VLAN prio, MPLS TC */
@@ -69,23 +143,22 @@ struct kefir_value {
 };
 
 /*
- * - One protocol header type (Ethernet, ARP, IPv4, IPv6, TCP, UDP, application, etc.)
- * - One offset in this header (TODO: check if we have fields with non-fixed offsets)
- * - The length of the field to match.
- * - One mask to apply to the field.
+ * - A type for the match, indicating the semantics of the data to match (semantics needed for optimizations).
  * - A value to match. If matching against a range of values, this should be the minimum value of the range.
- * - A maximum value to match, for ranges.
  * - An operator to indicate what type of comparison should be performed (equality, or other arithmetic or logic operator).
+ * - One protocol header type (Ethernet, ARP, IPv4, IPv6, TCP, UDP, application, etc.)
+ * - One mask to apply to the field.
+ * - A maximum value to match, for ranges.
  * - Option flags, indicating for example that the match is against a range of values instead of a single value.
  */
 struct kefir_match {
-	enum header_type	header_type;
-	uint16_t		match_offset;
-	uint8_t			match_length;
-	char			mask[16];
+	enum match_type		match_type;
 	struct kefir_value	value;
-	char			max_value[16];
 	enum comp_operator	comp_operator;
+
+	enum header_type	header_type;
+	char			mask[16];
+	char			max_value[16];
 	uint64_t		flags;
 };
 
