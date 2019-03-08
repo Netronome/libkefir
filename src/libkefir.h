@@ -153,7 +153,7 @@ void kefir_dump_cprog(const kefir_cprog *cprog);
 /**
  * Convert a C program into eBPF bytecode.
  * @cprog C program to convert
- * @bpfprog pointer to the eBPF program to create. If NULL, will be malloc-ed.
+ * @bpfprog pointer to the eBPF program to create; if NULL, will be malloc()'ed
  * @return 0 on success, error code otherwise
  */
 int kefir_convert_cprog_to_bpf(const kefir_cprog *cprog,
