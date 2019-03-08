@@ -6,28 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <arpa/inet.h>
 #include <netinet/tcp.h>
 
+#include "libkefir_parse.h"
 #include "libkefir_parse_ethtool.h"
 
-static void err_fail(const char *format, ...)
-{
-	va_list ap;
-
-	va_start(ap, format);
-	kefir_vset_prefix_error(format, "ethtool parsing failed: ", ap);
-	va_end(ap);
-}
-
-static void err_bug(const char *format, ...)
-{
-	va_list ap;
-
-	va_start(ap, format);
-	kefir_vset_prefix_error(format, "ethtool parsing bug: ", ap);
-	va_end(ap);
-}
+DEFINE_ERR_FUNCTIONS("ethtool")
 
 enum ethtool_flow_type {
 	ETHTOOL_FLOW_TYPE_ETHER,
@@ -115,7 +99,7 @@ static const struct ethtool_option opt_dst_ip6 = {
 static const struct ethtool_option opt_tos = {
 	.name		= "tos",
 	.type		= ETHTOOL_VAL_TYPE_IPV4_TOS,
-	.format		= KEFIR_VAL_FMT_TOS,
+	.format		= KEFIR_VAL_FMT_UINT6,
 };
 
 static const struct ethtool_option opt_tclass = {
@@ -163,7 +147,7 @@ static const struct ethtool_option opt_vlan_etype = {
 static const struct ethtool_option opt_vlan = {
 	.name		= "vlan",
 	.type		= ETHTOOL_VAL_TYPE_VLAN_ID,
-	.format		= KEFIR_VAL_FMT_VLAN_ID,
+	.format		= KEFIR_VAL_FMT_UINT12,
 };
 
 static const struct ethtool_option opt_dst_mac = {
@@ -340,139 +324,41 @@ get_flow_opts(enum ethtool_flow_type flow_type, ethtool_opts_t **opts_res,
 	return 0;
 }
 
-static int get_uint(const char *input, uint32_t *output, uint32_t nb_bits)
-{
-	unsigned int res;
-	char *endptr;
-
-	res = strtoul(input, &endptr, 10);
-	if (*endptr != '\0') {
-		err_fail("could not parse %s as int", input);
-		return -1;
-	}
-	if (res >= (unsigned int)(2 << (nb_bits - 1))) {
-		err_fail("value %s is too big", input);
-		return -1;
-	}
-
-	*output = res;
-	return 0;
-}
-
-static int get_eth_address(const char *input, struct ether_addr *output)
-{
-	struct ether_addr *addr;
-
-	addr = ether_aton(input);
-
-	if (!addr) {
-		err_fail("could not parse ether address %s", input);
-		return -1;
-	}
-
-	memcpy(output, addr, sizeof(struct ether_addr));
-
-	/* "addr" statically allocated in ether_aton(), do not free it */
-
-	return 0;
-
-
-	/*
-	unsigned int eth[ETH_ALEN];
-	int count;
-	size_t i;
-
-	count = sscanf(input, "%2x:%2x:%2x:%2x:%2x:%2x",
-		       &eth[0], &eth[1], &eth[2], &eth[3], &eth[4], &eth[5]);
-
-	if (count != ETH_ALEN)
-		return -1;
-
-	for (i = 0; i < ETH_ALEN; i++)
-		*output[i] = eth[i];
-
-	return 0;
-	*/
-}
-
-static int get_ipv4_address(const char *input, uint32_t *output)
-{
-	if (inet_pton(AF_INET, input, output) != 1) {
-		err_fail("could not parse IPv4 %s", input);
-		return -1;
-	}
-
-	return 0;
-
-	/*
-	unsigned int ip[IPV4_ADDR_LEN];
-	unsigned int count;
-	size_t i;
-
-	count = sscanf(input, "%3d.%3d.%3d.%3d",
-		       &ip[0], &ip[1], &ip[2], &ip[3]);
-
-	if (count != IPV4_ADDR_LEN)
-		return -1;
-
-	count = 0;
-	for (i = 0; i < IPV4_ADDR_LEN; i++) {
-		if (ip[i] > UINT8_MAX)
-			return -1;
-		count += ip[i];
-	}
-
-	*output = count;
-	return 0;
-	*/
-}
-
-static int get_ipv6_address(const char *input, uint8_t **output)
-{
-	if (inet_pton(AF_INET6, input, output) != 1) {
-		err_fail("could not parse IPv6 %s", input);
-		return -1;
-	}
-
-	return 0;
-}
-
 static int
 get_match_value(const char *input, struct kefir_value *val,
 		enum value_format format)
 {
 	switch (format) {
-	case KEFIR_VAL_FMT_TOS:
-		if (get_uint(input, &val->data.n, 6))
+	case KEFIR_VAL_FMT_UINT6:
+		if (parse_uint(input, &val->data.u8, 6))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_UINT8:
-		if (get_uint(input, &val->data.n, 8))
+		if (parse_uint(input, &val->data.u8, 8))
 			return -1;
 		break;
-	case KEFIR_VAL_FMT_VLAN_ID:
-		if (get_uint(input, &val->data.n, 12))
+	case KEFIR_VAL_FMT_UINT12:
+		if (parse_uint(input, &val->data.u16, 12))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_UINT16:
-		if (get_uint(input, &val->data.n, 16))
+		if (parse_uint(input, &val->data.u16, 16))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_UINT32:
-		if (get_uint(input, &val->data.n, 32))
+		if (parse_uint(input, &val->data.u32, 32))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_MAC_ADDR:
-		if (get_eth_address(input, &val->data.eth))
+		if (parse_eth_addr(input, &val->data.eth))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_IPV4_ADDR:
-		if (get_ipv4_address(input, &val->data.ipv4.s_addr))
+		if (parse_ipv4_addr(input, &val->data.ipv4.s_addr))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_IPV6_ADDR:
-		if (get_ipv6_address(input,
-				     (uint8_t **)&val->data.ipv6.__in6_u))
+		if (parse_ipv6_addr(input, (uint8_t **)&val->data.ipv6.__in6_u))
 			return -1;
 		break;
 	default:

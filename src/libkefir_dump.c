@@ -58,12 +58,19 @@ static const char *comp_operator_str(enum comp_operator op)
 static void value_str(struct kefir_value val, char *buf, size_t buf_len)
 {
 	switch (val.format) {
+	case KEFIR_VAL_FMT_BIT:
+	case KEFIR_VAL_FMT_UINT3:
+	case KEFIR_VAL_FMT_UINT6:
 	case KEFIR_VAL_FMT_UINT8:
+		snprintf(buf, buf_len, "%c", ntohs(val.data.u8));
+		break;
+	case KEFIR_VAL_FMT_UINT12:
 	case KEFIR_VAL_FMT_UINT16:
+		snprintf(buf, buf_len, "%hd", ntohs(val.data.u16));
+		break;
+	case KEFIR_VAL_FMT_UINT20:
 	case KEFIR_VAL_FMT_UINT32:
-	case KEFIR_VAL_FMT_TOS:
-	case KEFIR_VAL_FMT_VLAN_ID:
-		snprintf(buf, buf_len, "%d", val.data.n);
+		snprintf(buf, buf_len, "%d", ntohl(val.data.u32));
 		break;
 	case KEFIR_VAL_FMT_MAC_ADDR:
 		snprintf(buf, buf_len, "%s", ether_ntoa(&val.data.eth));

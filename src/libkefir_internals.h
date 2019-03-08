@@ -42,14 +42,17 @@ enum action_code {
 #define KEFIR_MATCH_FLAG_IPV6	1 << 1
 
 enum value_format {
+	KEFIR_VAL_FMT_BIT,	/* MPLS BoS */
+	KEFIR_VAL_FMT_UINT3,	/* VLAN prio, MPLS TC */
+	KEFIR_VAL_FMT_UINT6,	/* IPv4 ToS */
 	KEFIR_VAL_FMT_UINT8,
+	KEFIR_VAL_FMT_UINT12,	/* VLAN ID, TCP flags */
 	KEFIR_VAL_FMT_UINT16,
+	KEFIR_VAL_FMT_UINT20,	/* MPLS label */
 	KEFIR_VAL_FMT_UINT32,
-	KEFIR_VAL_FMT_TOS,
 	KEFIR_VAL_FMT_MAC_ADDR,
 	KEFIR_VAL_FMT_IPV4_ADDR,
 	KEFIR_VAL_FMT_IPV6_ADDR,
-	KEFIR_VAL_FMT_VLAN_ID,
 };
 
 struct kefir_value {
@@ -57,7 +60,10 @@ struct kefir_value {
 		struct ether_addr	eth;
 		struct in6_addr		ipv6;
 		struct in_addr		ipv4;
-		uint32_t		n; /* All other values <= uint32_t */
+		uint32_t		u32;
+		uint16_t		u16;
+		uint8_t			u8;
+		uint8_t			raw[sizeof(struct in6_addr)];
 	}			data;
 	enum value_format	format;
 };
