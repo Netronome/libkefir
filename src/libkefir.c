@@ -89,7 +89,7 @@ kefir_cprog *
 kefir_convert_filter_to_cprog(const kefir_filter *filter,
 			      const kefir_cprog_options *opts)
 {
-	return kefir_make_cprog_from_filter(filter, opts);
+	return proggen_make_cprog_from_filter(filter, opts);
 }
 
 void kefir_dump_cprog(const kefir_cprog *cprog)
@@ -100,7 +100,7 @@ void kefir_dump_cprog(const kefir_cprog *cprog)
 	buf = calloc(buf_len, sizeof(char));
 	if (!buf)
 		return;
-	kefir_cprog_to_buf(cprog, &buf, &buf_len);
+	proggen_cprog_to_buf(cprog, &buf, &buf_len);
 	printf("%s", buf);
 }
 

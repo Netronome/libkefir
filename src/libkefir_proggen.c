@@ -316,8 +316,8 @@ static void update_cprog_options(void *rule_ptr, va_list ap)
 }
 
 kefir_cprog *
-kefir_make_cprog_from_filter(const kefir_filter *filter,
-			     const kefir_cprog_options *opts)
+proggen_make_cprog_from_filter(const kefir_filter *filter,
+			       const kefir_cprog_options *opts)
 {
 	struct kefir_cprog_options default_opts = {0};
 	kefir_cprog *prog;
@@ -344,7 +344,7 @@ kefir_make_cprog_from_filter(const kefir_filter *filter,
 	return prog;
 }
 
-int kefir_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
+int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	if (!prog) {
 		err_fail("cannot dump empty C prog object");
