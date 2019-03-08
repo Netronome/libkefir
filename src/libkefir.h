@@ -164,6 +164,15 @@ kefir_cprog *kefir_convert_filter_to_cprog(const kefir_filter *filter,
 void kefir_dump_cprog(const kefir_cprog *cprog);
 
 /**
+ * Save a C program to a file on the disk.
+ * @cprog C program to save
+ * @filename name of file to write into (existing file will be overwritten)
+ * @return 0 on success, error code otherwise
+ */
+int kefir_cprog_to_file(const kefir_cprog *cprog,
+			const char *filename);
+
+/**
  * Convert a C program into eBPF bytecode.
  * @cprog C program to convert
  * @bpfprog pointer to the eBPF program to create; if NULL, will be malloc()'ed

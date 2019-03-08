@@ -14,6 +14,8 @@
 #include "list.h"
 #include "libkefir_error.h"
 
+#define KEFIR_CPROG_INIT_BUFLEN	8192
+
 enum comp_operator {
 	OPER_EQUAL,
 	OPER_LT,

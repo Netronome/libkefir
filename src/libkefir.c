@@ -109,7 +109,7 @@ int kefir_cprog_to_buf(const kefir_cprog *cprog,
 
 void kefir_dump_cprog(const kefir_cprog *cprog)
 {
-	size_t buf_len = 2048;
+	size_t buf_len = KEFIR_CPROG_INIT_BUFLEN;
 	char *buf;
 
 	buf = calloc(buf_len, sizeof(char));
@@ -117,6 +117,34 @@ void kefir_dump_cprog(const kefir_cprog *cprog)
 		return;
 	proggen_cprog_to_buf(cprog, &buf, &buf_len);
 	printf("%s", buf);
+}
+
+int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
+{
+	size_t buf_len = KEFIR_CPROG_INIT_BUFLEN;
+	size_t res;
+	FILE *file;
+	char *buf;
+
+	if (!filename)
+		return -1;
+
+	buf = calloc(buf_len, sizeof(char));
+	if (!buf)
+		return -1;
+	if (proggen_cprog_to_buf(cprog, &buf, &buf_len))
+		return -1;
+
+	file = fopen(filename, "w");
+	if (!file)
+		return -1;
+	res = fprintf(file, "%s", buf);
+	fclose(file);
+
+	if (res != strlen(buf))
+		return -1;
+
+	return 0;
 }
 
 /*
