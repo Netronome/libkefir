@@ -38,6 +38,9 @@ kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
 {
 	struct list *rule_list;
 
+	if (!rule)
+		return -1;
+
 	rule_list = list_insert(filter->rules, rule, index);
 	if (!rule_list)
 		return -1;
