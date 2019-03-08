@@ -90,9 +90,9 @@ void kefir_dump_filter(const kefir_filter *filter)
 
 kefir_cprog *
 kefir_convert_filter_to_cprog(const kefir_filter *filter,
-			      const kefir_cprog_options *opts)
+			      enum kefir_cprog_target target)
 {
-	return proggen_make_cprog_from_filter(filter, opts);
+	return proggen_make_cprog_from_filter(filter, target);
 }
 
 void kefir_destroy_cprog(kefir_cprog *cprog)

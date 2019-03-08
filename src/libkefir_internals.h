@@ -6,24 +6,13 @@
 
 #include <stdint.h>
 
+#include <linux/bpf.h>
 #include <netinet/ether.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
 
 #include "list.h"
 #include "libkefir_error.h"
-
-enum header_type {
-	HDR_TYPE_ETHERNET,
-	HDR_TYPE_VLAN,
-	HDR_TYPE_ARP,
-	HDR_TYPE_IP,
-	HDR_TYPE_TCP,
-	HDR_TYPE_UDP,
-	HDR_TYPE_SCTP,
-	HDR_TYPE_IPSEC,
-	HDR_TYPE_APPLI,
-};
 
 enum comp_operator {
 	OPER_EQUAL,
@@ -144,21 +133,18 @@ struct kefir_value {
 
 /*
  * - A type for the match, indicating the semantics of the data to match (semantics needed for optimizations).
- * - A value to match. If matching against a range of values, this should be the minimum value of the range.
  * - An operator to indicate what type of comparison should be performed (equality, or other arithmetic or logic operator).
- * - One protocol header type (Ethernet, ARP, IPv4, IPv6, TCP, UDP, application, etc.)
- * - One mask to apply to the field.
+ * - A value to match. If matching against a range of values, this should be the minimum value of the range.
  * - A maximum value to match, for ranges.
+ * - One mask to apply to the field.
  * - Option flags, indicating for example that the match is against a range of values instead of a single value.
  */
 struct kefir_match {
 	enum match_type		match_type;
-	struct kefir_value	value;
 	enum comp_operator	comp_operator;
-
-	enum header_type	header_type;
-	char			mask[16];
+	struct kefir_value	value;
 	char			max_value[16];
+	char			mask[16];
 	uint64_t		flags;
 };
 
@@ -177,6 +163,30 @@ struct kefir_rule {
 
 struct kefir_filter {
 	struct list *rules;
+};
+
+/*
+ * kefir_cprog
+ */
+
+#define OPT_FLAGS_NEED_ETHER	(1 << 0)
+#define OPT_FLAGS_NEED_IPV4	(1 << 1)
+#define OPT_FLAGS_NEED_IPV6	(1 << 2)
+#define OPT_FLAGS_NEED_UDP	(1 << 3)
+#define OPT_FLAGS_NEED_TCP	(1 << 4)
+#define OPT_FLAGS_NEED_SCTP	(1 << 5)
+#define OPT_FLAGS_NEED_L4	\
+	(OPT_FLAGS_NEED_UDP + OPT_FLAGS_NEED_TCP + OPT_FLAGS_NEED_SCTP)
+
+struct kefir_cprog_options {
+	uint64_t		flags;
+	enum kefir_cprog_target	target;
+	uint8_t	req_helpers[__BPF_FUNC_MAX_ID / 8 + 1];
+};
+
+struct kefir_cprog {
+	const kefir_filter	*filter;
+	kefir_cprog_options	options;
 };
 
 #endif /* LIBKEFIR_INTERNALS_H */
