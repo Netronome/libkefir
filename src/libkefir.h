@@ -173,6 +173,26 @@ int kefir_cprog_to_file(const kefir_cprog *cprog,
 			const char *filename);
 
 /**
+ * Compile a C file into BPF bytecode as an ELF object file.
+ * @c_file input C source code file
+ * @opt_object_file optional name for the output file, if NULL will be derived
+ *                  from c_file if possible (".c" extension will be replaced by
+ *                  ".o")
+ * @opt_ll_file optional name for intermediary ll file (LLVM IR), if NULL will
+ *              be derived from c_file (".ll")
+ * @opt_clang_bin optional path to clang executable, if NULL defaults to
+ *                /usr/bin/clang
+ * @opt_llc_bin optional path to llc executable, if NULL defaults to
+ *              /usr/bin/llc
+ * @return 0 on success, error code otherwise
+ */
+int kefir_compile_to_bpf(const char *c_file,
+			 const char *opt_object_file,
+			 const char *opt_ll_file,
+			 const char *opt_clang_bin,
+			 const char *opt_llc_bin);
+
+/**
  * Convert a C program into eBPF bytecode.
  * @cprog C program to convert
  * @bpfprog pointer to the eBPF program to create; if NULL, will be malloc()'ed

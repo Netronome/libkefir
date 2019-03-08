@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "libkefir.h"
+#include "libkefir_compile.h"
 #include "libkefir_dump.h"
 #include "libkefir_internals.h"
 #include "libkefir_parse_ethtool.h"
@@ -150,3 +151,11 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 /*
  * Loader
  */
+
+int kefir_compile_to_bpf(const char *c_file, const char *opt_object_file,
+			 const char *opt_ll_file,
+			 const char *opt_clang_bin, const char *opt_llc_bin)
+{
+	return compile_cfile_to_bpf(c_file, opt_object_file, opt_ll_file,
+				    opt_clang_bin, opt_llc_bin);
+}
