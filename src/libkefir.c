@@ -8,6 +8,7 @@
 #include "libkefir_dump.h"
 #include "libkefir_internals.h"
 #include "libkefir_parse_ethtool.h"
+#include "libkefir_parse_tc.h"
 #include "libkefir_proggen.h"
 
 /*
@@ -57,6 +58,9 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 	switch (rule_type) {
 	case RULE_TYPE_ETHTOOL_NTUPLE:
 		rule = kefir_parse_rule_ethtool(user_rule, rule_size);
+		break;
+	case RULE_TYPE_TC_FLOWER:
+		rule = kefir_parse_rule_tcflower(user_rule, rule_size);
 		break;
 	default:
 		return -1;
