@@ -165,6 +165,13 @@ static kefir_cprog *create_cprog(void)
 	return prog;
 }
 
+void proggen_cprog_destroy(kefir_cprog *cprog)
+{
+	// TODO: If someday we copy the filter instead of just pointing to the
+	// original, don't forget to free it here
+	free(cprog);
+}
+
 static void add_req_helper(kefir_cprog *prog, size_t helper_id)
 {
 	uint8_t flag;

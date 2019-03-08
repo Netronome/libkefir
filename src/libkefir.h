@@ -137,6 +137,12 @@ typedef struct kefir_cprog kefir_cprog;
 typedef struct kefir_cprog_options kefir_cprog_options;
 
 /**
+ * Destroy and free allocated memory for a C program object.
+ * @cprog C program object to destroy
+ */
+void kefir_destroy_cprog(kefir_cprog *cprog);
+
+/**
  * Convert a filter into an eBPF-compatible C program.
  * @filter filter to convert
  * @opts options for convertion (indicating e.g. desired hook).

@@ -8,6 +8,7 @@
 
 #include "libkefir.h"
 
+void proggen_cprog_destroy(kefir_cprog *cprog);
 kefir_cprog *
 proggen_make_cprog_from_filter(const kefir_filter *filter,
 			       const kefir_cprog_options *opts);

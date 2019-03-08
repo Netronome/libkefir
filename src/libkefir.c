@@ -91,6 +91,11 @@ kefir_convert_filter_to_cprog(const kefir_filter *filter,
 	return proggen_make_cprog_from_filter(filter, opts);
 }
 
+void kefir_destroy_cprog(kefir_cprog *cprog)
+{
+	proggen_cprog_destroy(cprog);
+}
+
 void kefir_dump_cprog(const kefir_cprog *cprog)
 {
 	size_t buf_len = 2048;
