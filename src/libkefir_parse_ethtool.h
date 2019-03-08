@@ -19,6 +19,6 @@
 #endif
 
 struct kefir_rule *
-kefir_parse_rule_ethtool(const char **user_rule, unsigned int rule_size);
+kefir_parse_rule_ethtool(const char **user_rule, size_t rule_size);
 
 #endif /* LIBKEFIR_PARSE_ETHTOOL_H */

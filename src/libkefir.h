@@ -4,6 +4,8 @@
 #ifndef LIBKEFIR_H
 #define LIBKEFIR_H
 
+#include <stdlib.h>
+
 struct bpf_program {
 	int TODO;
 };
@@ -40,7 +42,7 @@ void kefir_destroy_filter(kefir_filter *filter);
  * @filter the filter for which to count the rules
  * @return the number of rules in that filter
  */
-unsigned int kefir_sizeof_filter(const kefir_filter *filter);
+size_t kefir_sizeof_filter(const kefir_filter *filter);
 
 /**
  * Add a rule to a filter.
@@ -55,8 +57,8 @@ int
 kefir_load_rule(kefir_filter *filter,
 		enum kefir_rule_type rule_type,
 		const char **user_rule,
-		unsigned int rule_size,
-		unsigned int index);
+		size_t rule_size,
+		ssize_t index);
 
 /**
  * Add a rule to a filter.

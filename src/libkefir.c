@@ -28,7 +28,7 @@ void kefir_destroy_filter(kefir_filter *filter)
 	free(filter);
 }
 
-unsigned int kefir_sizeof_filter(const kefir_filter *filter) {
+size_t kefir_sizeof_filter(const kefir_filter *filter) {
 	return list_count(filter->rules);
 }
 
@@ -50,8 +50,7 @@ kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
 }
 
 int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
-		    const char **user_rule, unsigned int rule_size,
-		    unsigned int index)
+		    const char **user_rule, size_t rule_size, ssize_t index)
 {
 	struct kefir_rule *rule;
 
