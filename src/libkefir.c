@@ -3,6 +3,7 @@
 
 // TODO check that
 #include <stdio.h>
+#include <string.h>
 
 #include "libkefir.h"
 #include "libkefir_dump.h"
@@ -98,6 +99,12 @@ kefir_convert_filter_to_cprog(const kefir_filter *filter,
 void kefir_destroy_cprog(kefir_cprog *cprog)
 {
 	proggen_cprog_destroy(cprog);
+}
+
+int kefir_cprog_to_buf(const kefir_cprog *cprog,
+		       char **buf, size_t *buf_len)
+{
+	return proggen_cprog_to_buf(cprog, buf, buf_len);
 }
 
 void kefir_dump_cprog(const kefir_cprog *cprog)
