@@ -678,9 +678,9 @@ struct kefir_rule *
 kefir_parse_rule_ethtool(const char **user_rule, unsigned int rule_size)
 {
 	struct ethtool_option current_opt = { .name = "" };
+	struct kefir_value match_val = {0};
 	enum ethtool_flow_type flow_type;
 	enum action_code action_code;
-	struct kefir_value match_val;
 	ethtool_opts_t *flow_opts;
 	struct kefir_rule *rule;
 	size_t flow_opts_len, i;
