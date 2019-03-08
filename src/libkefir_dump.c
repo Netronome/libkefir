@@ -108,9 +108,9 @@ static void append(char **buf, size_t *buf_len, const char *fmt, ...)
 
 /*
  * Should be called as
- * void dump_rule(struct kefir_rule *rule_ptr, char **buf_ptr, size_t *buf_len)
+ * int dump_rule(struct kefir_rule *rule_ptr, char **buf_ptr, size_t *buf_len)
  */
-static void dump_rule(void *rule_ptr, va_list ap)
+static int dump_rule(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
 	size_t strval_len = 32;
@@ -134,6 +134,8 @@ static void dump_rule(void *rule_ptr, va_list ap)
 	       action_str(rule->action));
 
 	append(buf_ptr, buf_len, "\n");
+
+	return 0;
 }
 
 void kefir_dump_filter_to_buf(const kefir_filter *filter, char *buf,

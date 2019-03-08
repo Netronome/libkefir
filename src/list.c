@@ -33,30 +33,37 @@ void list_destroy(struct list *l, void (*destroy_elem)(void *))
 	free(l);
 }
 
-static void list_vfor_each(struct list *l,
-			   void (*process_elem)(void *, va_list arg_ap),
-			   va_list ap)
+static int
+list_vfor_each(struct list *l, int (*process_elem)(void *, va_list arg_ap),
+	       va_list ap)
 {
 	va_list aq;
+	int res;
 
 	if (!l)
-		return;
+		return 0;
 
 	va_copy(aq, ap);
-	process_elem(l->elem, aq);
+	res = process_elem(l->elem, aq);
 	va_end(aq);
 
-	list_vfor_each(l->next, process_elem, ap);
+	if (res)
+		return res;
+
+	return list_vfor_each(l->next, process_elem, ap);
 }
 
-void list_for_each(struct list *l,
-		   void (*process_elem)(void *, va_list arg_ap), ...)
+int list_for_each(struct list *l,
+		  int (*process_elem)(void *, va_list arg_ap), ...)
 {
 	va_list ap;
+	int res;
 
 	va_start(ap, process_elem);
-	list_vfor_each(l, process_elem, ap);
+	res = list_vfor_each(l, process_elem, ap);
 	va_end(ap);
+
+	return res;
 }
 
 void *list_get_elem(struct list *l)

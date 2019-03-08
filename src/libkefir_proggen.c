@@ -280,9 +280,9 @@ make_cprog_start(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 /*
  * Should be called as
- * void update_cprog_options(struct kefir_rule *rule_ptr, kefir_cprog *prog)
+ * int update_cprog_options(struct kefir_rule *rule_ptr, kefir_cprog *prog)
  */
-static void update_cprog_options(void *rule_ptr, va_list ap)
+static int update_cprog_options(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
 	kefir_cprog *prog;
@@ -313,13 +313,15 @@ static void update_cprog_options(void *rule_ptr, va_list ap)
 	case HDR_TYPE_APPLI:
 		break;
 	default:
-		return;
+		return -1;
 	}
 
 	/************* for test */
 	add_req_helper(prog, BPF_FUNC_map_lookup_elem);
 	add_req_helper(prog, BPF_FUNC_trace_printk);
 	/************* for test */
+
+	return 0;
 }
 
 kefir_cprog *

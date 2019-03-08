@@ -17,8 +17,8 @@ struct list {
 struct list *list_init(void *elem);
 void list_destroy(struct list *l, void (*destroy_elem)(void *));
 
-void list_for_each(struct list *l,
-		   void (*process_elem)(void *, va_list arg_ap), ...);
+int list_for_each(struct list *l,
+		  int (*process_elem)(void *, va_list arg_ap), ...);
 
 void *list_get_elem(struct list *l);
 void list_set_elem(struct list *l, void *elem);
