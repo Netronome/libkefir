@@ -1225,9 +1225,13 @@ static int update_cprog_options(void *rule_ptr, va_list ap)
 	prog = va_arg(ap, kefir_cprog *);
 
 	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
-	     rule->matches[i].match_type != KEFIR_MATCH_TYPE_UNSPEC; i++)
+	     rule->matches[i].match_type != KEFIR_MATCH_TYPE_UNSPEC; i++) {
 		update_options_from_matchtype(rule->matches[i].match_type,
 					      &prog->options);
+
+		if (rule->matches[i].flags & MATCH_FLAGS_USE_MASK)
+			prog->options.flags |= OPT_FLAGS_USE_MASKS;
+	}
 
 	prog->options.nb_matches = max(prog->options.nb_matches, i);
 

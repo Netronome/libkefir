@@ -51,6 +51,9 @@ static int
 tcflower_parse_match(const char ***argv, unsigned int *argc,
 		     enum ether_proto_type ethtype, struct kefir_match *match)
 {
+	uint32_t *data_ipv6_ptr = match->value.data.ipv6.__in6_u.__u6_addr32;
+	uint32_t *data_ipv4_ptr = &match->value.data.ipv4.s_addr;
+
 	if (*argc < 2) {
 		err_fail("bad number of arguments for parsing match value");
 		return -1;
@@ -60,13 +63,15 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 
 	if (!strcmp(**argv, "dst_mac")) {
 		NEXT_ARG();
-		if (parse_eth_addr(**argv, &match->value.data.eth))
+		if (parse_eth_addr_slash_mask(**argv, &match->value.data.eth,
+					      match->mask))
 			return -1;
 		match->match_type = KEFIR_MATCH_TYPE_ETHER_DST;
 		match->value.format = KEFIR_VAL_FMT_MAC_ADDR;
 	} else if (!strcmp(**argv, "src_mac")) {
 		NEXT_ARG();
-		if (parse_eth_addr(**argv, &match->value.data.eth))
+		if (parse_eth_addr_slash_mask(**argv, &match->value.data.eth,
+					      match->mask))
 			return -1;
 		match->match_type = KEFIR_MATCH_TYPE_ETHER_SRC;
 		match->value.format = KEFIR_VAL_FMT_MAC_ADDR;
@@ -139,13 +144,15 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 	} else if (!strcmp(**argv, "ip_tos")) {
 		NEXT_ARG();
 		/* Note: For IPv4, should be 6 bits only */
-		if (parse_uint(**argv, &match->value.data.u8, 8))
+		if (parse_uint_slash_mask(**argv, &match->value.data.u8, 8,
+					  match->mask))
 			return -1;
 		match->match_type = KEFIR_MATCH_TYPE_IP_ANY_TOS;
 		match->value.format = KEFIR_VAL_FMT_UINT8;
 	} else if (!strcmp(**argv, "ip_ttl")) {
 		NEXT_ARG();
-		if (parse_uint(**argv, &match->value.data.u8, 8))
+		if (parse_uint_slash_mask(**argv, &match->value.data.u8, 8,
+					  match->mask))
 			return -1;
 		match->match_type = KEFIR_MATCH_TYPE_IP_ANY_TTL;
 		match->value.format = KEFIR_VAL_FMT_UINT8;
@@ -153,16 +160,15 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		NEXT_ARG();
 		switch (ethtype) {
 		case TCFLOWER_ETH_PROTO_IPV4:
-			if (parse_ipv4_addr(**argv,
-					    &match->value.data.ipv4.s_addr))
+			if (parse_ipv4_addr_slash_mask(**argv, data_ipv4_ptr,
+						       match->mask))
 				return -1;
 			match->match_type = KEFIR_MATCH_TYPE_IP_4_DST;
 			match->value.format = KEFIR_VAL_FMT_IPV4_ADDR;
 			break;
 		case TCFLOWER_ETH_PROTO_IPV6:
-			if (parse_ipv6_addr(**argv,
-					    (uint8_t **)&match->value
-						.data.ipv6.__in6_u))
+			if (parse_ipv6_addr_slash_mask(**argv, data_ipv6_ptr,
+						       match->mask))
 				return -1;
 			match->match_type = KEFIR_MATCH_TYPE_IP_6_DST;
 			match->value.format = KEFIR_VAL_FMT_IPV6_ADDR;
@@ -176,16 +182,15 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		NEXT_ARG();
 		switch (ethtype) {
 		case TCFLOWER_ETH_PROTO_IPV4:
-			if (parse_ipv4_addr(**argv,
-					    &match->value.data.ipv4.s_addr))
+			if (parse_ipv4_addr_slash_mask(**argv, data_ipv4_ptr,
+						       match->mask))
 				return -1;
 			match->match_type = KEFIR_MATCH_TYPE_IP_4_SRC;
 			match->value.format = KEFIR_VAL_FMT_IPV4_ADDR;
 			break;
 		case TCFLOWER_ETH_PROTO_IPV6:
-			if (parse_ipv6_addr(**argv,
-					    (uint8_t **)&match->value
-						.data.ipv6.__in6_u))
+			if (parse_ipv6_addr_slash_mask(**argv, data_ipv6_ptr,
+						       match->mask))
 				return -1;
 			match->match_type = KEFIR_MATCH_TYPE_IP_6_SRC;
 			match->value.format = KEFIR_VAL_FMT_IPV6_ADDR;
@@ -209,7 +214,8 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		match->value.format = KEFIR_VAL_FMT_UINT16;
 	} else if (!strcmp(**argv, "tcp_flags")) {
 		NEXT_ARG();
-		if (parse_uint(**argv, &match->value.data.u16, 12))
+		if (parse_uint_slash_mask(**argv, &match->value.data.u16, 12,
+					  match->mask))
 			return -1;
 		match->match_type = KEFIR_MATCH_TYPE_TCP_FLAGS;
 		match->value.format = KEFIR_VAL_FMT_UINT12;

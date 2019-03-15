@@ -9,18 +9,11 @@
 
 DEFINE_ERR_FUNCTIONS("parser")
 
-int parse_uint(const char *input, void *output, uint32_t nb_bits)
+static int
+check_and_store_uint(unsigned int res, void *output, uint32_t nb_bits)
 {
-	unsigned int res;
-	char *endptr;
-
-	res = strtoul(input, &endptr, 10);
-	if (*endptr != '\0') {
-		err_fail("could not parse %s as int", input);
-		return -1;
-	}
 	if (res >= (unsigned int)(2 << (nb_bits - 1))) {
-		err_fail("value %s is too big", input);
+		err_fail("value %d is too big", res);
 		return -1;
 	}
 
@@ -31,6 +24,59 @@ int parse_uint(const char *input, void *output, uint32_t nb_bits)
 	else
 		*(uint32_t *)output = htonl(res);
 	return 0;
+}
+
+int parse_uint(const char *input, void *output, uint32_t nb_bits)
+{
+	unsigned int res;
+	char *endptr;
+
+	res = strtoul(input, &endptr, 10);
+	if (*endptr != '\0') {
+		err_fail("could not parse %s as int", input);
+		return -1;
+	}
+
+	return check_and_store_uint(res, output, nb_bits);
+}
+
+static void bitmask_from_int(unsigned int mask, uint8_t *bitmask, size_t size)
+{
+	size_t i;
+
+	for  (i = 0; i < size && mask > 0; i++, mask -= 8)
+		bitmask[i] = mask > 8 ? 0xff : 0xff << (8 - mask);
+}
+
+static int parse_slash_mask(const char *input, uint8_t *mask)
+{
+	int mask_int;
+
+	if (parse_uint(input, &mask_int, 6))
+		return -1;
+	bitmask_from_int(mask_int, mask, 4);
+
+	return 0;
+}
+
+int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
+			  uint8_t *mask)
+{
+	char *endptr, *slash;
+	unsigned int res;
+
+	slash = strchr(input, '/');
+	if (slash)
+		if (parse_slash_mask(slash + 1, mask))
+			return -1;
+
+	res = strtoul(input, &endptr, 10);
+	if (*endptr != '\0' && endptr != slash) {
+		err_fail("could not parse %s as int", input);
+		return -1;
+	}
+
+	return check_and_store_uint(res, output, nb_bits);
 }
 
 int parse_eth_addr(const char *input, struct ether_addr *output)
@@ -51,22 +97,84 @@ int parse_eth_addr(const char *input, struct ether_addr *output)
 	return 0;
 }
 
-int parse_ipv4_addr(const char *input, uint32_t *output)
+int parse_eth_addr_slash_mask(const char *input, struct ether_addr *output,
+			      uint8_t *mask)
 {
-	if (inet_pton(AF_INET, input, output) != 1) {
-		//err_fail("could not parse IPv4 %s", input);
+	char *slash;
+
+	slash = strchr(input, '/');
+	if (slash) {
+		struct ether_addr *mask_bits;
+		int mask_int;
+
+		mask_bits = ether_aton(slash + 1);
+
+		if (mask_bits) {
+			/* Mask expressed in the shape "/ff:ff:ff:00:00:00" */
+			memcpy(mask, mask_bits, sizeof(struct ether_addr));
+		} else if (parse_uint(slash + 1, &mask_int, 6)) {
+			/* Mask may be an integer, as in "/24" */
+			bitmask_from_int(mask_int, mask, 6);
+		} else {
+			err_fail("could not parse ether mask %s", slash + 1);
+			return -1;
+		}
+	}
+
+	return parse_eth_addr(input, output);
+}
+
+static int parse_ip_addr(int af, const char *input, uint32_t *output)
+{
+	if (inet_pton(af, input, output) != 1) {
+		err_fail("could not parse IP address %s", input);
 		return -1;
 	}
 
 	return 0;
 }
 
-int parse_ipv6_addr(const char *input, uint8_t **output)
+int parse_ipv4_addr(const char *input, uint32_t *output)
 {
-	if (inet_pton(AF_INET6, input, output) != 1) {
-		//err_fail("could not parse IPv6 %s", input);
-		return -1;
+	return parse_ip_addr(AF_INET, input, output);
+}
+
+int parse_ipv6_addr(const char *input, uint32_t *output)
+{
+	return parse_ip_addr(AF_INET6, input, output);
+}
+
+static int
+parse_ip_addr_slash_mask(int af, const char *input, uint32_t *output,
+			 uint8_t *mask)
+{
+	char *slash, *input_cpy = (char *)input;
+	int res;
+
+	slash = strchr(input, '/');
+	if (slash) {
+		if (parse_slash_mask(slash + 1, mask))
+			return -1;
+
+		input_cpy = strndup(input, slash - input);
 	}
 
-	return 0;
+	res = parse_ip_addr(af, input_cpy, output);
+
+	if (slash)
+		free(input_cpy);
+
+	return res;
+}
+
+int parse_ipv4_addr_slash_mask(const char *input, uint32_t *output,
+			       uint8_t *mask)
+{
+	return parse_ip_addr_slash_mask(AF_INET, input, output, mask);
+}
+
+int parse_ipv6_addr_slash_mask(const char *input, uint32_t *output,
+			       uint8_t *mask)
+{
+	return parse_ip_addr_slash_mask(AF_INET6, input, output, mask);
 }

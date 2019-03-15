@@ -295,7 +295,7 @@ get_match_value(const char *input, struct kefir_value *val,
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_IPV6_ADDR:
-		if (parse_ipv6_addr(input, (uint8_t **)&val->data.ipv6.__in6_u))
+		if (parse_ipv6_addr(input, val->data.ipv6.__in6_u.__u6_addr32))
 			return -1;
 		break;
 	default:

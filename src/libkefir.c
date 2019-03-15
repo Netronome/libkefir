@@ -58,6 +58,26 @@ kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
 	return 0;
 }
 
+static void update_from_mask(struct kefir_rule *rule)
+{
+	size_t i, j;
+
+	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
+	     rule->matches[i].match_type != KEFIR_MATCH_TYPE_UNSPEC; i++) {
+		struct kefir_match *match = &rule->matches[i];
+
+		for (j = 0; j < sizeof(match->mask); j++)
+			if (match->mask[j]) {
+				match->flags |= MATCH_FLAGS_USE_MASK;
+				break;
+			}
+
+		if (match->flags & MATCH_FLAGS_USE_MASK)
+			for (j = 0; j < sizeof(match->mask); j++)
+				match->value.data.raw[j] &= match->mask[j];
+	}
+}
+
 int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 		    const char **user_rule, size_t rule_size, ssize_t index)
 {
@@ -73,6 +93,8 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 	default:
 		return -1;
 	}
+
+	update_from_mask(rule);
 
 	return kefir_add_rule_to_filter(filter, rule, index);
 }

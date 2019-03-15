@@ -23,8 +23,16 @@
 	__DO_ERR_FUNC(COMPONENT, bug, "parsing bug")
 
 int parse_uint(const char *input, void *output, uint32_t nb_bits);
+int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
+			  uint8_t *mask);
 int parse_eth_addr(const char *input, struct ether_addr *output);
+int parse_eth_addr_slash_mask(const char *input, struct ether_addr *output,
+			      uint8_t *mask);
 int parse_ipv4_addr(const char *input, uint32_t *output);
-int parse_ipv6_addr(const char *input, uint8_t **output);
+int parse_ipv4_addr_slash_mask(const char *input, uint32_t *output,
+			       uint8_t *mask);
+int parse_ipv6_addr(const char *input, uint32_t *output);
+int parse_ipv6_addr_slash_mask(const char *input, uint32_t *output,
+			       uint8_t *mask);
 
 #endif /* LIBKEFIR_PARSE_H */

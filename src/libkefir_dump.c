@@ -60,6 +60,19 @@ static void value_str(struct kefir_value val, char *buf, size_t buf_len)
 	}
 }
 
+static void mask_str(uint8_t *mask, size_t mask_len, char *buf, size_t buf_len)
+{
+	size_t i;
+
+	for (i = 0; i < mask_len; i++)
+		snprintf(buf + i * 3, buf_len - i * 3, "%02hhx ", mask[i]);
+
+	for (i = strlen(buf) - 1; buf[i] == ' ' || buf[i] == '0'; i--) {
+		/* Rewind */
+	}
+	buf[i + 1] = '\0';
+}
+
 static const char *action_str(enum action_code ac)
 {
 	switch (ac) {
@@ -220,7 +233,7 @@ static const char *match_type_str(enum match_type match_type)
 static int dump_rule(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
-	size_t strval_len = 32;
+	size_t strval_len = 128;
 	char strval[strval_len];
 	size_t *buf_len;
 	char **buf_ptr;
@@ -237,6 +250,12 @@ static int dump_rule(void *rule_ptr, va_list ap)
 		       comp_operator_str(rule->matches[i].comp_operator));
 		value_str(rule->matches[i].value, strval, strval_len);
 		append(buf_ptr, buf_len, "value %zd: %s\t| ", i, strval);
+		if (rule->matches[i].flags & MATCH_FLAGS_USE_MASK) {
+			mask_str(rule->matches[i].mask,
+				 sizeof(rule->matches[i].mask),
+				 strval, strval_len);
+			append(buf_ptr, buf_len, "mask %zd: %s\t| ", i, strval);
+		}
 	}
 	append(buf_ptr, buf_len, "action: %s | ",
 	       action_str(rule->action));

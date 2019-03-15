@@ -136,6 +136,9 @@ struct kefir_value {
 	enum value_format	format;
 };
 
+#define MATCH_FLAGS_USE_MASK	(1 << 0)
+#define MATCH_FLAGS_USE_RANGE	(1 << 1)
+
 /*
  * - A type for the match, indicating the semantics of the data to match (semantics needed for optimizations).
  * - An operator to indicate what type of comparison should be performed (equality, or other arithmetic or logic operator).
@@ -182,6 +185,7 @@ struct kefir_filter {
 #define OPT_FLAGS_NEED_SCTP	(1 << 5)
 #define OPT_FLAGS_NEED_L4	\
 	(OPT_FLAGS_NEED_UDP + OPT_FLAGS_NEED_TCP + OPT_FLAGS_NEED_SCTP)
+#define OPT_FLAGS_USE_MASKS	(1 << 6)
 
 struct kefir_cprog_options {
 	uint64_t		flags;
