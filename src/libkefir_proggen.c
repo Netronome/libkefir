@@ -21,7 +21,7 @@ static void err_fail(const char *format, ...)
 	va_list ap;
 
 	va_start(ap, format);
-	kefir_vset_prefix_error(format, "C prog gen failed: ", ap);
+	error_vset_str("C prog gen failed: ", format, ap);
 	va_end(ap);
 }
 

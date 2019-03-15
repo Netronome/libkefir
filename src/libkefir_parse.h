@@ -6,22 +6,6 @@
 
 #include "libkefir_internals.h"
 
-#define __DO_ERR_FUNC(COMPONENT, NAME, CONTEXT)				\
-	__attribute__((unused))						\
-	static void err_ ## NAME(const char *format, ...)		\
-	{								\
-		va_list ap;						\
-									\
-		va_start(ap, format);					\
-		kefir_vset_prefix_error(format,				\
-					COMPONENT " " CONTEXT ": ", ap); \
-		va_end(ap);						\
-	}
-
-#define DEFINE_ERR_FUNCTIONS(COMPONENT)					\
-	__DO_ERR_FUNC(COMPONENT, fail, "parsing failed")		\
-	__DO_ERR_FUNC(COMPONENT, bug, "parsing bug")
-
 int parse_uint(const char *input, void *output, uint32_t nb_bits);
 int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
 			  uint8_t *mask);

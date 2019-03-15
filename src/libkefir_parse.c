@@ -5,6 +5,7 @@
 
 #include <arpa/inet.h>
 
+#include "libkefir_error.h"
 #include "libkefir_parse.h"
 
 DEFINE_ERR_FUNCTIONS("parser")

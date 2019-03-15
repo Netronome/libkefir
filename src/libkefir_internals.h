@@ -11,6 +11,7 @@
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
 
+#include "libkefir.h"
 #include "libkefir_error.h"
 #include "list.h"
 

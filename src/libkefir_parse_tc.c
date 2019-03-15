@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libkefir_error.h"
 #include "libkefir_parse.h"
 #include "libkefir_parse_tc.h"
 

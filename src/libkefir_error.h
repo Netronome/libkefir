@@ -9,12 +9,26 @@
 
 #include "libkefir.h"
 
+#define __DO_ERR_FUNC(COMPONENT, NAME, CONTEXT)				\
+	__attribute__((unused)) __attribute__((format(printf, 1, 2)))	\
+	static void err_ ## NAME(const char *format, ...)		\
+	{								\
+		va_list ap;						\
+									\
+		va_start(ap, format);					\
+		error_vset_str(COMPONENT " " CONTEXT ": ", format, ap);	\
+		va_end(ap);						\
+	}
+
+#define DEFINE_ERR_FUNCTIONS(COMPONENT)					\
+	__DO_ERR_FUNC(COMPONENT, fail, "parsing failed")		\
+	__DO_ERR_FUNC(COMPONENT, bug, "parsing bug")
+
 #define KEFIR_ERROR_STR_SIZE 1024
 
 char kefir_error_str[KEFIR_ERROR_STR_SIZE];
 
-void kefir_set_error(const char* format, ...);
-void kefir_vset_prefix_error(const char* format, const char* prefix,
-			     va_list ap);
+void error_set_str(const char *prefix, const char *format, ...);
+void error_vset_str(const char *prefix, const char *format, va_list ap);
 
 #endif /* LIBKEFIR_ERROR_H */

@@ -8,6 +8,7 @@
 
 #include <netinet/tcp.h>
 
+#include "libkefir_error.h"
 #include "libkefir_parse.h"
 #include "libkefir_parse_ethtool.h"
 

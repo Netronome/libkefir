@@ -13,22 +13,8 @@ char *kefir_strerror()
 	return kefir_error_str;
 }
 
-void kefir_set_error(const char* format, ...)
-{
-	va_list ap;
-
-	va_start(ap, format);
-	vsnprintf(kefir_error_str, KEFIR_ERROR_STR_SIZE - 1, format, ap);
-	va_end(ap);
-}
-
-void kefir_vset_error(const char* format, va_list ap)
-{
-	vsnprintf(kefir_error_str, KEFIR_ERROR_STR_SIZE - 1, format, ap);
-}
-
-void kefir_vset_prefix_error(const char* format, const char* prefix,
-			     va_list ap)
+__attribute__((format(printf, 2, 0)))
+void error_vset_str(const char *prefix, const char *format, va_list ap)
 {
 	size_t len;
 
@@ -37,4 +23,14 @@ void kefir_vset_prefix_error(const char* format, const char* prefix,
 
 	vsnprintf(kefir_error_str + len, KEFIR_ERROR_STR_SIZE - len - 1, format,
 		  ap);
+}
+
+__attribute__((format(printf, 2, 3)))
+void error_set_str(const char *prefix, const char *format, ...)
+{
+	va_list ap;
+
+	va_start(ap, format);
+	error_vset_str(format, prefix, ap);
+	va_end(ap);
 }
