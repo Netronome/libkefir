@@ -148,8 +148,8 @@ struct kefir_match {
 	enum match_type		match_type;
 	enum comp_operator	comp_operator;
 	struct kefir_value	value;
-	char			max_value[16];
-	char			mask[16];
+	uint8_t			max_value[16];
+	uint8_t			mask[16];
 	uint64_t		flags;
 };
 
