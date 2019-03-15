@@ -7,6 +7,8 @@
 
 #include "libkefir_parse.h"
 
+DEFINE_ERR_FUNCTIONS("parser")
+
 int parse_uint(const char *input, void *output, uint32_t nb_bits)
 {
 	unsigned int res;
@@ -14,11 +16,11 @@ int parse_uint(const char *input, void *output, uint32_t nb_bits)
 
 	res = strtoul(input, &endptr, 10);
 	if (*endptr != '\0') {
-		//err_fail("could not parse %s as int", input);
+		err_fail("could not parse %s as int", input);
 		return -1;
 	}
 	if (res >= (unsigned int)(2 << (nb_bits - 1))) {
-		//err_fail("value %s is too big", input);
+		err_fail("value %s is too big", input);
 		return -1;
 	}
 
@@ -38,7 +40,7 @@ int parse_eth_addr(const char *input, struct ether_addr *output)
 	addr = ether_aton(input);
 
 	if (!addr) {
-		//err_fail("could not parse ether address %s", input);
+		err_fail("could not parse ether address %s", input);
 		return -1;
 	}
 
