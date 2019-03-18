@@ -496,6 +496,7 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "		__u8	u8[16];\n"
 		       "		__u64	u64[2];\n"
 		       "	} value;\n"
+		       "	__u8	mask[16];\n"
 		       "};\n"
 		       "\n"
 		       "struct filter_rule {\n"
@@ -776,6 +777,7 @@ static int
 cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	const kefir_filter *filter = prog->filter;
+	char apply_mask[] = " % match->mask[i]";
 	//bool only_equal = filter_all_comp_equal(filter);
 	bool only_equal = false; // TODO: optim does not work with offload (only 15 unroll work) + much more insns
 
@@ -793,11 +795,11 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "	for (i = 0; i < 16; i++) {\n"
 			       "		if (i >= matchlen)\n"
 			       "			break;\n"
-			       "		if (*((__u8 *)matchval + i) != match->value.u8[i])\n"
+			       "		if (*((__u8 *)matchval + i)%s != match->value.u8[i])\n"
 			       "			return false;\n"
 			       "	}\n"
 			       "	return true;\n"
-			       ""))
+			       "", apply_mask))
 			return -1;
 	} else {
 		if (buf_append(buf, buf_len, ""
@@ -810,7 +812,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "	for (i = 0; i < 16; i++) {\n"
 			       "		if (i >= matchlen)\n"
 			       "			break;\n"
-			       "		copy.u8[i] = *((__u8 *)matchval + i);\n"
+			       "		copy.u8[i] = *((__u8 *)matchval + i)%s;\n"
 			       "	}\n"
 			       "\n"
 			       "	if (match->comp_operator == OPER_EQUAL) {\n"
@@ -822,7 +824,8 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "		return true;\n"
 			       "	}\n"
 			       "\n"
-			       "	switch (match->comp_operator) {\n"))
+			       "	switch (match->comp_operator) {\n"
+			       "", apply_mask))
 			return -1;
 		if (filter_has_comp_oper(prog->filter, OPER_LT))
 			if (buf_append(buf, buf_len, ""

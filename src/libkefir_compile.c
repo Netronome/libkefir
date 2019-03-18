@@ -25,6 +25,7 @@ struct bpf_map_match {
 		__u8	u8[16];
 		__u64	u64[2];
 	} value;
+	__u8	mask[16];
 };
 
 /*
