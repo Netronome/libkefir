@@ -25,6 +25,17 @@ struct bpf_map_match {
 		__u8	u8[16];
 		__u64	u64[2];
 	} value;
+};
+
+/* Must be identical to struct bpf_map_match, with additional flags and masks */
+struct bpf_map_match_with_masks {
+	enum match_type		match_type;
+	enum comp_operator	comp_operator;
+	union {
+		__u8	u8[16];
+		__u64	u64[2];
+	} value;
+	__u64	flags;
 	__u8	mask[16];
 };
 
@@ -37,6 +48,11 @@ struct bpf_map_match {
 struct bpf_map_filter_rule {
 	enum action_code	action_code;
 	struct bpf_map_match	matches[KEFIR_MAX_MATCH_PER_RULE];
+};
+
+struct bpf_map_filter_rule_with_masks {
+	enum action_code		action_code;
+	struct bpf_map_match_with_masks	matches[KEFIR_MAX_MATCH_PER_RULE];
 };
 
 static void ret0 (__attribute__((unused)) int sig)
@@ -137,31 +153,73 @@ err_free_objfile:
 
 /*
  * Should be called as
- * int fill_one_rule(void *rule_ptr, int map_fd, int *index, unsigned int nb_matches);
+ * int fill_one_rule(void *rule_ptr, int map_fd, int *index, unsigned int nb_matches, uint64_t flags);
  */
 static int fill_one_rule(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
-	struct bpf_map_filter_rule rule_entry;
-	int map_fd, *index;
+	struct bpf_map_filter_rule_with_masks *map_entry;
 	unsigned int nb_matches;
+	int map_fd, *index;
+	uint64_t flags;
+	bool use_masks;
 	size_t i;
+	int res;
 
 	map_fd = va_arg(ap, int);
 	index = va_arg(ap, int *);
 	nb_matches = va_arg(ap, unsigned int);
+	flags = va_arg(ap, uint64_t);
+	use_masks = flags & OPT_FLAGS_USE_MASKS;
+
+	map_entry = calloc(1, sizeof(struct bpf_map_filter_rule_with_masks));
+	if (!map_entry)
+		return -1;
 
 	for (i = 0; i < nb_matches; i++) {
-		struct bpf_map_match *match = &rule_entry.matches[i];
+		struct bpf_map_match_with_masks *map_match;
+		struct kefir_match *rule_match = &rule->matches[i];
 
-		match->match_type = rule->matches[i].match_type;
-		match->comp_operator = rule->matches[i].comp_operator;
-		memcpy(match->value.u8, rule->matches[i].value.data.raw,
-		       sizeof(match->value));
+		if (use_masks) {
+			map_match = &map_entry->matches[i];
+		} else {
+			struct bpf_map_filter_rule *r;
+			struct bpf_map_match *m;
+
+			/*
+			 * Masks disabled, therefore the generated BPF program
+			 * holds an array of struct bpf_map_match (with no
+			 * masks), while here map_entry is declared as an array
+			 * of structs with room for masks in each cell. Let's
+			 * adjust it by casting map_entry to a struct
+			 * bpf_map_filter_rule before pointing to, and filling,
+			 * its i-th element. The struct will have empty room at
+			 * its end but bpf_map_update_elem() does not care
+			 * about that.
+			 */
+			r = (struct bpf_map_filter_rule *)map_entry;
+			m = &r->matches[i];
+			map_match = (struct bpf_map_match_with_masks *)m;
+		}
+
+		map_match->match_type = rule_match->match_type;
+		map_match->comp_operator = rule_match->comp_operator;
+		memcpy(map_match->value.u8, rule_match->value.data.raw,
+		       sizeof(map_match->value));
+
+		if (use_masks && rule_match->flags & MATCH_FLAGS_USE_MASK) {
+			memcpy(map_match->mask, rule_match->mask,
+			       sizeof(map_match->mask));
+			map_match->flags |= MATCH_FLAGS_USE_MASK;
+		}
 	}
-	rule_entry.action_code = rule->action;
+	map_entry->action_code = rule->action;
 
-	if (bpf_map_update_elem(map_fd, index, &rule_entry, BPF_ANY))
+	res = bpf_map_update_elem(map_fd, index, map_entry, BPF_ANY);
+
+	free(map_entry);
+
+	if (res)
 		return -1;
 
 	*index += 1;
@@ -223,7 +281,8 @@ int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 	// TODO: return value
 	if (list_for_each((struct list *)cprog->filter->rules,
 			  fill_one_rule, rule_map_fd, &index,
-			  cprog->options.nb_matches))
+			  cprog->options.nb_matches,
+			  cprog->options.flags))
 		return -1;
 
 	return 0;

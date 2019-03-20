@@ -484,6 +484,13 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "", ACTION_CODE_DROP, ACTION_CODE_PASS))
 		return -1;
 
+	if (prog->options.flags & OPT_FLAGS_USE_MASKS)
+		if (buf_append(buf, buf_len, ""
+			       "#define MATCH_FLAGS_USE_MASK	%d\n"
+			       "\n"
+			       "", MATCH_FLAGS_USE_MASK))
+			return -1;
+
 	/*
 	 * Note that struct filter_rule must be identically defined in
 	 * libkefir_compile.c
@@ -496,7 +503,17 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "		__u8	u8[16];\n"
 		       "		__u64	u64[2];\n"
 		       "	} value;\n"
-		       "	__u8	mask[16];\n"
+		       ""))
+		return -1;
+
+	if (prog->options.flags & OPT_FLAGS_USE_MASKS)
+		if (buf_append(buf, buf_len, ""
+			       "	__u64	flags;\n"
+			       "	__u8	mask[16];\n"
+			       ""))
+			return -1;
+
+	if (buf_append(buf, buf_len, ""
 		       "};\n"
 		       "\n"
 		       "struct filter_rule {\n"
@@ -776,8 +793,8 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 static int
 cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
+	bool use_masks = prog->options.flags & OPT_FLAGS_USE_MASKS;
 	const kefir_filter *filter = prog->filter;
-	char apply_mask[] = " % match->mask[i]";
 	//bool only_equal = filter_all_comp_equal(filter);
 	bool only_equal = false; // TODO: optim does not work with offload (only 15 unroll work) + much more insns
 
@@ -793,13 +810,24 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "\n"
 			       "#pragma clang loop unroll(full)\n"
 			       "	for (i = 0; i < 16; i++) {\n"
+			       ""))
+			return -1;
+
+		if (use_masks && buf_append(buf, buf_len, ""
+			       "		uint8_t mask = (match->flags & MATCH_FLAGS_USE_MASK) ?\n"
+			       "			match->mask[i] : 0xff;\n"
+			       "\n"
+			       ""))
+			return -1;
+
+		if (buf_append(buf, buf_len, ""
 			       "		if (i >= matchlen)\n"
 			       "			break;\n"
 			       "		if (*((__u8 *)matchval + i)%s != match->value.u8[i])\n"
 			       "			return false;\n"
 			       "	}\n"
 			       "	return true;\n"
-			       "", apply_mask))
+			       "", use_masks ? " & mask" : ""))
 			return -1;
 	} else {
 		if (buf_append(buf, buf_len, ""
@@ -808,8 +836,20 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "		__u64	u64[2];\n"
 			       "	} copy = {{0}};\n"
 			       "\n"
+			       "static const char format[] = \"%%d - %%d\\n\";\n"
 			       "#pragma clang loop unroll(full)\n"
 			       "	for (i = 0; i < 16; i++) {\n"
+			       ""))
+			return -1;
+
+		if (use_masks && buf_append(buf, buf_len, ""
+			       "		uint8_t mask = (match->flags & MATCH_FLAGS_USE_MASK) ?\n"
+			       "			match->mask[i] : 0xff;\n"
+			       "\n"
+			       ""))
+			return -1;
+
+		if (buf_append(buf, buf_len, ""
 			       "		if (i >= matchlen)\n"
 			       "			break;\n"
 			       "		copy.u8[i] = *((__u8 *)matchval + i)%s;\n"
@@ -825,7 +865,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "	}\n"
 			       "\n"
 			       "	switch (match->comp_operator) {\n"
-			       "", apply_mask))
+			       "", use_masks ? " & mask" : ""))
 			return -1;
 		if (filter_has_comp_oper(prog->filter, OPER_LT))
 			if (buf_append(buf, buf_len, ""
