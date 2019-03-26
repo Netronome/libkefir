@@ -12,6 +12,7 @@
 #include "libkefir_compile.h"
 #include "libkefir_dump.h"
 #include "libkefir_internals.h"
+#include "libkefir_json_save.h"
 #include "libkefir_parse_ethtool.h"
 #include "libkefir_parse_tc.h"
 #include "libkefir_proggen.h"
@@ -108,6 +109,12 @@ void kefir_dump_filter(const kefir_filter *filter)
 
 	kefir_dump_filter_to_buf(filter, buf, sizeof(buf));
 	printf("%s", buf);
+}
+
+int kefir_save_filter_to_file(const kefir_filter *filter,
+			      const char* filename)
+{
+	return json_save_filter_to_file(filter, filename);
 }
 
 /*
