@@ -14,6 +14,18 @@
 #include "list.h"
 #include "libkefir_error.h"
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
+#ifndef offsetof
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
+
+#ifndef sizeof_member
+#define sizeof_member(TYPE, MEMBER) sizeof(*(&((TYPE *)0)->MEMBER))
+#endif
+
 #define KEFIR_MAX_MATCH_PER_RULE	5
 #define KEFIR_CPROG_INIT_BUFLEN		8192
 
