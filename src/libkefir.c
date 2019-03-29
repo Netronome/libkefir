@@ -41,9 +41,8 @@ size_t kefir_sizeof_filter(const kefir_filter *filter) {
 	return list_count(filter->rules);
 }
 
-static int
-kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
-			 unsigned int index)
+int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
+			     unsigned int index)
 {
 	struct list *rule_list;
 

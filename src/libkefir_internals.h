@@ -199,4 +199,11 @@ struct kefir_cprog {
 	kefir_cprog_options	options;
 };
 
+/*
+ * Shared functions
+ */
+
+int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
+			     unsigned int index);
+
 #endif /* LIBKEFIR_INTERNALS_H */
