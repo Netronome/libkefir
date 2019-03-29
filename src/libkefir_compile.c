@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
+#include <errno.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -122,6 +123,7 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 	if (sigaction(SIGCHLD, &sigact, NULL))
 		return -1;
 	pause();
+	errno = 0;
 
 	pid = fork();
 	if (pid < 0)
@@ -133,6 +135,7 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 	}
 
 	pause();
+	errno = 0;
 
 	if (!opt_ll_file)
 		free(llfile);
