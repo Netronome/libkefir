@@ -83,12 +83,9 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 
 void kefir_dump_filter(const kefir_filter *filter)
 {
-	size_t buf_len = 1024;
-	char buf[buf_len];
+	char buf[1024] = {0};
 
-	buf[0] = '\0';
-
-	kefir_dump_filter_to_buf(filter, buf, buf_len);
+	kefir_dump_filter_to_buf(filter, buf, sizeof(buf));
 	printf("%s", buf);
 }
 
