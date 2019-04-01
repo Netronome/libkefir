@@ -44,6 +44,50 @@ void kefir_destroy_filter(kefir_filter *filter)
 	free(filter);
 }
 
+/*
+ * Should be called as
+ * int clone_rule(void *rule_ptr, kefir_filter *cpy_filter, size_t index)
+ */
+static int clone_rule(void *rule_ptr, va_list ap)
+{
+	struct kefir_rule *ref_rule = (struct kefir_rule *)rule_ptr;
+	struct kefir_rule *cpy_rule;
+	kefir_filter *cpy_filter;
+	size_t index;
+
+	cpy_filter = va_arg(ap, kefir_filter *);
+	index = va_arg(ap, size_t);
+
+	cpy_rule = malloc(sizeof(struct kefir_rule));
+	if (!cpy_rule)
+		return -1;
+
+	memcpy(cpy_rule, ref_rule, sizeof(struct kefir_rule));
+
+	return kefir_add_rule_to_filter(cpy_filter, cpy_rule, index);
+}
+
+kefir_filter *kefir_clone_filter(const kefir_filter *filter)
+{
+	struct kefir_filter *copy;
+	size_t index = 0;
+
+	if (!filter)
+		return NULL;
+
+	copy = kefir_init_filter();
+	if (!copy)
+		return NULL;
+
+	if (list_for_each((struct list *)filter->rules, clone_rule,
+			  copy, index++)) {
+		kefir_destroy_filter(copy);
+		return NULL;
+	}
+
+	return copy;
+}
+
 size_t kefir_sizeof_filter(const kefir_filter *filter) {
 	return list_count(filter->rules);
 }

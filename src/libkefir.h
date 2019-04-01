@@ -34,6 +34,13 @@ kefir_filter *kefir_init_filter(void);
 void kefir_destroy_filter(kefir_filter *filter);
 
 /**
+ * Copy a filter object.
+ * @filter the filter to copy
+ * @return a new filter object (the caller is responsible for its destruction)
+ */
+kefir_filter *kefir_clone_filter(const kefir_filter *filter);
+
+/**
  * Count the number of rules present in the list of a filter.
  * @filter the filter for which to count the rules
  * @return the number of rules in that filter
