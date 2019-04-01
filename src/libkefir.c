@@ -30,12 +30,17 @@ kefir_filter *kefir_init_filter(void)
 	return filter;
 }
 
+static void destroy_rule(void *rule)
+{
+	free(rule);
+}
+
 void kefir_destroy_filter(kefir_filter *filter)
 {
 	if (!filter)
 		return;
 
-	list_destroy(filter->rules, free);
+	list_destroy(filter->rules, destroy_rule);
 	free(filter);
 }
 
