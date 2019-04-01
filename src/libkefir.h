@@ -77,7 +77,7 @@ kefir_delete_rule(kefir_filter *filter,
  */
 int
 kefir_delete_rule_by_id(kefir_filter *filter,
-			unsigned int index);
+		        ssize_t index);
 
 /** Dump all rules of a filter to the console.
  * @filter: object to dump

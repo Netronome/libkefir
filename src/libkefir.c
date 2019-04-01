@@ -107,6 +107,27 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 }
 
 /*
+ * TODO:
+ * The id must be the index of the rule in the list as stored in the filter. In
+ * case we process the list in the future and change the order after the user
+ * loads a rule, this may NOT be the order in which the user loaded the rule
+ * (e.g. if we removed duplicates in the list).
+ *
+ * Therefore, we will need a way in the future to make sure the user is aware
+ * of the id of the list. We could make the loading function returning the id
+ * of the whent it is loaded, but then it would be subject to change if
+ * additional rules are loaded after that. We could dump all the filter and
+ * print ids associated to the rules, but that will not be really helpful in
+ * terms of programmability. One solution could be to add an attribute to each
+ * rule to keep the order in which it was added, so we could instead match on
+ * this user id in the future.
+ */
+int kefir_delete_rule_by_id(kefir_filter *filter, ssize_t index)
+{
+	return list_delete(filter->rules, index, destroy_rule);
+}
+
+/*
  * Dump, save and restore filter
  */
 
