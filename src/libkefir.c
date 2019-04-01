@@ -43,6 +43,7 @@ size_t kefir_sizeof_filter(const kefir_filter *filter) {
 	return list_count(filter->rules);
 }
 
+/* Used in other files, but not UAPI */
 int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
 			     unsigned int index)
 {
@@ -127,22 +128,16 @@ kefir_filter *kefir_load_filter_from_file(const char* filename)
  * Back end: Conversion to C
  */
 
-kefir_cprog *
-kefir_convert_filter_to_cprog(const kefir_filter *filter,
-			      enum kefir_cprog_target target)
-{
-	return proggen_make_cprog_from_filter(filter, target);
-}
-
 void kefir_destroy_cprog(kefir_cprog *cprog)
 {
 	proggen_cprog_destroy(cprog);
 }
 
-int kefir_cprog_to_buf(const kefir_cprog *cprog,
-		       char **buf, size_t *buf_len)
+kefir_cprog *
+kefir_convert_filter_to_cprog(const kefir_filter *filter,
+			      enum kefir_cprog_target target)
 {
-	return proggen_cprog_to_buf(cprog, buf, buf_len);
+	return proggen_make_cprog_from_filter(filter, target);
 }
 
 void kefir_dump_cprog(const kefir_cprog *cprog)
@@ -155,6 +150,12 @@ void kefir_dump_cprog(const kefir_cprog *cprog)
 		return;
 	proggen_cprog_to_buf(cprog, &buf, &buf_len);
 	printf("%s", buf);
+}
+
+int kefir_cprog_to_buf(const kefir_cprog *cprog,
+		       char **buf, size_t *buf_len)
+{
+	return proggen_cprog_to_buf(cprog, buf, buf_len);
 }
 
 int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
