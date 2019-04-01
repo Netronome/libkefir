@@ -19,7 +19,7 @@
 #include "libkefir_proggen.h"
 
 /*
- * Front end
+ * Filter management
  */
 
 kefir_filter *kefir_init_filter(void)
@@ -101,7 +101,7 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 }
 
 /*
- * Data base
+ * Dump, save and restore filter
  */
 
 void kefir_dump_filter(const kefir_filter *filter)
@@ -124,7 +124,7 @@ kefir_filter *kefir_load_filter_from_file(const char* filename)
 }
 
 /*
- * Back end
+ * Back end: Conversion to C
  */
 
 kefir_cprog *
@@ -186,7 +186,7 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 }
 
 /*
- * Loader
+ * Compile to eBPF, load, attach programs
  */
 
 int kefir_compile_to_bpf(const char *c_file, const char *opt_object_file,

@@ -14,7 +14,7 @@ typedef struct kefir_filter kefir_filter;
 
 /*
  *
- * Front end
+ * Filter management
  *
  */
 
@@ -105,7 +105,7 @@ kefir_dump_filter(const kefir_filter *filter);
 
 /*
  *
- * Data base
+ * Dump, save and restore filter
  *
  */
 
@@ -129,7 +129,7 @@ kefir_filter *kefir_load_filter_from_file(const char* filename);
 
 /*
  *
- * Back end
+ * Back end: Conversion to C
  *
  */
 
@@ -171,6 +171,12 @@ void kefir_dump_cprog(const kefir_cprog *cprog);
  */
 int kefir_cprog_to_file(const kefir_cprog *cprog,
 			const char *filename);
+
+/*
+ *
+ * Compile to eBPF, load, attach programs
+ *
+ */
 
 /**
  * Compile a C file into BPF bytecode as an ELF object file.
