@@ -179,7 +179,7 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 			match->value.format = KEFIR_VAL_FMT_IPV6_ADDR;
 			break;
 		default:
-			err_fail("unsupported match on dst_ip for protocol %s",
+			err_fail("unsupported match on dst_ip for protocol %d",
 				 ethtype);
 			return -1;
 		}
@@ -201,7 +201,7 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 			match->value.format = KEFIR_VAL_FMT_IPV6_ADDR;
 			break;
 		default:
-			err_fail("unsupported match on src_ip for protocol %s",
+			err_fail("unsupported match on src_ip for protocol %d",
 				 ethtype);
 			return -1;
 		}
@@ -274,7 +274,7 @@ tcflower_parse_action(const char ***argv, unsigned int *argc,
 	} else if (!strcmp(**argv, "drop")) {
 		*action_code = ACTION_CODE_DROP;
 	} else {
-		err_fail("unsupported action code %s");
+		err_fail("unsupported action code %d", *action_code);
 		return -1;
 	}
 
