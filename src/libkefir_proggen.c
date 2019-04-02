@@ -16,14 +16,7 @@
 
 #define max(a, b)	(a > b ? a : b)
 
-static void err_fail(const char *format, ...)
-{
-	va_list ap;
-
-	va_start(ap, format);
-	error_vset_str("C prog gen failed: ", format, ap);
-	va_end(ap);
-}
+DEFINE_ERR_FUNCTIONS("proggen")
 
 static char cprog_attr_func_static_inline[] = ""
 	"static __attribute__((always_inline))\n"
@@ -1300,7 +1293,7 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 	}
 
 	if (!filter || !kefir_sizeof_filter(filter)) {
-		err_fail("cannot convert empty filter");
+		err_fail("cannot convert NULL or empty filter");
 		return NULL;
 	}
 
@@ -1434,7 +1427,7 @@ cprog_fill_table(const kefir_cprog *prog, char **buf, size_t *buf_len)
 int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	if (!prog) {
-		err_fail("cannot dump empty C prog object");
+		err_fail("cannot dump NULL C prog object");
 		return -1;
 	}
 
