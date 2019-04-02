@@ -1399,7 +1399,7 @@ cprog_fill_table(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	rules_buf[0] = '\0';
 
-	kefir_dump_filter_to_buf(prog->filter, rules_buf, rules_buf_len);
+	dump_filter_to_buf(prog->filter, rules_buf, rules_buf_len);
 
 	if (buf_append(buf, buf_len, ""
 		       "This BPF program was generated from the following filter:\n"

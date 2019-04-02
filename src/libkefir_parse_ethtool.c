@@ -414,8 +414,7 @@ ethtool_compose_rule(enum ethtool_val_type val_type, struct kefir_value value,
 	return rule;
 }
 
-struct kefir_rule *
-kefir_parse_rule_ethtool(const char **user_rule, size_t rule_size)
+struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 {
 	struct ethtool_option current_opt = { .name = "" };
 	struct kefir_value match_val = {0};

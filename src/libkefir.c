@@ -136,10 +136,10 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 
 	switch (rule_type) {
 	case RULE_TYPE_ETHTOOL_NTUPLE:
-		rule = kefir_parse_rule_ethtool(user_rule, rule_size);
+		rule = ethtool_parse_rule(user_rule, rule_size);
 		break;
 	case RULE_TYPE_TC_FLOWER:
-		rule = kefir_parse_rule_tcflower(user_rule, rule_size);
+		rule = tcflower_parse_rule(user_rule, rule_size);
 		break;
 	default:
 		return -1;
@@ -179,7 +179,7 @@ void kefir_dump_filter(const kefir_filter *filter)
 {
 	char buf[1024] = {0};
 
-	kefir_dump_filter_to_buf(filter, buf, sizeof(buf));
+	dump_filter_to_buf(filter, buf, sizeof(buf));
 	printf("%s", buf);
 }
 

@@ -293,8 +293,7 @@ tcflower_compose_rule(struct kefir_match *matches, enum action_code action_code)
 	return rule;
 }
 
-struct kefir_rule *
-kefir_parse_rule_tcflower(const char **user_rule, size_t rule_size)
+struct kefir_rule *tcflower_parse_rule(const char **user_rule, size_t rule_size)
 {
 	enum ether_proto_type ethtype = TCFLOWER_ETH_PROTO_UNSPEC;
 	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE] = {{0}};

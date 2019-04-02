@@ -265,8 +265,7 @@ static int dump_rule(void *rule_ptr, va_list ap)
 	return 0;
 }
 
-void kefir_dump_filter_to_buf(const kefir_filter *filter, char *buf,
-			      size_t buf_len)
+void dump_filter_to_buf(const kefir_filter *filter, char *buf, size_t buf_len)
 {
 	list_for_each((struct list *)filter->rules, dump_rule, &buf, &buf_len);
 }

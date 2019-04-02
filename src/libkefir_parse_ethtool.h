@@ -7,6 +7,6 @@
 #include "libkefir_internals.h"
 
 struct kefir_rule *
-kefir_parse_rule_ethtool(const char **user_rule, size_t rule_size);
+ethtool_parse_rule(const char **user_rule, size_t rule_size);
 
 #endif /* LIBKEFIR_PARSE_ETHTOOL_H */
