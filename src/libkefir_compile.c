@@ -14,8 +14,11 @@
 #include <linux/if_link.h>
 
 #include "libkefir.h"
+#include "libkefir_error.h"
 #include "libkefir_internals.h"
 #include "list.h"
+
+DEFINE_ERR_FUNCTIONS("compilation")
 
 /* As used in the BPF program, see libkefir_proggen.c */
 struct bpf_map_match {
@@ -70,21 +73,29 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 	size_t len;
 	pid_t pid;
 
-	if (!c_file)
+	if (!c_file) {
+		err_fail("C input file name is NULL");
 		return -1;
+	}
 	len = strlen(c_file);
 
 	if (!opt_object_file || !opt_ll_file) {
-		if (len < 3)
+		if (len < 3) {
+			err_fail("no object or ll file name provided, and unable to derive it from C input file (name too short)");
 			return -1;
-		if (strcmp(c_file + len - 2, ".c"))
+		}
+		if (strcmp(c_file + len - 2, ".c")) {
+			err_fail("no object or ll file name provided, and unable to derive it from C input file (no .c extension)");
 			return -1;
+		}
 	}
 
 	if (!opt_object_file) {
 		objfile = strdup(c_file);
-		if (!objfile)
+		if (!objfile) {
+			err_fail("failed to allocate memory for object file name");
 			return -1;
+		}
 		*(objfile + len - 1) = 'o';
 	} else {
 		objfile = (char *)opt_object_file;
@@ -92,8 +103,10 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 
 	if (!opt_ll_file) {
 		llfile = malloc(len + 2);
-		if (!llfile)
+		if (!llfile) {
+			err_fail("failed to allocate memory for ll file name");
 			goto err_free_objfile;
+		}
 		strcpy(llfile, c_file);
 		sprintf(llfile + len - 1, "ll");
 	} else {
@@ -101,12 +114,17 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 	}
 
 	pid = fork();
-	if (pid < 0)
+	if (pid < 0) {
+		err_fail("failed to fork for running clang: %s",
+			 strerror(errno));
 		return -1;
+	}
 	if (pid == 0) {
 		if (execl(clang, clang, "-O2", "-g", "-emit-llvm", "-o", llfile,
-			  "-c", c_file, (char *)NULL))
+			  "-c", c_file, (char *)NULL)) {
+			err_fail("failed to exec clang: %s", strerror(errno));
 			goto err_free_filenames;
+		}
 	}
 
 	/*
@@ -119,18 +137,26 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 	struct sigaction sigact = {
 		.sa_handler = ret0
 	};
-	if (sigaction(SIGCHLD, &sigact, NULL))
+	if (sigaction(SIGCHLD, &sigact, NULL)) {
+		err_fail("cannot wait for clang because sigaction failed: %s",
+			 strerror(errno));
 		return -1;
+	}
 	pause();
 	errno = 0;
 
 	pid = fork();
-	if (pid < 0)
+	if (pid < 0) {
+		err_fail("failed to fork for running llc: %s", strerror(errno));
 		return -1;
+	}
 	if (pid == 0) {
 		if (execl(llc, llc, "-march=bpf", "-mcpu=probe",
-			  "-filetype=obj", "-o", objfile, llfile, (char *)NULL))
+			  "-filetype=obj", "-o", objfile, llfile,
+			  (char *)NULL)) {
+			err_fail("failed to exec llc: %s", strerror(errno));
 			goto err_free_filenames;
+		}
 	}
 
 	pause();
@@ -175,8 +201,10 @@ static int fill_one_rule(void *rule_ptr, va_list ap)
 	use_masks = flags & OPT_FLAGS_USE_MASKS;
 
 	map_entry = calloc(1, sizeof(struct bpf_map_filter_rule_with_masks));
-	if (!map_entry)
+	if (!map_entry) {
+		err_fail("failed to allocate buffer for map entry");
 		return -1;
+	}
 
 	for (i = 0; i < nb_matches; i++) {
 		struct bpf_map_match_with_masks *map_match;
@@ -221,8 +249,10 @@ static int fill_one_rule(void *rule_ptr, va_list ap)
 
 	free(map_entry);
 
-	if (res)
+	if (res) {
+		err_fail("map update failed: %s", strerror(errno));
 		return -1;
+	}
 
 	*index += 1;
 
@@ -245,6 +275,8 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 		load_attr.prog_type = BPF_PROG_TYPE_SCHED_CLS;
 		break;
 	default:
+		err_bug("unknown compilation target: %d",
+			cprog->options.target);
 		return -1;
 	}
 
@@ -265,22 +297,27 @@ int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:
 		if (bpf_set_link_xdp_fd(ifindex, prog_fd, flags))
+			// Message needed?
 			return -1;
 		break;
 	case KEFIR_CPROG_TARGET_TC:
 		// TODO
 	default:
+		err_bug("unknown attach target: %d", cprog->options.target);
 		return -1;
 	}
 
 	/* Fill map */
 	rule_map = bpf_object__find_map_by_name(bpf_obj, "rules");
-	if (!rule_map)
+	if (!rule_map) {
+		err_fail("failed to retrieve map handler for loading rules");
 		return -1;
+	}
 	rule_map_fd = bpf_map__fd(rule_map);
-	if (rule_map_fd < 0)
+	if (rule_map_fd < 0) {
+		err_fail("failed to retrieve file descriptor for the map");
 		return -1;
-	// TODO: return value
+	}
 	if (list_for_each((struct list *)cprog->filter->rules, fill_one_rule,
 			  rule_map_fd, &index, cprog->options.nb_matches,
 			  cprog->options.flags))
