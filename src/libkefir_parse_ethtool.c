@@ -253,7 +253,7 @@ get_flow_opts(const char *input, ethtool_opts_t **opts_res,
 		flow_opts = ethtool_esp6_opts;
 		flow_opts_len = ARRAY_SIZE(ethtool_esp6_opts);
 	} else {
-		err_bug("unknown enum value for flow type");
+		err_fail("unsupported flow type: %s", input);
 		return -1;
 	}
 
@@ -300,7 +300,7 @@ get_match_value(const char *input, struct kefir_value *val,
 			return -1;
 		break;
 	default:
-		err_bug("unknown enum value for value format");
+		err_bug("unknown enum value for value format: %d", format);
 		return -1;
 	}
 
@@ -396,7 +396,7 @@ ethtool_compose_rule(enum ethtool_val_type val_type, struct kefir_value value,
 	case ETHTOOL_VAL_TYPE_VLAN_ID:
 		// TODO: needs two matchs, one on SPI, one on VLAN ID
 	default:
-		err_bug("unknown enum value for value type");
+		err_bug("unknown enum value for value type: %d", val_type);
 		return NULL;
 	}
 
