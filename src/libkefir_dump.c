@@ -85,7 +85,7 @@ static const char *action_str(enum action_code ac)
 	}
 }
 
-__attribute__ ((format (printf, 3, 4)))
+__attribute__((format(printf, 3, 4)))
 static void append(char **buf, size_t *buf_len, const char *fmt, ...)
 {
 	size_t len;
@@ -252,13 +252,12 @@ static int dump_rule(void *rule_ptr, va_list ap)
 		append(buf_ptr, buf_len, "value %zd: %s\t| ", i, strval);
 		if (rule->matches[i].flags & MATCH_FLAGS_USE_MASK) {
 			mask_str(rule->matches[i].mask,
-				 sizeof(rule->matches[i].mask),
-				 strval, strval_len);
+				 sizeof(rule->matches[i].mask), strval,
+				 strval_len);
 			append(buf_ptr, buf_len, "mask %zd: %s\t| ", i, strval);
 		}
 	}
-	append(buf_ptr, buf_len, "action: %s | ",
-	       action_str(rule->action));
+	append(buf_ptr, buf_len, "action: %s | ", action_str(rule->action));
 
 	append(buf_ptr, buf_len, "\n");
 

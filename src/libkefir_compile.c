@@ -3,8 +3,8 @@
 
 #include <errno.h>
 #include <signal.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -16,7 +16,6 @@
 #include "libkefir.h"
 #include "libkefir_internals.h"
 #include "list.h"
-
 
 /* As used in the BPF program, see libkefir_proggen.c */
 struct bpf_map_match {
@@ -56,14 +55,14 @@ struct bpf_map_filter_rule_with_masks {
 	struct bpf_map_match_with_masks	matches[KEFIR_MAX_MATCH_PER_RULE];
 };
 
-static void ret0 (__attribute__((unused)) int sig)
+static void ret0(__attribute__((unused)) int sig)
 {
 	return;
 }
 
 int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
-			 const char *opt_ll_file,
-			 const char *opt_clang_bin, const char *opt_llc_bin)
+			 const char *opt_ll_file, const char *opt_clang_bin,
+			 const char *opt_llc_bin)
 {
 	const char *clang = opt_clang_bin ? opt_clang_bin : "/usr/bin/clang";
 	const char *llc = opt_llc_bin ? opt_llc_bin : "/usr/bin/llc";
@@ -105,8 +104,8 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 	if (pid < 0)
 		return -1;
 	if (pid == 0) {
-		if (execl(clang, clang, "-O2", "-g", "-emit-llvm",
-			  "-o", llfile, "-c", c_file, (char *)NULL))
+		if (execl(clang, clang, "-O2", "-g", "-emit-llvm", "-o", llfile,
+			  "-c", c_file, (char *)NULL))
 			goto err_free_filenames;
 	}
 
@@ -282,9 +281,8 @@ int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 	if (rule_map_fd < 0)
 		return -1;
 	// TODO: return value
-	if (list_for_each((struct list *)cprog->filter->rules,
-			  fill_one_rule, rule_map_fd, &index,
-			  cprog->options.nb_matches,
+	if (list_for_each((struct list *)cprog->filter->rules, fill_one_rule,
+			  rule_map_fd, &index, cprog->options.nb_matches,
 			  cprog->options.flags))
 		return -1;
 

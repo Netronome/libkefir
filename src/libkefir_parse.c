@@ -44,7 +44,7 @@ static void bitmask_from_int(unsigned int mask, uint8_t *bitmask, size_t size)
 {
 	size_t i;
 
-	for  (i = 0; i < size && mask > 0; i++, mask -= 8)
+	for (i = 0; i < size && mask > 0; i++, mask -= 8)
 		bitmask[i] = mask > 8 ? 0xff : 0xff << (8 - mask);
 }
 

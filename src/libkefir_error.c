@@ -35,6 +35,6 @@ void kefir_vset_prefix_error(const char* format, const char* prefix,
 	strncpy(kefir_error_str, prefix, KEFIR_ERROR_STR_SIZE);
 	len = strlen(prefix);
 
-	vsnprintf(kefir_error_str + len, KEFIR_ERROR_STR_SIZE - len - 1,
-		  format, ap);
+	vsnprintf(kefir_error_str + len, KEFIR_ERROR_STR_SIZE - len - 1, format,
+		  ap);
 }

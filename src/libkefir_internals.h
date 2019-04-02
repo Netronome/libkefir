@@ -11,8 +11,8 @@
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
 
-#include "list.h"
 #include "libkefir_error.h"
+#include "list.h"
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))

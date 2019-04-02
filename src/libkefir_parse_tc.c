@@ -9,7 +9,11 @@
 #include "libkefir_parse.h"
 #include "libkefir_parse_tc.h"
 
-#define NEXT_ARG()	do { *argv += 1; *argc -= 1; } while (0)
+#define NEXT_ARG()		\
+	do {			\
+		*argv += 1;	\
+		*argc -= 1;	\
+	} while (0)
 
 DEFINE_ERR_FUNCTIONS("tc flower")
 

@@ -106,7 +106,7 @@ kefir_dump_filter(const kefir_filter *filter);
  * @return 0 on success, error code otherwise
  */
 int kefir_save_filter_to_file(const kefir_filter *filter,
-			      const char* filename);
+			      const char *filename);
 
 /**
  * Load a filter from a backup
@@ -114,7 +114,7 @@ int kefir_save_filter_to_file(const kefir_filter *filter,
  * @return filter object on success (to be freed by the user on exit), NULL
  *         and sets errno otherwise
  */
-kefir_filter *kefir_load_filter_from_file(const char* filename);
+kefir_filter *kefir_load_filter_from_file(const char *filename);
 
 /*
  *

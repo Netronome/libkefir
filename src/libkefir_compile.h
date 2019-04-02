@@ -9,8 +9,8 @@
 #include "libkefir.h"
 
 int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
-			 const char *opt_ll_file,
-			 const char *opt_clang_bin, const char *opt_llc_bin);
+			 const char *opt_ll_file, const char *opt_clang_bin,
+			 const char *opt_llc_bin);
 int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 			      struct bpf_object **bpf_obj, int ifindex);
 int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,

@@ -53,8 +53,8 @@ list_vfor_each(struct list *l, int (*process_elem)(void *, va_list arg_ap),
 	return list_vfor_each(l->next, process_elem, ap);
 }
 
-int list_for_each(struct list *l,
-		  int (*process_elem)(void *, va_list arg_ap), ...)
+int list_for_each(struct list *l, int (*process_elem)(void *, va_list arg_ap),
+		  ...)
 {
 	va_list ap;
 	int res;
@@ -97,7 +97,7 @@ bool list_is_empty(struct list *l)
 	return !l;
 }
 
-/* Only count next elements (don't count previous elements, if any */
+/* Only count next elements (don't count previous elements, if any) */
 size_t list_count(struct list *l)
 {
 	if (!l)

@@ -79,8 +79,8 @@ kefir_filter *kefir_clone_filter(const kefir_filter *filter)
 	if (!copy)
 		return NULL;
 
-	if (list_for_each((struct list *)filter->rules, clone_rule,
-			  copy, index++)) {
+	if (list_for_each((struct list *)filter->rules, clone_rule, copy,
+			  index++)) {
 		kefir_destroy_filter(copy);
 		return NULL;
 	}
@@ -88,7 +88,8 @@ kefir_filter *kefir_clone_filter(const kefir_filter *filter)
 	return copy;
 }
 
-size_t kefir_sizeof_filter(const kefir_filter *filter) {
+size_t kefir_sizeof_filter(const kefir_filter *filter)
+{
 	return list_count(filter->rules);
 }
 
@@ -183,13 +184,12 @@ void kefir_dump_filter(const kefir_filter *filter)
 	printf("%s", buf);
 }
 
-int kefir_save_filter_to_file(const kefir_filter *filter,
-			      const char* filename)
+int kefir_save_filter_to_file(const kefir_filter *filter, const char *filename)
 {
 	return json_save_filter_to_file(filter, filename);
 }
 
-kefir_filter *kefir_load_filter_from_file(const char* filename)
+kefir_filter *kefir_load_filter_from_file(const char *filename)
 {
 	return json_restore_filter_from_file(filename);
 }
@@ -222,8 +222,7 @@ void kefir_dump_cprog(const kefir_cprog *cprog)
 	printf("%s", buf);
 }
 
-int kefir_cprog_to_buf(const kefir_cprog *cprog,
-		       char **buf, size_t *buf_len)
+int kefir_cprog_to_buf(const kefir_cprog *cprog, char **buf, size_t *buf_len)
 {
 	return proggen_cprog_to_buf(cprog, buf, buf_len);
 }
@@ -261,8 +260,8 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
  */
 
 int kefir_compile_to_bpf(const char *c_file, const char *opt_object_file,
-			 const char *opt_ll_file,
-			 const char *opt_clang_bin, const char *opt_llc_bin)
+			 const char *opt_ll_file, const char *opt_clang_bin,
+			 const char *opt_llc_bin)
 {
 	return compile_cfile_to_bpf(c_file, opt_object_file, opt_ll_file,
 				    opt_clang_bin, opt_llc_bin);

@@ -59,7 +59,7 @@ static const char *cprog_header = ""
 	"		type_val value;					\\\n"
 	"	};							\\\n"
 	"	struct ____btf_map_##name				\\\n"
-	"	__attribute__ ((section(\".maps.\" #name), used))		\\\n"
+	"	__attribute__((section(\".maps.\" #name), used))		\\\n"
 	"		____btf_map_##name = { }\n"
 	"\n"
 	"";
@@ -69,38 +69,38 @@ static const char *cprog_license = ""
 	"";
 
 static const char * const cprog_return_values[] = {
-	[KEFIR_CPROG_TARGET_XDP] =
+	[KEFIR_CPROG_TARGET_XDP] = ""
 		"#define RET_PASS XDP_PASS\n"
 		"#define RET_DROP XDP_DROP\n"
 		"\n",
-	[KEFIR_CPROG_TARGET_TC] =
+	[KEFIR_CPROG_TARGET_TC] = ""
 		"#define RET_PASS TC_ACT_OK\n"
 		"#define RET_DROP TC_ACT_SHOT\n"
 		"\n",
 };
 
 static const char * const cprog_prog_starts[] = {
-	[KEFIR_CPROG_TARGET_XDP] =
+	[KEFIR_CPROG_TARGET_XDP] = ""
 		"__attribute__((section(\"xdp\"), used))\n"
 		"int xdp_main(struct xdp_md *ctx)\n",
-	[KEFIR_CPROG_TARGET_TC] =
+	[KEFIR_CPROG_TARGET_TC] = ""
 		"__attribute__((section(\"classifier\"), used))\n"
 		"int cls_main(struct __sk_buff *ctx)\n",
 };
 
 static const char * const cprog_helpers[] = {
-	[BPF_FUNC_map_lookup_elem] =
+	[BPF_FUNC_map_lookup_elem] = ""
 		"static void *(*bpf_map_lookup_elem)(void *map, void *key) =\n"
 		"	(void *) BPF_FUNC_map_lookup_elem;\n",
-	[BPF_FUNC_map_update_elem] =
+	[BPF_FUNC_map_update_elem] = ""
 		"static int (*bpf_map_update_elem)(void *map, void *key,\n"
 		"				  void *value,\n"
 		"				  unsigned long long flags) =\n"
 		"	(void *) BPF_FUNC_map_update_elem;\n",
-	[BPF_FUNC_map_delete_elem] =
+	[BPF_FUNC_map_delete_elem] = ""
 		"static int (*bpf_map_delete_elem)(void *map, void *key) =\n"
 		"	(void *) BPF_FUNC_map_delete_elem;\n",
-	[BPF_FUNC_trace_printk] =
+	[BPF_FUNC_trace_printk] = ""
 		"static int (*bpf_trace_printk)(const char *fmt, int fmt_size, ...) =\n"
 		"	(void *) BPF_FUNC_trace_printk;\n"
 		"#define trace_printk(fmt, ...)	({			\\\n"
@@ -110,7 +110,7 @@ static const char * const cprog_helpers[] = {
 		"})\n",
 };
 
- __attribute__ ((format (printf, 3, 4)))
+ __attribute__((format (printf, 3, 4)))
 static int buf_append(char **buf, size_t *buf_len, const char *fmt, ...)
 {
 	size_t offset, maxlen, reqlen;
@@ -234,8 +234,8 @@ static int rule_has_matchtype(void *rule_ptr, va_list ap)
 static bool
 filter_has_matchtype(const kefir_filter* filter, enum match_type type)
 {
-	return !!list_for_each((struct list *)filter->rules,
-			       rule_has_matchtype, type);
+	return !!list_for_each((struct list *)filter->rules, rule_has_matchtype,
+			       type);
 }
 
 /*
@@ -569,12 +569,12 @@ cprog_func_process_l4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_L4_PORT_ANY))
 		if (buf_append(buf, buf_len,
 			       "	key->l4port_src = tcph->source;\n"))
-			       return -1;
+			return -1;
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_L4_PORT_DST) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_L4_PORT_ANY))
 		if (buf_append(buf, buf_len,
 			       "	key->l4port_dst = tcph->dest;\n"))
-			       return -1;
+			return -1;
 
 	if (buf_append(buf, buf_len, ""
 		       "\n"
@@ -1306,8 +1306,7 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 
 	prog->options.target = target;
 
-	list_for_each((struct list *)filter->rules,
-		      update_cprog_options, prog);
+	list_for_each((struct list *)filter->rules, update_cprog_options, prog);
 
 	// TODO: We probably want to copy the filter to avoid bad surprises
 	// Needs to move init filter function somewhere accessible from here
