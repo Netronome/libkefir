@@ -2,6 +2,7 @@
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
 // TODO check that
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -11,12 +12,15 @@
 #include "libkefir.h"
 #include "libkefir_compile.h"
 #include "libkefir_dump.h"
+#include "libkefir_error.h"
 #include "libkefir_internals.h"
 #include "libkefir_json_restore.h"
 #include "libkefir_json_save.h"
 #include "libkefir_parse_ethtool.h"
 #include "libkefir_parse_tc.h"
 #include "libkefir_proggen.h"
+
+DEFINE_ERR_FUNCTIONS("core")
 
 /*
  * Filter management
@@ -59,8 +63,10 @@ static int clone_rule(void *rule_ptr, va_list ap)
 	index = va_arg(ap, size_t);
 
 	cpy_rule = malloc(sizeof(struct kefir_rule));
-	if (!cpy_rule)
+	if (!cpy_rule) {
+		err_fail("failed to allocate new rule");
 		return -1;
+	}
 
 	memcpy(cpy_rule, ref_rule, sizeof(struct kefir_rule));
 
@@ -72,8 +78,10 @@ kefir_filter *kefir_clone_filter(const kefir_filter *filter)
 	struct kefir_filter *copy;
 	size_t index = 0;
 
-	if (!filter)
+	if (!filter) {
+		err_fail("filter object is NULL");
 		return NULL;
+	}
 
 	copy = kefir_init_filter();
 	if (!copy)
@@ -99,12 +107,16 @@ int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
 {
 	struct list *rule_list;
 
-	if (!rule)
+	if (!rule) {
+		err_fail("rule object is NULL");
 		return -1;
+	}
 
 	rule_list = list_insert(filter->rules, rule, index);
-	if (!rule_list)
+	if (!rule_list) {
+		err_fail("failed to insert rule into the list");
 		return -1;
+	}
 
 	filter->rules = rule_list;
 	return 0;
@@ -143,6 +155,7 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 		rule = tcflower_parse_rule(user_rule, rule_size);
 		break;
 	default:
+		err_fail("unsupported rule type: %d", rule_type);
 		return -1;
 	}
 
@@ -234,23 +247,31 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 	FILE *file;
 	char *buf;
 
-	if (!filename)
+	if (!filename) {
+		err_fail("file name is NULL");
 		return -1;
+	}
 
 	buf = calloc(buf_len, sizeof(char));
-	if (!buf)
+	if (!buf) {
+		err_fail("failed to allocate buffer for cprog");
 		return -1;
+	}
 	if (proggen_cprog_to_buf(cprog, &buf, &buf_len))
 		return -1;
 
 	file = fopen(filename, "w");
-	if (!file)
+	if (!file) {
+		err_fail("fail to open file %s: %s", filename, strerror(errno));
 		return -1;
+	}
 	res = fprintf(file, "%s", buf);
 	fclose(file);
 
-	if (res != strlen(buf))
+	if (res != strlen(buf)) {
+		err_fail("failed to write cprog to file %s", filename);
 		return -1;
+	}
 
 	return 0;
 }
@@ -296,7 +317,7 @@ int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
 		return -1;
 
 	if (compile_attach_program(cprog, bpf_obj, prog_fd, ifindex, flags))
-		return -1;
+		prog_fd = -1;
 
 	bpf_object__close(bpf_obj);
 
