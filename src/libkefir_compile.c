@@ -58,6 +58,18 @@ struct bpf_map_filter_rule_with_masks {
 	struct bpf_map_match_with_masks	matches[KEFIR_MAX_MATCH_PER_RULE];
 };
 
+__attribute__((format(printf, 2, 0)))
+static int
+libbpf_output_to_buf(enum libbpf_print_level level, const char *format,
+		     va_list ap)
+{
+	if (level == LIBBPF_DEBUG)
+		return 0;
+
+	error_vappend_str("attach fail: ", format, ap);
+	return 0;
+}
+
 static void ret0(__attribute__((unused)) int sig)
 {
 	return;
@@ -264,6 +276,8 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 {
 	struct bpf_prog_load_attr load_attr = {0};
 	int prog_fd;
+
+	libbpf_set_print(libbpf_output_to_buf);
 
 	load_attr.file = objfile;
 	load_attr.ifindex = ifindex;

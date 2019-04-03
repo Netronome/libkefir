@@ -31,4 +31,7 @@ char kefir_error_str[KEFIR_ERROR_STR_SIZE];
 void error_set_str(const char *prefix, const char *format, ...);
 void error_vset_str(const char *prefix, const char *format, va_list ap);
 
+void error_append_str(const char *prefix, const char *format, ...);
+void error_vappend_str(const char *prefix, const char *format, va_list ap);
+
 #endif /* LIBKEFIR_ERROR_H */
