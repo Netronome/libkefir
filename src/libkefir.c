@@ -289,12 +289,12 @@ int kefir_compile_to_bpf(const char *c_file, const char *opt_object_file,
 }
 
 int kefir_load_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
-				  int ifindex)
+				  struct kefir_load_attr *attr)
 {
 	struct bpf_object *bpf_obj;
 	int prog_fd;
 
-	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, ifindex);
+	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, attr);
 	if (prog_fd < 0)
 		return -1;
 
@@ -304,19 +304,18 @@ int kefir_load_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
 }
 
 int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
-				    const char *objfile, int ifindex,
-				    unsigned int flags)
+				    const char *objfile,
+				    struct kefir_load_attr *attr)
 {
 	struct bpf_object *bpf_obj;
-	int prog_fd, load_ifindex;
+	int prog_fd;
 
-	load_ifindex = flags && XDP_FLAGS_HW_MODE ? ifindex : 0;
-	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj,
-					    load_ifindex);
+	attr->ifindex = attr->flags && XDP_FLAGS_HW_MODE ? attr->ifindex : 0;
+	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, attr);
 	if (prog_fd < 0)
 		return -1;
 
-	if (compile_attach_program(cprog, bpf_obj, prog_fd, ifindex, flags))
+	if (compile_attach_program(cprog, bpf_obj, prog_fd, attr))
 		prog_fd = -1;
 
 	bpf_object__close(bpf_obj);

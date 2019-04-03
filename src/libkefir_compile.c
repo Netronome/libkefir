@@ -272,7 +272,8 @@ static int fill_one_rule(void *rule_ptr, va_list ap)
 }
 
 int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
-			      struct bpf_object **bpf_obj, int ifindex)
+			      struct bpf_object **bpf_obj,
+			      struct kefir_load_attr *attr)
 {
 	struct bpf_prog_load_attr load_attr = {0};
 	int prog_fd;
@@ -280,7 +281,10 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 	libbpf_set_print(libbpf_output_to_buf);
 
 	load_attr.file = objfile;
-	load_attr.ifindex = ifindex;
+	load_attr.ifindex = attr->ifindex;
+	// TODO: Alexei's patch not passed yet
+	// TODO: add guard for libbpf version?? How to check it???
+	// load_attr.log_level = attr->log_level;
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:
 		load_attr.prog_type = BPF_PROG_TYPE_XDP;
@@ -302,7 +306,7 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 }
 
 int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
-			   int prog_fd, int ifindex, uint32_t flags)
+			   int prog_fd, struct kefir_load_attr *attr)
 {
 	struct bpf_map *rule_map;
 	int rule_map_fd;
@@ -310,7 +314,7 @@ int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:
-		if (bpf_set_link_xdp_fd(ifindex, prog_fd, flags))
+		if (bpf_set_link_xdp_fd(attr->ifindex, prog_fd, attr->flags))
 			// Message needed?
 			return -1;
 		break;

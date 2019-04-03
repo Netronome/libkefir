@@ -198,16 +198,32 @@ int kefir_compile_to_bpf(const char *c_file,
 			 const char *opt_llc_bin);
 
 /**
+ * Struct containing attributes used when loading a BPF program from an object
+ * file.
+ * @ifindex: interface index, for BPF hardware offload only; should be left at 0
+ *           if offload is not desired
+ * @log_level: TODO
+ * @flags for XDP: passed to netlink to set XDP mode (socket buffer, driver,
+ *        hardware) (see <linux/if_link.h>)
+ *        for TC: TODO
+ */
+struct kefir_load_attr {
+	int ifindex;
+	int log_level;
+	unsigned int flags;
+};
+
+/**
  * Load the BPF program associated to a C program object into the kernel.
  * @cprog cprog used to generate the BPF program
  * @objfile name of ELF object file containing the BPF program generated from
  *          the filter
- * @ifindex interface index, for BPF hardware offload only; should be left at 0
- *          if offload is not desired
+ * @attr object containing optional attributes to use when loading the program
  * @return file descriptor to the BPF program, or negative error
  */
 int kefir_load_cprog_from_objfile(const kefir_cprog *cprog,
-				  const char *objfile, int ifindex);
+				  const char *objfile,
+				  struct kefir_load_attr *attr);
 
 /**
  * Load the BPF program associated to a C program object into the kernel, then
@@ -215,15 +231,12 @@ int kefir_load_cprog_from_objfile(const kefir_cprog *cprog,
  * @cprog cprog used to generate the BPF program
  * @objfile name of ELF object file containing the BPF program generated from
  *          the filter
- * @ifindex interface index to which the program should be attached
- * @flags for XDP: passed to netlink to set XDP mode (socket buffer, driver,
- *        hardware) (see <linux/if_link.h>)
- *        for TC: TODO
+ * @attr object containing optional attributes to use when loading the program
  * @return file descriptor to the BPF program, or negative error
  */
 int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
-				    const char *objfile, int ifindex,
-				    unsigned int flags);
+				    const char *objfile,
+				    struct kefir_load_attr *attr);
 
 /*
  *
