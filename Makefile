@@ -7,6 +7,7 @@ KEFIR_EXTRAVERSION	= 0
 KEFIR_FULLVERSION	= $(KEFIR_VERSION).$(KEFIR_PATCHLEVEL).$(KEFIR_EXTRAVERSION)
 
 SRC	= src/
+DOC	= doc/
 TESTS	= tests/
 OUTPUT	= build/
 PREFIX	?= /usr/local
@@ -97,6 +98,16 @@ clean: kefir-clean
 	$(Q)$(MAKE) -C $(LIBBPF_DIR) clean
 
 .PHONY: all kefir-clean clean
+
+# Documentation
+
+doc:
+	$(Q)$(MAKE) -C $(DOC) html
+
+doc-clean:
+	$(Q)$(MAKE) -C $(DOC) clean
+
+.PHONY: doc doc-clean
 
 # Code checks
 
