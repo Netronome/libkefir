@@ -56,25 +56,11 @@ size_t kefir_sizeof_filter(const kefir_filter *filter);
  * @index index of the rule in the list (overwrite if pre-existing)
  * @return 0 on success, error code otherwise
  */
-int
-kefir_load_rule(kefir_filter *filter,
-		enum kefir_rule_type rule_type,
-		const char **user_rule,
-		size_t rule_size,
-		ssize_t index);
-
-/**
- * Delete a rule from a filter.
- * The rule must have been previously added to the filter.
- * @filter: object to remove the rule from
- * @rule_type type of the rule to delete
- * @rule string containing the rule
- * @return 0 on success, error code otherwise
- */
-int
-kefir_delete_rule(kefir_filter *filter,
-		  enum kefir_rule_type rule_type,
-		  const char *rule);
+int kefir_load_rule(kefir_filter *filter,
+		    enum kefir_rule_type rule_type,
+		    const char **user_rule,
+		    size_t rule_size,
+		    ssize_t index);
 
 /**
  * Delete a rule at given index from a filter.
@@ -82,15 +68,13 @@ kefir_delete_rule(kefir_filter *filter,
  * @index index of the rule to delete
  * @return 0 on success, error code otherwise
  */
-int
-kefir_delete_rule_by_id(kefir_filter *filter,
-		        ssize_t index);
+int kefir_delete_rule_by_id(kefir_filter *filter,
+			    ssize_t index);
 
 /** Dump all rules of a filter to the console.
  * @filter: object to dump
  */
-void
-kefir_dump_filter(const kefir_filter *filter);
+void kefir_dump_filter(const kefir_filter *filter);
 
 /*
  *
@@ -123,7 +107,6 @@ kefir_filter *kefir_load_filter_from_file(const char *filename);
  */
 
 typedef struct kefir_cprog kefir_cprog;
-typedef struct kefir_cprog_options kefir_cprog_options;
 
 enum kefir_cprog_target {
 	KEFIR_CPROG_TARGET_XDP,
