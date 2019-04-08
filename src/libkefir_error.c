@@ -8,7 +8,7 @@
 #include "libkefir.h"
 #include "libkefir_error.h"
 
-char *kefir_strerror()
+const char *kefir_strerror()
 {
 	return kefir_error_str;
 }

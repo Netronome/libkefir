@@ -244,6 +244,11 @@ int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
  *
  */
 
-char *kefir_strerror();
+/**
+ * Return a pointer to the error messages produced by the library.
+ * @return pointer to a buffer containing all error messages produced by the
+ *         library
+ */
+const char *kefir_strerror();
 
 #endif /* LIBKEFIR_H */
