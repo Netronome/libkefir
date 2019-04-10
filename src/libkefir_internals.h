@@ -208,8 +208,8 @@ struct kefir_cprog_options {
 };
 
 struct kefir_cprog {
-	const kefir_filter	*filter;
-	kefir_cprog_options	options;
+	const kefir_filter		*filter;
+	struct kefir_cprog_options	options;
 };
 
 /*
