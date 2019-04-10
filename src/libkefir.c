@@ -308,10 +308,13 @@ int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
 				    struct kefir_load_attr *attr)
 {
 	struct bpf_object *bpf_obj;
-	int prog_fd;
+	int prog_fd, ifindex;
 
-	attr->ifindex = attr->flags && XDP_FLAGS_HW_MODE ? attr->ifindex : 0;
+	/* Ifindex must be 0 for loading if no hardware offload is required */
+	ifindex = attr->ifindex;
+	attr->ifindex = attr->flags && XDP_FLAGS_HW_MODE ? ifindex : 0;
 	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, attr);
+	attr->ifindex = ifindex;
 	if (prog_fd < 0)
 		return -1;
 

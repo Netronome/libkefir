@@ -183,8 +183,9 @@ int kefir_compile_to_bpf(const char *c_file,
 /**
  * Struct containing attributes used when loading a BPF program from an object
  * file.
- * @ifindex: interface index, for BPF hardware offload only; should be left at 0
- *           if offload is not desired
+ * @ifindex: interface index, for indicating where the filter should be
+ *           attached (or where the map should be allocated, for hardware
+ *           offload, even if the program is simply loaded)
  * @log_level: TODO
  * @flags for XDP: passed to netlink to set XDP mode (socket buffer, driver,
  *        hardware) (see <linux/if_link.h>)
