@@ -144,6 +144,7 @@ int json_save_filter_to_file(const kefir_filter *filter, const char *filename)
 {
 	json_writer_t *jw;
 	FILE *outfile;
+	int err = -1;
 
 	outfile = fopen(filename, "w");
 	if (!outfile) {
@@ -155,7 +156,7 @@ int json_save_filter_to_file(const kefir_filter *filter, const char *filename)
 	jw = jsonw_new(outfile);
 	if (!jw) {
 		err_fail("failed to allocate memory for JSON writer");
-		return -1;
+		goto close_file;
 	}
 
 	jsonw_pretty(jw, true);
@@ -166,10 +167,14 @@ int json_save_filter_to_file(const kefir_filter *filter, const char *filename)
 	jsonw_name(jw, "libkefir_filter");
 
 	if (save_filter_object(filter, jw))
-		return -1;
+		goto close_file;
 
 	jsonw_end_object(jw);	/* root */
 	jsonw_destroy(&jw);
 
-	return 0;
+	err = 0;
+
+close_file:
+	fclose(outfile);
+	return err;
 }

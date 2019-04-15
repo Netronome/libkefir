@@ -437,14 +437,14 @@ kefir_filter *json_restore_filter_from_file(const char *filename)
 	if (stat(filename, &statbuf)) {
 		err_fail("failed to get size of file %s: %s", filename,
 			 strerror(errno));
-		return NULL;
+		goto close_file;
 	}
 	input_size = statbuf.st_size;
 
 	input_str = calloc(input_size + 1, sizeof(char));
 	if (!input_str) {
 		err_fail("failed to allocate memory for reading input file");
-		return NULL;
+		goto close_file;
 	}
 
 	nb_read = fread(input_str, 1, input_size, input_file);
@@ -497,5 +497,7 @@ free_tokens:
 	free(tokens);
 free_input_str:
 	free(input_str);
+close_file:
+	fclose(input_file);
 	return filter;
 }
