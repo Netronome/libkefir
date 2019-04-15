@@ -59,6 +59,7 @@ static int parse_int(const char *str, const jsmntok_t *token, int *dest)
 		return -1;
 	}
 
+	errno = 0;
 	*dest = strtol(str + token->start, NULL, 10);
 
 	/*
