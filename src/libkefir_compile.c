@@ -301,6 +301,8 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 	/* Load BPF program */
 	if (bpf_prog_load_xattr(&load_attr, bpf_obj, &prog_fd))
 		return -1;
+	/* Success, but bpf_prog_load_xattr often changes errno. Reset it */
+	errno = 0;
 
 	return prog_fd;
 }
