@@ -873,7 +873,6 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "		__u64	u64[2];\n"
 			       "	} copy = {{0}};\n"
 			       "\n"
-			       "static const char format[] = \"%%d - %%d\\n\";\n"
 			       "#pragma clang loop unroll(full)\n"
 			       "	for (i = 0; i < 16; i++) {\n"
 			       ""))
