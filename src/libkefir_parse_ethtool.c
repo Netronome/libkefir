@@ -403,7 +403,7 @@ ethtool_compose_rule(enum ethtool_val_type val_type, struct kefir_value value,
 	match.comp_operator = OPER_EQUAL;
 	match.value = value;
 
-	rule = malloc(sizeof(struct kefir_rule));
+	rule = calloc(1, sizeof(struct kefir_rule));
 	if (!rule) {
 		err_fail("failed to allocate memory for rule");
 		return NULL;
