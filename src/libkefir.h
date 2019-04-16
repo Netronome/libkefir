@@ -63,6 +63,19 @@ int kefir_load_rule(kefir_filter *filter,
 		    ssize_t index);
 
 /**
+ * Add a rule to a filter.
+ * @filter object to add the rule to
+ * @rule_type type of the rule to add
+ * @user_rule single string defining the rule in the format for rule_type
+ * @index index of the rule in the list (overwrite if pre-existing)
+ * @return 0 on success, error code otherwise
+ */
+int kefir_load_rule_l(kefir_filter *filter,
+		      enum kefir_rule_type rule_type,
+		      const char *user_rule,
+		      ssize_t index);
+
+/**
  * Delete a rule at given index from a filter.
  * @filter: object to remove the rule from
  * @index index of the rule to delete

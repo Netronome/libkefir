@@ -173,6 +173,56 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 	return kefir_add_rule_to_filter(filter, rule, index);
 }
 
+int kefir_load_rule_l(kefir_filter *filter, enum kefir_rule_type rule_type,
+		      const char *user_rule, ssize_t index)
+{
+	size_t rule_size = 1, i = 0;
+	const char **rule_words;
+	char *rule_cpy, *word;
+	int res = -1;
+
+	/* Count words */
+	rule_cpy = strdup(user_rule);
+	if (!rule_cpy) {
+		err_fail("failed to allocate buffer for splitting rule");
+		return -1;
+	}
+
+	if (!strtok(rule_cpy, " \t\n")) {
+		err_fail("rule is too short");
+		goto free_rule_cpy;
+	}
+	while (strtok(NULL, " \t\n"))
+		rule_size++;
+
+	/* Split string */
+	free(rule_cpy);
+	rule_cpy = strdup(user_rule);
+	if (!rule_cpy) {
+		err_fail("failed to allocate buffer for splitting rule");
+		return -1;
+	}
+	rule_words = calloc(rule_size, sizeof(char *));
+	if (!rule_words) {
+		err_fail("failed to allocate array for splitting rule");
+		goto free_rule_cpy;
+	}
+
+	rule_words[0] = strtok(rule_cpy, " \t\n");
+	while ((word = strtok(NULL, " \t\n")) != NULL) {
+		i++;
+		rule_words[i] = word;
+	}
+
+	res = kefir_load_rule(filter, rule_type, rule_words, rule_size, index);
+	free(rule_words);
+
+free_rule_cpy:
+	free(rule_cpy);
+
+	return res;
+}
+
 /*
  * TODO:
  * The id must be the index of the rule in the list as stored in the filter. In
