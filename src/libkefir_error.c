@@ -43,7 +43,7 @@ void error_vappend_str(const char *prefix, const char *format, va_list ap)
 	if (index >= KEFIR_ERROR_STR_SIZE - strlen(prefix) - 1)
 		return;
 
-	strncpy(kefir_error_str + index, prefix, KEFIR_ERROR_STR_SIZE);
+	strncpy(kefir_error_str + index, prefix, KEFIR_ERROR_STR_SIZE - index - 1);
 	index += strlen(prefix);
 
 	vsnprintf(kefir_error_str + index, KEFIR_ERROR_STR_SIZE - index - 1,
