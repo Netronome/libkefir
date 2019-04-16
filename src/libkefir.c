@@ -159,6 +159,9 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 		return -1;
 	}
 
+	if (!rule)
+		return -1;
+
 	update_from_mask(rule);
 
 	return kefir_add_rule_to_filter(filter, rule, index);
