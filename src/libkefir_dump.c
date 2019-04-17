@@ -130,8 +130,16 @@ static const char *match_type_str(enum match_type match_type)
 		return "IPv4, L4 protocol";
 	case KEFIR_MATCH_TYPE_IP_4_L4DATA:
 		return "IPv4, L4 first 4 bytes of data";
+	case KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC:
+		return "IPv4, L4 source port";
+	case KEFIR_MATCH_TYPE_IP_4_L4PORT_DST:
+		return "IPv4, L4 destination port";
+	case KEFIR_MATCH_TYPE_IP_4_L4PORT_ANY:
+		return "IPv4, L4 any port";
 	case KEFIR_MATCH_TYPE_IP_4_SPI:
 		return "IPv4, SPI";
+	case KEFIR_MATCH_TYPE_IP_4_TCP_FLAGS:
+		return "IPv4, TCP flags";
 	case KEFIR_MATCH_TYPE_IP_6_SRC:
 		return "IPv6 source address";
 	case KEFIR_MATCH_TYPE_IP_6_DST:
@@ -148,8 +156,16 @@ static const char *match_type_str(enum match_type match_type)
 		return "IPv6, L4 protocol";
 	case KEFIR_MATCH_TYPE_IP_6_L4DATA:
 		return "IPv6, L4 first 4 bytes of data";
+	case KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC:
+		return "IPv6, L4 source port";
+	case KEFIR_MATCH_TYPE_IP_6_L4PORT_DST:
+		return "IPv6, L4 destination port";
+	case KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY:
+		return "IPv6, L4 any port";
 	case KEFIR_MATCH_TYPE_IP_6_SPI:
 		return "IPv6, SPI";
+	case KEFIR_MATCH_TYPE_IP_6_TCP_FLAGS:
+		return "IPv6, TCP flags";
 	case KEFIR_MATCH_TYPE_IP_ANY_SRC:
 		return "IP source address";
 	case KEFIR_MATCH_TYPE_IP_ANY_DST:
@@ -168,14 +184,14 @@ static const char *match_type_str(enum match_type match_type)
 		return "IP, L4 first 4 bytes of data";
 	case KEFIR_MATCH_TYPE_IP_ANY_SPI:
 		return "IP, SPI";
-	case KEFIR_MATCH_TYPE_L4_PORT_SRC:
-		return "L4 source port";
-	case KEFIR_MATCH_TYPE_L4_PORT_DST:
-		return "L4 destination port";
-	case KEFIR_MATCH_TYPE_L4_PORT_ANY:
-		return "L4 any port";
-	case KEFIR_MATCH_TYPE_TCP_FLAGS:
-		return "TCP flags";
+	case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC:
+		return "IP, L4 source port";
+	case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST:
+		return "IP, L4 destination port";
+	case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY:
+		return "IP, L4 any port";
+	case KEFIR_MATCH_TYPE_IP_ANY_TCP_FLAGS:
+		return "IP, TCP flags";
 	case KEFIR_MATCH_TYPE_VLAN_ID:
 		return "VLAN ID";
 	case KEFIR_MATCH_TYPE_VLAN_PRIO:

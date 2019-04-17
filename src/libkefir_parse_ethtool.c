@@ -22,7 +22,7 @@ enum ethtool_val_type {
 	ETHTOOL_VAL_TYPE_IP_DST,
 	ETHTOOL_VAL_TYPE_IPV4_TOS,
 	ETHTOOL_VAL_TYPE_IPV6_TCLASS,
-	ETHTOOL_VAL_TYPE_IP_L4PROTO,
+	ETHTOOL_VAL_TYPE_L4_PROTO,
 	ETHTOOL_VAL_TYPE_L4_PORT_SRC,
 	ETHTOOL_VAL_TYPE_L4_PORT_DST,
 	ETHTOOL_VAL_TYPE_IP_SPI,
@@ -95,7 +95,7 @@ static const struct ethtool_option opt_tclass = {
 
 static const struct ethtool_option opt_l4proto = {
 	.name		= "l4proto",
-	.type		= ETHTOOL_VAL_TYPE_IP_L4PROTO,
+	.type		= ETHTOOL_VAL_TYPE_L4_PROTO,
 	.format		= KEFIR_VAL_FMT_UINT8,
 };
 
@@ -375,20 +375,29 @@ ethtool_compose_rule(enum ethtool_val_type val_type, struct kefir_value value,
 		match.mask[0] &= 0xf0;
 		match.match_type = KEFIR_MATCH_TYPE_IP_6_TOS;
 		break;
-	case ETHTOOL_VAL_TYPE_IP_L4PROTO:
+	case ETHTOOL_VAL_TYPE_L4_PROTO:
 		if (ipv6_flow)
 			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4PROTO;
 		else
 			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4PROTO;
 		break;
 	case ETHTOOL_VAL_TYPE_L4_PORT_SRC:
-		match.match_type = KEFIR_MATCH_TYPE_L4_PORT_SRC;
+		if (ipv6_flow)
+			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC;
+		else
+			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC;
 		break;
 	case ETHTOOL_VAL_TYPE_L4_PORT_DST:
-		match.match_type = KEFIR_MATCH_TYPE_L4_PORT_DST;
+		if (ipv6_flow)
+			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_DST;
+		else
+			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_DST;
 		break;
 	case ETHTOOL_VAL_TYPE_IP_L4DATA:
-		match.match_type = KEFIR_MATCH_TYPE_IP_ANY_L4DATA;
+		if (ipv6_flow)
+			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4DATA;
+		else
+			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4DATA;
 		break;
 	case ETHTOOL_VAL_TYPE_IP_SPI:
 		// TODO: needs two matchs, one on SPI, one on flow type

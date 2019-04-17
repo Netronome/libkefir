@@ -58,6 +58,7 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 {
 	uint32_t *data_ipv6_ptr = match->value.data.ipv6.__in6_u.__u6_addr32;
 	uint32_t *data_ipv4_ptr = &match->value.data.ipv4.s_addr;
+	bool ipv6_flow = (ethtype == TCFLOWER_ETH_PROTO_IPV6);
 
 	if (*argc < 2) {
 		err_fail("bad number of arguments for parsing match value");
@@ -144,7 +145,10 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		NEXT_ARG();
 		if (parse_uint(**argv, &match->value.data.u8, 8))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_IP_ANY_L4PROTO;
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PROTO;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PROTO;
 		match->value.format = KEFIR_VAL_FMT_UINT8;
 	} else if (!strcmp(**argv, "ip_tos")) {
 		NEXT_ARG();
@@ -152,77 +156,78 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		if (parse_uint_slash_mask(**argv, &match->value.data.u8, 8,
 					  match->mask))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_IP_ANY_TOS;
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_TOS;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_TOS;
 		match->value.format = KEFIR_VAL_FMT_UINT8;
 	} else if (!strcmp(**argv, "ip_ttl")) {
 		NEXT_ARG();
 		if (parse_uint_slash_mask(**argv, &match->value.data.u8, 8,
 					  match->mask))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_IP_ANY_TTL;
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_TTL;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_TTL;
 		match->value.format = KEFIR_VAL_FMT_UINT8;
 	} else if (!strcmp(**argv, "dst_ip")) {
 		NEXT_ARG();
-		switch (ethtype) {
-		case TCFLOWER_ETH_PROTO_IPV4:
-			if (parse_ipv4_addr_slash_mask(**argv, data_ipv4_ptr,
-						       match->mask))
-				return -1;
-			match->match_type = KEFIR_MATCH_TYPE_IP_4_DST;
-			match->value.format = KEFIR_VAL_FMT_IPV4_ADDR;
-			break;
-		case TCFLOWER_ETH_PROTO_IPV6:
+		if (ipv6_flow) {
 			if (parse_ipv6_addr_slash_mask(**argv, data_ipv6_ptr,
 						       match->mask))
 				return -1;
 			match->match_type = KEFIR_MATCH_TYPE_IP_6_DST;
 			match->value.format = KEFIR_VAL_FMT_IPV6_ADDR;
-			break;
-		default:
-			err_fail("unsupported match on dst_ip for protocol %d",
-				 ethtype);
-			return -1;
-		}
-	} else if (!strcmp(**argv, "src_ip")) {
-		NEXT_ARG();
-		switch (ethtype) {
-		case TCFLOWER_ETH_PROTO_IPV4:
+		} else {
 			if (parse_ipv4_addr_slash_mask(**argv, data_ipv4_ptr,
 						       match->mask))
 				return -1;
-			match->match_type = KEFIR_MATCH_TYPE_IP_4_SRC;
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_DST;
 			match->value.format = KEFIR_VAL_FMT_IPV4_ADDR;
-			break;
-		case TCFLOWER_ETH_PROTO_IPV6:
+		}
+	} else if (!strcmp(**argv, "src_ip")) {
+		NEXT_ARG();
+		if (ipv6_flow) {
 			if (parse_ipv6_addr_slash_mask(**argv, data_ipv6_ptr,
 						       match->mask))
 				return -1;
 			match->match_type = KEFIR_MATCH_TYPE_IP_6_SRC;
 			match->value.format = KEFIR_VAL_FMT_IPV6_ADDR;
-			break;
-		default:
-			err_fail("unsupported match on src_ip for protocol %d",
-				 ethtype);
-			return -1;
+		} else {
+			if (parse_ipv4_addr_slash_mask(**argv, data_ipv4_ptr,
+						       match->mask))
+				return -1;
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_SRC;
+			match->value.format = KEFIR_VAL_FMT_IPV4_ADDR;
 		}
 	} else if (!strcmp(**argv, "dst_port")) {
 		NEXT_ARG();
 		if (parse_uint(**argv, &match->value.data.u16, 16))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_L4_PORT_DST;
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_DST;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_DST;
 		match->value.format = KEFIR_VAL_FMT_UINT16;
 	} else if (!strcmp(**argv, "src_port")) {
 		NEXT_ARG();
 		if (parse_uint(**argv, &match->value.data.u16, 16))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_L4_PORT_SRC;
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC;
 		match->value.format = KEFIR_VAL_FMT_UINT16;
 	} else if (!strcmp(**argv, "tcp_flags")) {
 		NEXT_ARG();
 		if (parse_uint_slash_mask(**argv, &match->value.data.u16, 12,
 					  match->mask))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_TCP_FLAGS;
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_TCP_FLAGS;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_TCP_FLAGS;
 		match->value.format = KEFIR_VAL_FMT_UINT12;
 	// } else if (!strcmp(**argv, "type")) {
 	// } else if (!strcmp(**argv, "code")) {
