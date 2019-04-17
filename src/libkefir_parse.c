@@ -51,10 +51,14 @@ static void bitmask_from_int(unsigned int mask, uint8_t *bitmask, size_t size)
 
 static int parse_slash_mask(const char *input, uint8_t *mask)
 {
-	int mask_int;
+	unsigned int mask_int;
+	char *endptr;
 
-	if (parse_uint(input, &mask_int, 6))
+	mask_int = strtoul(input, &endptr, 10);
+	if (*endptr != '\0' || mask_int > 32) {
+		err_fail("could not parse %s as int mask", input);
 		return -1;
+	}
 	bitmask_from_int(mask_int, mask, 4);
 
 	return 0;
