@@ -684,7 +684,7 @@ cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 static int
 cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
-	if (!(prog->options.flags & OPT_FLAGS_NEED_IPV4))
+	if (!(prog->options.flags & OPT_FLAGS_NEED_IPV6))
 		return 0;
 
 	if (buf_append(buf, buf_len, ""
