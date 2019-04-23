@@ -12,6 +12,8 @@
 #include <bpf/libbpf.h>
 #include <linux/bpf.h>
 #include <linux/if_link.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "libkefir.h"
 #include "libkefir_error.h"
@@ -70,11 +72,6 @@ libbpf_output_to_buf(enum libbpf_print_level level, const char *format,
 	return 0;
 }
 
-static void ret0(__attribute__((unused)) int sig)
-{
-	return;
-}
-
 int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 			 const char *opt_ll_file, const char *opt_clang_bin,
 			 const char *opt_llc_bin)
@@ -82,6 +79,7 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 	const char *clang = opt_clang_bin ? opt_clang_bin : "/usr/bin/clang";
 	const char *llc = opt_llc_bin ? opt_llc_bin : "/usr/bin/llc";
 	char *objfile, *llfile;
+	int wstatus;
 	size_t len;
 	pid_t pid;
 
@@ -139,23 +137,15 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 		}
 	}
 
-	/*
-	 * We need to wait for the compilation from C to IR to finish: we can
-	 * pause() to wait for the SIGCHLD signal sent by the child process
-	 * when it terminates, but pause() only resumes on SIGCHLD if it
-	 * triggers a callback action. Let's set up a callback that does
-	 * nothing.
-	 */
-	struct sigaction sigact = {
-		.sa_handler = ret0
-	};
-	if (sigaction(SIGCHLD, &sigact, NULL)) {
-		err_fail("cannot wait for clang because sigaction failed: %s",
+	if (wait(&wstatus) < 0) {
+		err_fail("cannot wait for clang, wait() syscall failed: %s",
 			 strerror(errno));
 		return -1;
 	}
-	pause();
-	errno = 0;
+	if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus)) {
+		err_fail("call to clang failed");
+		return -1;
+	}
 
 	pid = fork();
 	if (pid < 0) {
@@ -171,8 +161,15 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 		}
 	}
 
-	pause();
-	errno = 0;
+	if (wait(&wstatus) < 0) {
+		err_fail("cannot wait for llc, wait() syscall failed: %s",
+			 strerror(errno));
+		return -1;
+	}
+	if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus)) {
+		err_fail("call to llc failed");
+		return -1;
+	}
 
 	if (!opt_ll_file)
 		free(llfile);
