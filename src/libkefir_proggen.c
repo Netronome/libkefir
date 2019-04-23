@@ -280,6 +280,18 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	if (buf_append(buf, buf_len, "struct filter_key {\n"))
 		return -1;
 
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_SRC) ||
+	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_ANY))
+		if (buf_append(buf, buf_len, "	uint8_t		ether_src[6];\n"))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_DST) ||
+	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_ANY))
+		if (buf_append(buf, buf_len, "	uint8_t		ether_dst[6];\n"))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
+		if (buf_append(buf, buf_len, "	uint8_t		ether_proto;\n"))
+			return -1;
+
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_SRC) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_SRC) ||
@@ -359,6 +371,27 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	if (buf_append(buf, buf_len, "enum match_type {\n"))
 		return -1;
+
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_SRC))
+		if (buf_append(buf, buf_len,
+			       "	MATCH_ETHER_SRC		= %d,\n",
+			       KEFIR_MATCH_TYPE_ETHER_SRC))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_DST))
+		if (buf_append(buf, buf_len,
+			       "	MATCH_ETHER_DST		= %d,\n",
+			       KEFIR_MATCH_TYPE_ETHER_DST))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_ANY))
+		if (buf_append(buf, buf_len,
+			       "	MATCH_ETHER_ANY		= %d,\n",
+			       KEFIR_MATCH_TYPE_ETHER_ANY))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
+		if (buf_append(buf, buf_len,
+			       "	MATCH_ETHER_PROTO	= %d,\n",
+			       KEFIR_MATCH_TYPE_ETHER_PROTO))
+			return -1;
 
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_SRC))
 		if (buf_append(buf, buf_len,
@@ -757,6 +790,40 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
+cprog_func_process_ether(const kefir_cprog *prog, char **buf, size_t *buf_len)
+{
+	if (!(prog->options.flags & OPT_FLAGS_NEED_ETHER))
+		return 0;
+
+	if (buf_append(buf, buf_len, ""
+		       "%sint process_ether(void *data, void *data_end, struct filter_key *key)\n"
+		       "{\n"
+		       "	struct ethhdr *eth = data;\n"
+		       "\n"
+		       "", cprog_attr_func_static_inline))
+		return -1;
+
+	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_SRC) ||
+	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_ANY))
+		if (buf_append(buf, buf_len, "	memcpy(&key->ether_src, eth->h_source, sizeof(eth->h_source));\n"))
+			return -1;
+	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_DST) ||
+	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_ANY))
+		if (buf_append(buf, buf_len, "	memcpy(&key->ether_dst, eth->h_dest, sizeof(eth->h_dest));\n"))
+			return -1;
+
+	if (buf_append(buf, buf_len, ""
+		       "\n"
+		       "	return 0;\n"
+		       "}\n"
+		       "\n"
+		       ""))
+		return -1;
+
+	return 0;
+}
+
+static int
 cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	bool need_ether = prog->options.flags & OPT_FLAGS_NEED_ETHER;
@@ -778,9 +845,14 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "", cprog_attr_func_static_inline))
 		return -1;
 
+	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
+		if (buf_append(buf, buf_len, "	key->ether_proto = eth->h_proto;\n"))
+			return -1;
+
 	if (need_ether)
 		if (buf_append(buf, buf_len, ""
-			       "	//process_ether(ctx);\n"
+			       "	if (process_ether(data, data_end, key))\n"
+			       "		return 0;\n"
 			       "\n"
 			       ""))
 			return -1;
@@ -981,6 +1053,47 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	// We should have the type (IPv4/IPv6) of packet by now, no need to
 	// test all cases every time
+
+	/* Ether */
+
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_SRC))
+		if (buf_append(buf, buf_len, ""
+			       "		case MATCH_ETHER_SRC:\n"
+			       "			does_match = does_match &&\n"
+			       "				check_match(&key->ether_src,\n"
+			       "					    sizeof(key->ether_src), match);\n"
+			       "			break;\n"
+			       ""))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_DST))
+		if (buf_append(buf, buf_len, ""
+			       "		case MATCH_ETHER_DST:\n"
+			       "			does_match = does_match &&\n"
+			       "				check_match(&key->ether_dst,\n"
+			       "					    sizeof(key->ether_dst), match);\n"
+			       "			break;\n"
+			       ""))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_ANY))
+		if (buf_append(buf, buf_len, ""
+			       "		case MATCH_ETHER_ANY:\n"
+			       "			does_match = does_match &&\n"
+			       "				(check_match(&key->ether_src,\n"
+			       "					     sizeof(key->ether_src), match) ||\n"
+			       "				 check_match(&key->ether_dst,\n"
+			       "					     sizeof(key->ether_dst), match));\n"
+			       "			break;\n"
+			       ""))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
+		if (buf_append(buf, buf_len, ""
+			       "		case MATCH_ETHER_PROTO:\n"
+			       "			does_match = does_match &&\n"
+			       "				check_match(&key->ether_proto,\n"
+			       "					    sizeof(key->ether_proto), match);\n"
+			       "			break;\n"
+			       ""))
+			return -1;
 
 	/* IPv4 */
 
@@ -1538,6 +1651,9 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		return -1;
 
 	if (cprog_func_process_ipv6(prog, buf, buf_len))
+		return -1;
+
+	if (cprog_func_process_ether(prog, buf, buf_len))
 		return -1;
 
 	if (cprog_func_extract_key(prog, buf, buf_len))
