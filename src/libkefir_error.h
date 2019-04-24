@@ -24,7 +24,7 @@
 	__DO_ERR_FUNC(COMPONENT, fail, "failed")		\
 	__DO_ERR_FUNC(COMPONENT, bug, "bug")
 
-#define KEFIR_ERROR_STR_SIZE 1024
+#define KEFIR_ERROR_STR_SIZE 2048
 
 char kefir_error_str[KEFIR_ERROR_STR_SIZE];
 

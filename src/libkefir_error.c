@@ -8,9 +8,17 @@
 #include "libkefir.h"
 #include "libkefir_error.h"
 
+static size_t kefir_strerror_index;
+
 const char *kefir_strerror()
 {
 	return kefir_error_str;
+}
+
+void kefir_strerror_reset()
+{
+	*kefir_error_str = '\0';
+	kefir_strerror_index = 0;
 }
 
 __attribute__((format(printf, 2, 0)))
@@ -38,18 +46,18 @@ void error_set_str(const char *prefix, const char *format, ...)
 __attribute__((format(printf, 2, 0)))
 void error_vappend_str(const char *prefix, const char *format, va_list ap)
 {
-	static size_t index = 0;
-
-	if (index >= KEFIR_ERROR_STR_SIZE - strlen(prefix) - 1)
+	if (kefir_strerror_index >= KEFIR_ERROR_STR_SIZE - strlen(prefix) - 1)
 		return;
 
-	strncpy(kefir_error_str + index, prefix, KEFIR_ERROR_STR_SIZE - index - 1);
-	index += strlen(prefix);
+	strncpy(kefir_error_str + kefir_strerror_index, prefix,
+		KEFIR_ERROR_STR_SIZE - kefir_strerror_index - 1);
+	kefir_strerror_index += strlen(prefix);
 
-	vsnprintf(kefir_error_str + index, KEFIR_ERROR_STR_SIZE - index - 1,
+	vsnprintf(kefir_error_str + kefir_strerror_index,
+		  KEFIR_ERROR_STR_SIZE - kefir_strerror_index - 1,
 		  format, ap);
 
-	index += strlen(kefir_error_str + index);
+	kefir_strerror_index += strlen(kefir_error_str + kefir_strerror_index);
 }
 
 __attribute__((format(printf, 2, 3)))

@@ -235,4 +235,10 @@ int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
  */
 const char *kefir_strerror();
 
+/**
+ * Reset the error string. This is useful to get rid of libbpf warnings that
+ * may get incrementally appended to the string.
+ */
+void kefir_strerror_reset();
+
 #endif /* LIBKEFIR_H */
