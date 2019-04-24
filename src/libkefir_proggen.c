@@ -280,6 +280,8 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	if (buf_append(buf, buf_len, "struct filter_key {\n"))
 		return -1;
 
+	/* Ether */
+
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_SRC) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_ANY))
 		if (buf_append(buf, buf_len, "	uint8_t		ether_src[6];\n"))
@@ -291,6 +293,8 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
 		if (buf_append(buf, buf_len, "	uint8_t		ether_proto;\n"))
 			return -1;
+
+	/* IPv4 */
 
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_SRC) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY) ||
@@ -306,12 +310,15 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			return -1;
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TOS) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
-		if (buf_append(buf, buf_len, "	uint8_t		tos;\n"))
+		if (buf_append(buf, buf_len, "	uint8_t		ipv4_tos;\n"))
 			return -1;
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TTL) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TTL))
-		if (buf_append(buf, buf_len, "	uint8_t		ttl;\n"))
+		if (buf_append(buf, buf_len, "	uint8_t		ipv4_ttl;\n"))
 			return -1;
+
+	/* IPv6 */
+
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_SRC) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_SRC) ||
@@ -336,6 +343,17 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "	} ipv6_dst;\n"
 			       ""))
 			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TOS) ||
+	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
+		if (buf_append(buf, buf_len, "	uint8_t		ipv6_tos;\n"))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TTL) ||
+	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TTL))
+		if (buf_append(buf, buf_len, "	uint8_t		ipv6_ttl;\n"))
+			return -1;
+
+	/* L4 */
+
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4PROTO) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_L4PROTO))
 		if (buf_append(buf, buf_len,
