@@ -291,7 +291,7 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		if (buf_append(buf, buf_len, "	uint8_t		ether_dst[6];\n"))
 			return -1;
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
-		if (buf_append(buf, buf_len, "	uint8_t		ether_proto;\n"))
+		if (buf_append(buf, buf_len, "	uint16_t	ether_proto;\n"))
 			return -1;
 
 	/* IPv4 */
@@ -721,7 +721,7 @@ cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		return 0;
 
 	if (buf_append(buf, buf_len, ""
-		       "%sint process_ipv4(void *data, void *data_end, __u32 nh_off,\n"
+		       "%sint process_ipv4(void *data, void *data_end, uint8_t nh_off,\n"
 		       "		 struct filter_key *key)\n"
 		       "{\n"
 		       "	struct iphdr *iph = data + nh_off;\n"
@@ -782,7 +782,7 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		return 0;
 
 	if (buf_append(buf, buf_len, ""
-		       "%sint process_ipv6(void *data, void *data_end, __u32 nh_off,\n"
+		       "%sint process_ipv6(void *data, void *data_end, uint8_t nh_off,\n"
 		       "		 struct filter_key *key)\n"
 		       "{\n"
 		       "	struct ipv6hdr *ip6h = data + nh_off;\n"
@@ -893,10 +893,11 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	if (buf_append(buf, buf_len, ""
 		       "%sint extract_key(void *data, void *data_end, struct filter_key *key,\n"
-		       "		__u32 *eth_proto)\n"
+		       "		__u16 *eth_proto)\n"
 		       "{\n"
 		       "	struct ethhdr *eth = data;\n"
-		       "	__u32 nh_off;\n"
+		       "	unsigned int i;\n"
+		       "	uint8_t nh_off;\n"
 		       "\n"
 		       "	nh_off = sizeof(struct ethhdr);\n"
 		       "	if (data + nh_off > data_end)\n"
@@ -907,7 +908,9 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		return -1;
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
-		if (buf_append(buf, buf_len, "	key->ether_proto = eth->h_proto;\n"))
+		if (buf_append(buf, buf_len, ""
+			       "	key->ether_proto = *(uint16_t *)(data + nh_off - 2);\n"
+			       ""))
 			return -1;
 
 	if (need_ether)
@@ -1091,7 +1094,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "	}\n"
 		       "}\n"
 		       "\n"
-		       "%sint check_nth_rule(struct filter_key *key, int n, __u32 *eth_proto, int *res)\n"
+		       "%sint check_nth_rule(struct filter_key *key, int n, __u16 *eth_proto, int *res)\n"
 		       "{\n"
 		       "	struct filter_rule *rule;\n"
 		       "	struct rule_match *match;\n"
@@ -1433,8 +1436,8 @@ make_cprog_main(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "	void *data = (void *)(long)ctx->data;\n"
 		       "	struct filter_key key = {0};\n"
 		       "	struct ethhdr *eth = data;\n"
-		       "	__u32 eth_proto;\n"
-		       "	__u32 nh_off;\n"
+		       "	__u16 eth_proto;\n"
+		       "	uint8_t nh_off;\n"
 		       "	int res;\n"
 		       "\n"
 		       "	if (extract_key(data, data_end, &key, &eth_proto))\n"
