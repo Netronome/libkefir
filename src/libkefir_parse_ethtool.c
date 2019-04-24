@@ -137,6 +137,7 @@ static const struct ethtool_option opt_vlan = {
 
 static const struct ethtool_option opt_dst_mac = {
 	.name		= "dst-mac",
+	.type		= ETHTOOL_VAL_TYPE_ETHER_DST,
 	.format		= KEFIR_VAL_FMT_MAC_ADDR,
 };
 
