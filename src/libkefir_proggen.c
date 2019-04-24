@@ -907,6 +907,25 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "", cprog_attr_func_static_inline))
 		return -1;
 
+	// TODO: add switch to deactivate VLAN stuff
+	if (buf_append(buf, buf_len, ""
+		       "#pragma clang loop unroll(full)\n"
+		       "	for (i = 0; i < 2; i++) {\n"
+		       "		if (*eth_proto == ETH_P_8021Q || *eth_proto == ETH_P_8021AD) {\n"
+		       "			void *vlan_hdr;\n"
+		       "\n"
+		       "			vlan_hdr = data + nh_off;\n"
+		       "			nh_off += 4;\n"
+		       "			if (data + nh_off > data_end)\n"
+		       "				return -1;\n"
+		       "			*eth_proto = *(uint16_t *)(data + nh_off - 2);\n"
+		       "			*eth_proto = bpf_ntohs(*eth_proto);\n"
+		       "		}\n"
+		       "	}\n"
+		       "\n"
+		       ""))
+		return -1;
+
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
 		if (buf_append(buf, buf_len, ""
 			       "	key->ether_proto = *(uint16_t *)(data + nh_off - 2);\n"
