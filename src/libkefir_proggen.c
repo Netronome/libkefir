@@ -378,6 +378,17 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "	uint16_t	l4port_dst;\n"))
 			return -1;
 
+	/* VLAN */
+
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ID))
+		if (buf_append(buf, buf_len,
+			       "	uint16_t	vlan_id[2];\n"))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
+		if (buf_append(buf, buf_len,
+			       "	uint16_t	vlan_etype[2];\n"))
+			return -1;
+
 	if (buf_append(buf, buf_len, "};\n\n"))
 		return -1;
 
@@ -534,6 +545,17 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		if (buf_append(buf, buf_len,
 			       "	MATCH_IP_ANY_L4PORT_DST	= %d,\n",
 			       KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST))
+			return -1;
+
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ID))
+		if (buf_append(buf, buf_len,
+			       "	MATCH_VLAN_ID		= %d,\n",
+			       KEFIR_MATCH_TYPE_VLAN_ID))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
+		if (buf_append(buf, buf_len,
+			       "	MATCH_VLAN_ETHERTYPE	= %d,\n",
+			       KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
 			return -1;
 
 	if (buf_append(buf, buf_len, ""
@@ -920,6 +942,21 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		       "				return -1;\n"
 		       "			*eth_proto = *(uint16_t *)(data + nh_off - 2);\n"
 		       "			*eth_proto = bpf_ntohs(*eth_proto);\n"
+		       ""))
+		return -1;
+
+	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_VLAN_ID))
+		if (buf_append(buf, buf_len, ""
+			       "			key->vlan_id[i] = *(uint16_t *)(vlan_hdr);\n"
+			       ""))
+			return -1;
+	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
+		if (buf_append(buf, buf_len, ""
+			       "			key->vlan_etype[i] = *(uint16_t *)(vlan_hdr + 2);\n"
+			       ""))
+			return -1;
+
+	if (buf_append(buf, buf_len, ""
 		       "		}\n"
 		       "	}\n"
 		       "\n"
@@ -1413,6 +1450,31 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			       "			does_match = does_match &&\n"
 			       "				check_match(&key->l4port_dst,\n"
 			       "					    sizeof(key->l4port_dst), match);\n"
+			       "			break;\n"
+			       ""))
+			return -1;
+
+	/* VLAN */
+
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ID))
+		if (buf_append(buf, buf_len, ""
+			       "		case MATCH_VLAN_ID:\n"
+			       "			does_match = does_match &&\n"
+			       "				(check_match(&key->vlan_id[0],\n"
+			       "					     sizeof(key->vlan_id[0]), match) ||\n"
+			       "				 check_match(&key->vlan_id[1],\n"
+			       "					     sizeof(key->vlan_id[1]), match));\n"
+			       "			break;\n"
+			       ""))
+			return -1;
+	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
+		if (buf_append(buf, buf_len, ""
+			       "		case MATCH_VLAN_ETHERTYPE:\n"
+			       "			does_match = does_match &&\n"
+			       "				(check_match(&key->vlan_etype[0],\n"
+			       "					     sizeof(key->vlan_etype[0]), match) ||\n"
+			       "				 check_match(&key->vlan_etype[1],\n"
+			       "					     sizeof(key->vlan_etype[1]), match));\n"
 			       "			break;\n"
 			       ""))
 			return -1;

@@ -132,7 +132,7 @@ static const struct ethtool_option opt_vlan_etype = {
 static const struct ethtool_option opt_vlan = {
 	.name		= "vlan",
 	.type		= ETHTOOL_VAL_TYPE_VLAN_ID,
-	.format		= KEFIR_VAL_FMT_UINT12,
+	.format		= KEFIR_VAL_FMT_UINT16,
 };
 
 static const struct ethtool_option opt_dst_mac = {
@@ -276,10 +276,6 @@ get_match_value(const char *input, struct kefir_value *val,
 		if (parse_uint(input, &val->data.u8, 8))
 			return -1;
 		break;
-	case KEFIR_VAL_FMT_UINT12:
-		if (parse_uint(input, &val->data.u16, 12))
-			return -1;
-		break;
 	case KEFIR_VAL_FMT_UINT16:
 		if (parse_uint(input, &val->data.u16, 16))
 			return -1;
@@ -399,12 +395,14 @@ ethtool_compose_rule(enum ethtool_val_type val_type, struct kefir_value value,
 		else
 			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4DATA;
 		break;
+	case ETHTOOL_VAL_TYPE_VLAN_ETYPE:
+		match.match_type = KEFIR_MATCH_TYPE_VLAN_ETHERTYPE;
+		break;
+	case ETHTOOL_VAL_TYPE_VLAN_ID:
+		match.match_type = KEFIR_MATCH_TYPE_VLAN_ID;
+		break;
 	case ETHTOOL_VAL_TYPE_IP_SPI:
 		// TODO: needs two matchs, one on SPI, one on flow type
-	case ETHTOOL_VAL_TYPE_VLAN_ETYPE:
-		// TODO: needs two matchs, one on SPI, one on VLAN ethertype
-	case ETHTOOL_VAL_TYPE_VLAN_ID:
-		// TODO: needs two matchs, one on SPI, one on VLAN ID
 	default:
 		err_bug("unknown enum value for value type: %d", val_type);
 		return NULL;
