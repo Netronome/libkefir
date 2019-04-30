@@ -14,6 +14,22 @@
 
 DEFINE_ERR_FUNCTIONS("ethtool parsing")
 
+enum ethtool_flow_type {
+	ETHTOOL_FLOW_TYPE_ETHER,
+	ETHTOOL_FLOW_TYPE_IP4,
+	ETHTOOL_FLOW_TYPE_TCP4,
+	ETHTOOL_FLOW_TYPE_UDP4,
+	ETHTOOL_FLOW_TYPE_SCTP4,
+	ETHTOOL_FLOW_TYPE_AH4,
+	ETHTOOL_FLOW_TYPE_ESP4,
+	ETHTOOL_FLOW_TYPE_IP6,
+	ETHTOOL_FLOW_TYPE_TCP6,
+	ETHTOOL_FLOW_TYPE_UDP6,
+	ETHTOOL_FLOW_TYPE_SCTP6,
+	ETHTOOL_FLOW_TYPE_AH6,
+	ETHTOOL_FLOW_TYPE_ESP6,
+};
+
 enum ethtool_val_type {
 	ETHTOOL_VAL_TYPE_ETHER_SRC,
 	ETHTOOL_VAL_TYPE_ETHER_DST,
@@ -219,55 +235,230 @@ static ethtool_opts_t ethtool_esp6_opts[] = {
 	&opt_dst_mac,
 };
 
+static int get_flow_type(const char *input)
+{
+	if (!strcmp(input, "ether"))
+		return ETHTOOL_FLOW_TYPE_ETHER;
+	else if (!strcmp(input, "ip4"))
+		return ETHTOOL_FLOW_TYPE_IP4;
+	else if (!strcmp(input, "tcp4"))
+		return ETHTOOL_FLOW_TYPE_TCP4;
+	else if (!strcmp(input, "udp4"))
+		return ETHTOOL_FLOW_TYPE_UDP4;
+	else if (!strcmp(input, "sctp4"))
+		return ETHTOOL_FLOW_TYPE_SCTP4;
+	else if (!strcmp(input, "ah4"))
+		return ETHTOOL_FLOW_TYPE_AH4;
+	else if (!strcmp(input, "esp4"))
+		return ETHTOOL_FLOW_TYPE_ESP4;
+	else if (!strcmp(input, "ip6"))
+		return ETHTOOL_FLOW_TYPE_IP6;
+	else if (!strcmp(input, "tcp6"))
+		return ETHTOOL_FLOW_TYPE_TCP6;
+	else if (!strcmp(input, "udp6"))
+		return ETHTOOL_FLOW_TYPE_UDP6;
+	else if (!strcmp(input, "sctp6"))
+		return ETHTOOL_FLOW_TYPE_SCTP6;
+	else if (!strcmp(input, "ah6"))
+		return ETHTOOL_FLOW_TYPE_AH6;
+	else if (!strcmp(input, "esp6"))
+		return ETHTOOL_FLOW_TYPE_ESP6;
+	else
+		err_fail("unsupported flow type: %s", input);
+
+	return -1;
+}
+
 static int
-get_flow_opts(const char *input, ethtool_opts_t **opts_res,
+get_flow_opts(enum ethtool_flow_type flow_type, ethtool_opts_t **opts_res,
 	      size_t *opts_len_res)
 {
-	ethtool_opts_t *flow_opts;
-	size_t flow_opts_len;
-
-	if (!strcmp(input, "ether")) {
-		flow_opts = ethtool_ether_opts;
-		flow_opts_len = ARRAY_SIZE(ethtool_ether_opts);
-	} else if (!strcmp(input, "ip4")) {
-		flow_opts = ethtool_ip4_opts;
-		flow_opts_len = ARRAY_SIZE(ethtool_ip4_opts);
-	} else if (!strcmp(input, "tcp4") ||
-		   !strcmp(input, "udp4") ||
-		   !strcmp(input, "sctp4")) {
-		flow_opts = ethtool_tcp4_opts;
-		flow_opts_len = ARRAY_SIZE(ethtool_tcp4_opts);
-	} else if (!strcmp(input, "ah4") ||
-		   !strcmp(input, "exp4")) {
-		flow_opts = ethtool_esp4_opts;
-		flow_opts_len = ARRAY_SIZE(ethtool_esp4_opts);
-	} else if (!strcmp(input, "ip6")) {
-		flow_opts = ethtool_ip6_opts;
-		flow_opts_len = ARRAY_SIZE(ethtool_ip6_opts);
-	} else if (!strcmp(input, "tcp6") ||
-		   !strcmp(input, "udp6") ||
-		   !strcmp(input, "sctp6")) {
-		flow_opts = ethtool_tcp6_opts;
-		flow_opts_len = ARRAY_SIZE(ethtool_tcp6_opts);
-	} else if (!strcmp(input, "ah4") ||
-		   !strcmp(input, "exp4")) {
-		flow_opts = ethtool_esp6_opts;
-		flow_opts_len = ARRAY_SIZE(ethtool_esp6_opts);
-	} else {
-		err_fail("unsupported flow type: %s", input);
+	switch (flow_type) {
+	case ETHTOOL_FLOW_TYPE_ETHER:
+		*opts_res = ethtool_ether_opts;
+		*opts_len_res = ARRAY_SIZE(ethtool_ether_opts);
+		break;
+	case ETHTOOL_FLOW_TYPE_IP4:
+		*opts_res = ethtool_ip4_opts;
+		*opts_len_res = ARRAY_SIZE(ethtool_ip4_opts);
+		break;
+	case ETHTOOL_FLOW_TYPE_TCP4:
+	case ETHTOOL_FLOW_TYPE_UDP4:
+	case ETHTOOL_FLOW_TYPE_SCTP4:
+		*opts_res = ethtool_tcp4_opts;
+		*opts_len_res = ARRAY_SIZE(ethtool_tcp4_opts);
+		break;
+	case ETHTOOL_FLOW_TYPE_AH4:
+	case ETHTOOL_FLOW_TYPE_ESP4:
+		*opts_res = ethtool_esp4_opts;
+		*opts_len_res = ARRAY_SIZE(ethtool_esp4_opts);
+		break;
+	case ETHTOOL_FLOW_TYPE_IP6:
+		*opts_res = ethtool_ip6_opts;
+		*opts_len_res = ARRAY_SIZE(ethtool_ip6_opts);
+		break;
+	case ETHTOOL_FLOW_TYPE_TCP6:
+	case ETHTOOL_FLOW_TYPE_UDP6:
+	case ETHTOOL_FLOW_TYPE_SCTP6:
+		*opts_res = ethtool_tcp6_opts;
+		*opts_len_res = ARRAY_SIZE(ethtool_tcp6_opts);
+		break;
+	case ETHTOOL_FLOW_TYPE_AH6:
+	case ETHTOOL_FLOW_TYPE_ESP6:
+		*opts_res = ethtool_esp6_opts;
+		*opts_len_res = ARRAY_SIZE(ethtool_esp6_opts);
+		break;
+	default:
+		err_bug("unknown flow type: %d", flow_type);
 		return -1;
 	}
 
-	*opts_res = flow_opts;
-	*opts_len_res = flow_opts_len;
+	return 0;
+}
+
+static void
+create_match_l4proto(struct kefir_match *match, bool ipv6_flow, uint8_t value)
+{
+	if (ipv6_flow)
+		match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PROTO;
+	else
+		match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PROTO;
+	match->comp_operator = OPER_EQUAL;
+	match->value.data.u8 = value;
+	match->value.format = KEFIR_VAL_FMT_UINT8;
+}
+
+static int
+account_for_flow_type(struct kefir_match *match,
+		      enum ethtool_flow_type flow_type, bool *ipv6_flow,
+		      size_t *match_index)
+{
+	*ipv6_flow = false;
+
+	switch (flow_type) {
+	case ETHTOOL_FLOW_TYPE_TCP4:
+		create_match_l4proto(match, *ipv6_flow, IPPROTO_TCP);
+		*match_index += 1;
+		break;
+	case ETHTOOL_FLOW_TYPE_UDP4:
+		create_match_l4proto(match, *ipv6_flow, IPPROTO_UDP);
+		*match_index += 1;
+		break;
+	case ETHTOOL_FLOW_TYPE_SCTP4:
+		create_match_l4proto(match, *ipv6_flow, IPPROTO_SCTP);
+		*match_index += 1;
+		break;
+	case ETHTOOL_FLOW_TYPE_AH4:
+	case ETHTOOL_FLOW_TYPE_ESP4:
+		// TODO
+		break;
+	case ETHTOOL_FLOW_TYPE_IP6:
+		*ipv6_flow = true;
+		break;
+	case ETHTOOL_FLOW_TYPE_TCP6:
+		*ipv6_flow = true;
+		create_match_l4proto(match, *ipv6_flow, IPPROTO_TCP);
+		*match_index += 1;
+		break;
+	case ETHTOOL_FLOW_TYPE_UDP6:
+		*ipv6_flow = true;
+		create_match_l4proto(match, *ipv6_flow, IPPROTO_UDP);
+		*match_index += 1;
+		break;
+	case ETHTOOL_FLOW_TYPE_SCTP6:
+		*ipv6_flow = true;
+		create_match_l4proto(match, *ipv6_flow, IPPROTO_SCTP);
+		*match_index += 1;
+		break;
+	case ETHTOOL_FLOW_TYPE_AH6:
+	case ETHTOOL_FLOW_TYPE_ESP6:
+		// TODO
+		*ipv6_flow = true;
+		break;
+	default:
+		break;
+	}
+
 	return 0;
 }
 
 static int
-get_match_value(const char *input, struct kefir_value *val,
-		enum value_format format)
+set_match_type(struct kefir_match *match, bool ipv6_flow,
+	       enum ethtool_val_type val_type)
 {
-	switch (format) {
+	switch (val_type) {
+	case ETHTOOL_VAL_TYPE_ETHER_SRC:
+		match->match_type = KEFIR_MATCH_TYPE_ETHER_SRC;
+		break;
+	case ETHTOOL_VAL_TYPE_ETHER_DST:
+		match->match_type = KEFIR_MATCH_TYPE_ETHER_DST;
+		break;
+	case ETHTOOL_VAL_TYPE_ETHER_PROTO:
+		match->match_type = KEFIR_MATCH_TYPE_ETHER_PROTO;
+		break;
+	case ETHTOOL_VAL_TYPE_IP_SRC:
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_SRC;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_SRC;
+		break;
+	case ETHTOOL_VAL_TYPE_IP_DST:
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_DST;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_DST;
+		break;
+	case ETHTOOL_VAL_TYPE_IPV4_TOS:
+		match->match_type = KEFIR_MATCH_TYPE_IP_4_TOS;
+		break;
+	case ETHTOOL_VAL_TYPE_IPV6_TCLASS:
+		match->mask[1] &= 0x0f;
+		match->mask[0] &= 0xf0;
+		match->match_type = KEFIR_MATCH_TYPE_IP_6_TOS;
+		break;
+	case ETHTOOL_VAL_TYPE_L4_PROTO:
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PROTO;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PROTO;
+		break;
+	case ETHTOOL_VAL_TYPE_L4_PORT_SRC:
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC;
+		break;
+	case ETHTOOL_VAL_TYPE_L4_PORT_DST:
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_DST;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_DST;
+		break;
+	case ETHTOOL_VAL_TYPE_IP_L4DATA:
+		if (ipv6_flow)
+			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4DATA;
+		else
+			match->match_type = KEFIR_MATCH_TYPE_IP_4_L4DATA;
+		break;
+	case ETHTOOL_VAL_TYPE_VLAN_ETYPE:
+		match->match_type = KEFIR_MATCH_TYPE_VLAN_ETHERTYPE;
+		break;
+	case ETHTOOL_VAL_TYPE_VLAN_ID:
+		match->match_type = KEFIR_MATCH_TYPE_VLAN_ID;
+		break;
+	case ETHTOOL_VAL_TYPE_IP_SPI:
+		// TODO: needs two matchs, one on SPI, one on flow type
+	default:
+		err_bug("unknown enum value for value type: %d", val_type);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int get_match_value(const char *input, struct kefir_value *val)
+{
+	switch (val->format) {
 	case KEFIR_VAL_FMT_UINT6:
 		if (parse_uint(input, &val->data.u8, 6))
 			return -1;
@@ -297,11 +488,10 @@ get_match_value(const char *input, struct kefir_value *val,
 			return -1;
 		break;
 	default:
-		err_bug("unknown enum value for value format: %d", format);
+		err_bug("unknown enum value for match value format: %d",
+			val->format);
 		return -1;
 	}
-
-	val->format = format;
 
 	return 0;
 }
@@ -317,7 +507,7 @@ static int get_action_code(const char *input, enum action_code *action)
 		err_fail("could not parse %s as int", input);
 		return -1;
 	}
-	
+
 	switch (code) {
 	case -1:
 		*action = ACTION_CODE_DROP;
@@ -333,104 +523,15 @@ static int get_action_code(const char *input, enum action_code *action)
 	return 0;
 }
 
-static struct kefir_rule *
-ethtool_compose_rule(enum ethtool_val_type val_type, struct kefir_value value,
-		     enum action_code action_code)
-{
-	struct kefir_match match = {0};
-	struct kefir_rule *rule;
-	bool ipv6_flow = false;
-
-	switch (val_type) {
-	case ETHTOOL_VAL_TYPE_ETHER_SRC:
-		match.match_type = KEFIR_MATCH_TYPE_ETHER_SRC;
-		break;
-	case ETHTOOL_VAL_TYPE_ETHER_DST:
-		match.match_type = KEFIR_MATCH_TYPE_ETHER_DST;
-		break;
-	case ETHTOOL_VAL_TYPE_ETHER_PROTO:
-		match.match_type = KEFIR_MATCH_TYPE_ETHER_PROTO;
-		break;
-	case ETHTOOL_VAL_TYPE_IP_SRC:
-		if (ipv6_flow)
-			match.match_type = KEFIR_MATCH_TYPE_IP_6_SRC;
-		else
-			match.match_type = KEFIR_MATCH_TYPE_IP_4_SRC;
-		break;
-	case ETHTOOL_VAL_TYPE_IP_DST:
-		if (ipv6_flow)
-			match.match_type = KEFIR_MATCH_TYPE_IP_6_DST;
-		else
-			match.match_type = KEFIR_MATCH_TYPE_IP_4_DST;
-		break;
-	case ETHTOOL_VAL_TYPE_IPV4_TOS:
-		match.match_type = KEFIR_MATCH_TYPE_IP_4_TOS;
-		break;
-	case ETHTOOL_VAL_TYPE_IPV6_TCLASS:
-		match.mask[1] &= 0x0f;
-		match.mask[0] &= 0xf0;
-		match.match_type = KEFIR_MATCH_TYPE_IP_6_TOS;
-		break;
-	case ETHTOOL_VAL_TYPE_L4_PROTO:
-		if (ipv6_flow)
-			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4PROTO;
-		else
-			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4PROTO;
-		break;
-	case ETHTOOL_VAL_TYPE_L4_PORT_SRC:
-		if (ipv6_flow)
-			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC;
-		else
-			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC;
-		break;
-	case ETHTOOL_VAL_TYPE_L4_PORT_DST:
-		if (ipv6_flow)
-			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_DST;
-		else
-			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_DST;
-		break;
-	case ETHTOOL_VAL_TYPE_IP_L4DATA:
-		if (ipv6_flow)
-			match.match_type = KEFIR_MATCH_TYPE_IP_6_L4DATA;
-		else
-			match.match_type = KEFIR_MATCH_TYPE_IP_4_L4DATA;
-		break;
-	case ETHTOOL_VAL_TYPE_VLAN_ETYPE:
-		match.match_type = KEFIR_MATCH_TYPE_VLAN_ETHERTYPE;
-		break;
-	case ETHTOOL_VAL_TYPE_VLAN_ID:
-		match.match_type = KEFIR_MATCH_TYPE_VLAN_ID;
-		break;
-	case ETHTOOL_VAL_TYPE_IP_SPI:
-		// TODO: needs two matchs, one on SPI, one on flow type
-	default:
-		err_bug("unknown enum value for value type: %d", val_type);
-		return NULL;
-	}
-
-	match.comp_operator = OPER_EQUAL;
-	match.value = value;
-
-	rule = calloc(1, sizeof(struct kefir_rule));
-	if (!rule) {
-		err_fail("failed to allocate memory for rule");
-		return NULL;
-	}
-
-	rule->matches[0] = match;	/* ethtool allows for only 1 match */
-	rule->action = action_code;
-
-	return rule;
-}
-
 struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 {
 	struct ethtool_option current_opt = { .name = "" };
-	struct kefir_value match_val = {0};
+	size_t flow_opts_len, i, match_index = 0;
+	enum ethtool_flow_type flow_type;
 	enum action_code action_code;
 	ethtool_opts_t *flow_opts;
 	struct kefir_rule *rule;
-	size_t flow_opts_len, i;
+	bool ipv6_flow;
 
 	/*
 	 * Shortest rules: "flow-type <type> <field> <value> action <value>"
@@ -446,8 +547,20 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 	}
 	user_rule++;
 
-	if (get_flow_opts(*user_rule, &flow_opts, &flow_opts_len))
+	rule = calloc(1, sizeof(struct kefir_rule));
+	if (!rule) {
+		err_fail("failed to allocate memory for rule");
 		return NULL;
+	}
+
+	flow_type = get_flow_type(*user_rule);
+	if (flow_type < 0)
+		goto err_free_rule;
+	if (get_flow_opts(flow_type, &flow_opts, &flow_opts_len))
+		goto err_free_rule;
+	if (account_for_flow_type(&rule->matches[match_index], flow_type,
+				  &ipv6_flow, &match_index))
+		goto err_free_rule;
 	user_rule++;
 
 	for (i = 0; i < flow_opts_len; i++) {
@@ -458,24 +571,39 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 	}
 	if (!current_opt.name[0]) {
 		err_fail("unsupported option %s", *user_rule);
-		return NULL;
+		goto err_free_rule;
 	}
 	user_rule++;
 
-	if (get_match_value(*user_rule, &match_val, current_opt.format))
-		return NULL;
+	if (set_match_type(&rule->matches[match_index], ipv6_flow,
+			   current_opt.type))
+		goto err_free_rule;
+
+	rule->matches[match_index].value.format = current_opt.format;
+	if (get_match_value(*user_rule, &rule->matches[match_index].value))
+		goto err_free_rule;
 	user_rule++;
+
+	rule->matches[match_index].comp_operator = OPER_EQUAL;
+	match_index++;
+
+	// TODO: Some rules can have different parameters. This is the case for
+	// vlan, vlan-etype, and dst-mac, which are considered as extensions by
+	// ethtool.
 
 	if (strcmp(*user_rule, "action")) {
 		err_fail("expected 'action', got '%s'", *user_rule);
-		return NULL;
+		goto err_free_rule;
 	}
 	user_rule++;
 
 	if (get_action_code(*user_rule, &action_code))
-		return NULL;
-
-	rule = ethtool_compose_rule(current_opt.type, match_val, action_code);
+		goto err_free_rule;
+	rule->action = action_code;
 
 	return rule;
+
+err_free_rule:
+	free(rule);
+	return NULL;
 }
