@@ -264,14 +264,12 @@ filter_has_comp_oper(const kefir_filter *filter, enum comp_operator op)
 			     rule_has_comp_operator, op, 1);
 }
 
-/*
 static bool
 filter_all_comp_equal(const kefir_filter *filter)
 {
 	return !list_for_each((struct list *)filter->rules,
 			      rule_has_comp_operator, OPER_EQUAL, 0);
 }
-*/
 
 static int
 make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
@@ -513,16 +511,13 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "struct rule_match {\n"
 	    "	enum match_type		match_type;\n"
 	    "	enum comp_operator	comp_operator;\n"
-	    "	union {\n"
-	    "		__u8	u8[16];\n"
-	    "		__u64	u64[2];\n"
-	    "	} value;\n"
+	    "	__u64			value[2];\n"
 	    "");
 
 	if (prog->options.flags & OPT_FLAGS_USE_MASKS)
 		GEN(""
 		    "	__u64	flags;\n"
-		    "	__u8	mask[16];\n"
+		    "	__u64	mask[2];\n"
 		    "");
 
 	GEN(""
@@ -868,109 +863,78 @@ static int
 cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	bool use_masks = prog->options.flags & OPT_FLAGS_USE_MASKS;
+	bool only_equal = filter_all_comp_equal(prog->filter);
 	const kefir_filter *filter = prog->filter;
-	//bool only_equal = filter_all_comp_equal(filter);
-	bool only_equal = false; // TODO: optim does not work with offload (only 15 unroll work) + much more insns
 
 	GEN(""
 	    "%sbool check_match(void *matchval, size_t matchlen, struct rule_match *match)\n"
 	    "{\n"
+	    "	uint64_t copy[2] = {0};\n"
 	    "	size_t i;\n"
+	    "	memcpy(copy, matchval, matchlen);\n"
+	    "\n"
 	    "", cprog_attr_func_static_inline);
 
-	if (only_equal) {
+	if (use_masks)
 		GEN(""
-		    "\n"
 		    "#pragma clang loop unroll(full)\n"
-		    "	for (i = 0; i < 16; i++) {\n"
+		    "	for (i = 0; i < 2; i++) \n"
+		    "		copy[i] &= (match->flags * MATCH_FLAGS_USE_MASK) ?\n"
+		    "			match->mask[i] : 0xffffffffffffffff;\n"
+		    "\n"
 		    "");
 
-		if (use_masks)
-			GEN(""
-			    "		uint8_t mask = (match->flags & MATCH_FLAGS_USE_MASK) ?\n"
-			    "			match->mask[i] : 0xff;\n"
-			    "\n"
-			    "");
-
-		GEN(""
-		    "		if (i >= matchlen)\n"
-		    "			break;\n"
-		    "		if (*((__u8 *)matchval + i)%s != match->value.u8[i])\n"
-		    "			return false;\n"
-		    "	}\n"
-		    "	return true;\n"
-		    "", use_masks ? " & mask" : "");
-	} else {
-		GEN(""
-		    "	union {\n"
-		    "		__u8	u8[16];\n"
-		    "		__u64	u64[2];\n"
-		    "	} copy = {{0}};\n"
-		    "\n"
-		    "#pragma clang loop unroll(full)\n"
-		    "	for (i = 0; i < 16; i++) {\n"
-		    "");
-
-		if (use_masks)
-			GEN(""
-			    "		uint8_t mask = (match->flags & MATCH_FLAGS_USE_MASK) ?\n"
-			    "			match->mask[i] : 0xff;\n"
-			    "\n"
-			    "");
-
-		GEN(""
-		    "		if (i >= matchlen)\n"
-		    "			break;\n"
-		    "		copy.u8[i] = *((__u8 *)matchval + i)%s;\n"
-		    "	}\n"
-		    "\n"
-		    "	if (match->comp_operator == OPER_EQUAL) {\n"
-		    "		if (copy.u64[0] != match->value.u64[0])\n"
-		    "			return false;\n"
-		    "		if (matchlen > sizeof(__u64) &&\n"
-		    "		    copy.u64[1] != match->value.u64[1])\n"
-		    "			return false;\n"
-		    "		return true;\n"
-		    "	}\n"
-		    "\n"
-		    "	switch (match->comp_operator) {\n"
-		    "", use_masks ? " & mask" : "");
+	GEN(""
+	    "\n"
+	    "	if (match->comp_operator == OPER_EQUAL) {\n"
+	    "		if (copy[0] != match->value[0])\n"
+	    "			return false;\n"
+	    "		if (matchlen > sizeof(__u64) &&\n"
+	    "		    copy[1] != match->value[1])\n"
+	    "			return false;\n"
+	    "		return true;\n"
+	    "	}\n"
+	    "\n"
+	    "");
+	if (!only_equal) {
+		GEN("	switch (match->comp_operator) {\n");
 		if (filter_has_comp_oper(prog->filter, OPER_LT))
 			GEN(""
 			    "	case OPER_LT:\n"
-			    "		return copy.u64[0] < match->value.u64[0] ||\n"
-			    "			(copy.u64[0] == match->value.u64[0] &&\n"
-			    "			 copy.u64[1] < copy.u64[1]);\n"
+			    "		return copy[0] < match->value[0] ||\n"
+			    "			(copy[0] == match->value[0] &&\n"
+			    "			 copy[1] < copy[1]);\n"
 			    "");
 		if (filter_has_comp_oper(prog->filter, OPER_LEQ))
 			GEN(""
 			    "	case OPER_LEQ:\n"
-			    "		return copy.u64[0] < match->value.u64[0] ||\n"
-			    "			(copy.u64[0] == match->value.u64[0] &&\n"
-			    "			 copy.u64[1] <= copy.u64[1]);\n"
+			    "		return copy[0] < match->value[0] ||\n"
+			    "			(copy[0] == match->value[0] &&\n"
+			    "			 copy[1] <= copy[1]);\n"
 			    "");
 		if (filter_has_comp_oper(prog->filter, OPER_GT))
 			GEN(""
 			    "	case OPER_GT:\n"
-			    "		return copy.u64[0] > match->value.u64[0] ||\n"
-			    "			(copy.u64[0] == match->value.u64[0] &&\n"
-			    "			 copy.u64[1] > copy.u64[1]);\n"
+			    "		return copy[0] > match->value[0] ||\n"
+			    "			(copy[0] == match->value[0] &&\n"
+			    "			 copy[1] > copy[1]);\n"
 			    "");
 		if (filter_has_comp_oper(prog->filter, OPER_GEQ))
 			GEN(""
 			    "	case OPER_GEQ:\n"
-			    "		return copy.u64[0] > match->value.u64[0] ||\n"
-			    "			(copy.u64[0] == match->value.u64[0] &&\n"
-			    "			 copy.u64[1] >= copy.u64[1]);\n"
+			    "		return copy[0] > match->value[0] ||\n"
+			    "			(copy[0] == match->value[0] &&\n"
+			    "			 copy[1] >= copy[1]);\n"
 			    "");
 		GEN(""
 		    "	default:\n"
 		    "		return false;\n"
 		    "	}\n"
+		    "\n"
 		    "");
 	}
-
 	GEN(""
+	    "	return false;\n"
 	    "}\n"
 	    "\n"
 	    "%sint get_retval(enum action_code code)\n"
