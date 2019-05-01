@@ -726,11 +726,15 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			return -1;
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_TOS) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
-		if (buf_append(buf, buf_len, "	key->ipv6_tos = ip6h->priority << 2 + ip6h->flow_lbl[0] >> 2; // to be checked\n"))
+		if (buf_append(buf, buf_len, ""
+			       "	key->ipv6_tos = (ip6h->priority << 4) + (ip6h->flow_lbl[0] >> 4);\n"
+			       ""))
 			return -1;
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_TTL) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_TTL))
-		if (buf_append(buf, buf_len, "	key->ipv6_ttl = ip6h->hop_limit;\n"))
+		if (buf_append(buf, buf_len, ""
+			       "	key->ipv6_ttl = ip6h->hop_limit;\n"
+			       ""))
 			return -1;
 
 	if (prog->options.flags & OPT_FLAGS_NEED_L4)
