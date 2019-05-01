@@ -1267,7 +1267,6 @@ update_options_from_matchtype(enum match_type match_type,
 	case KEFIR_MATCH_TYPE_ETHER_SRC:
 	case KEFIR_MATCH_TYPE_ETHER_DST:
 	case KEFIR_MATCH_TYPE_ETHER_ANY:
-	case KEFIR_MATCH_TYPE_ETHER_PROTO:
 		options->flags |= OPT_FLAGS_NEED_ETHER;
 		break;
 
