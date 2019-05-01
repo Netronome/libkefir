@@ -33,7 +33,7 @@ int parse_uint(const char *input, void *output, uint32_t nb_bits)
 	unsigned int res;
 	char *endptr;
 
-	res = strtoul(input, &endptr, 10);
+	res = strtoul(input, &endptr, 0);
 	if (*endptr != '\0') {
 		err_fail("could not parse %s as int", input);
 		return -1;
