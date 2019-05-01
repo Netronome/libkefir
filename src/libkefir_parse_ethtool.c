@@ -454,9 +454,14 @@ set_match_type(struct kefir_match *match, bool ipv6_flow,
 	return 0;
 }
 
-static int get_match_value(const char *input, struct kefir_value *val)
+static int
+parse_value(const char *input, enum value_format format, void *output)
 {
-	switch (val->format) {
+	struct kefir_value *val;
+
+	val = container_of(output, struct kefir_value, data);
+
+	switch (format) {
 	case KEFIR_VAL_FMT_UINT6:
 		if (parse_uint(input, &val->data.u8, 6))
 			return -1;
@@ -487,7 +492,7 @@ static int get_match_value(const char *input, struct kefir_value *val)
 		break;
 	default:
 		err_bug("unknown enum value for match value format: %d",
-			val->format);
+			format);
 		return -1;
 	}
 
@@ -535,7 +540,7 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 	 * Shortest rules: "flow-type <type> <field> <value> action <value>"
 	 * Longest rules: for now, same thing, in future we may have masks?
 	 */
-	if (rule_size < 6 || rule_size > 6) {
+	if (rule_size < 6 || rule_size > 8) {
 		err_fail("bad number of arguments");
 		return NULL;
 	}
@@ -577,17 +582,36 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 			   current_opt.type))
 		goto err_free_rule;
 
-	rule->matches[match_index].value.format = current_opt.format;
-	if (get_match_value(*user_rule, &rule->matches[match_index].value))
+	if (parse_value(*user_rule, current_opt.format,
+			&rule->matches[match_index].value.data))
 		goto err_free_rule;
+	rule->matches[match_index].value.format = current_opt.format;
 	user_rule++;
 
-	rule->matches[match_index].comp_operator = OPER_EQUAL;
-	match_index++;
+	if (!strcmp(*user_rule, "m")) {
+		user_rule++;
+		/*
+		 * In parse_value() below, Mask will be cast as a struct
+		 * kefir_value.data, this assumes that "data" attribute is the
+		 * first attribute of struct kefir_value (null offset).
+		 */
+		if (offsetof(struct kefir_value, data) != 0) {
+			err_bug("data offset in struct kefir_value should be null");
+			goto err_free_rule;
+		}
+		if (parse_value(*user_rule,
+				rule->matches[match_index].value.format,
+				&rule->matches[match_index].mask))
+			goto err_free_rule;
+		user_rule++;
+	}
 
 	// TODO: Some rules can have different parameters. This is the case for
 	// vlan, vlan-etype, and dst-mac, which are considered as extensions by
 	// ethtool.
+
+	rule->matches[match_index].comp_operator = OPER_EQUAL;
+	match_index++;
 
 	if (strcmp(*user_rule, "action")) {
 		err_fail("expected 'action', got '%s'", *user_rule);

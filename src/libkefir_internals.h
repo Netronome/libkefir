@@ -23,6 +23,11 @@
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #endif
 
+#ifndef container_of
+#define container_of(POINTER, TYPE, MEMBER)	\
+	(TYPE *)(POINTER) - offsetof(TYPE, MEMBER)
+#endif
+
 #ifndef sizeof_member
 #define sizeof_member(TYPE, MEMBER) sizeof(*(&((TYPE *)0)->MEMBER))
 #endif
