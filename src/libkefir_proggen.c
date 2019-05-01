@@ -711,10 +711,10 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_DST) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_DST))
 		if (buf_append(buf, buf_len, ""
-			       "	key->ipv6_dst.u32[0] = ip6h->saddr.in6_u.u6_addr32[0];\n"
-			       "	key->ipv6_dst.u32[1] = ip6h->saddr.in6_u.u6_addr32[1];\n"
-			       "	key->ipv6_dst.u32[2] = ip6h->saddr.in6_u.u6_addr32[2];\n"
-			       "	key->ipv6_dst.u32[3] = ip6h->saddr.in6_u.u6_addr32[3];\n"
+			       "	key->ipv6_dst.u32[0] = ip6h->daddr.in6_u.u6_addr32[0];\n"
+			       "	key->ipv6_dst.u32[1] = ip6h->daddr.in6_u.u6_addr32[1];\n"
+			       "	key->ipv6_dst.u32[2] = ip6h->daddr.in6_u.u6_addr32[2];\n"
+			       "	key->ipv6_dst.u32[3] = ip6h->daddr.in6_u.u6_addr32[3];\n"
 			       ""))
 			return -1;
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_L4PROTO) ||
