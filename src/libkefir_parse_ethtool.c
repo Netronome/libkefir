@@ -412,8 +412,6 @@ set_match_type(struct kefir_match *match, bool ipv6_flow,
 		match->match_type = KEFIR_MATCH_TYPE_IP_4_TOS;
 		break;
 	case ETHTOOL_VAL_TYPE_IPV6_TCLASS:
-		match->mask[1] &= 0x0f;
-		match->mask[0] &= 0xf0;
 		match->match_type = KEFIR_MATCH_TYPE_IP_6_TOS;
 		break;
 	case ETHTOOL_VAL_TYPE_L4_PROTO:
