@@ -334,7 +334,7 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		    "");
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TOS) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
-		GEN("	uint8_t		ipv6_tos;\n");
+		GEN("	uint8_t		ipv6_tclass;\n");
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TTL) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TTL))
 		GEN("	uint8_t		ipv6_ttl;\n");
@@ -421,7 +421,7 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		GEN("	MATCH_IPV6_DST		= %d,\n",
 		    KEFIR_MATCH_TYPE_IP_6_DST);
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TOS))
-		GEN("	MATCH_IPV6_TOS		= %d,\n",
+		GEN("	MATCH_IPV6_TCLASS	= %d,\n",
 		    KEFIR_MATCH_TYPE_IP_6_TOS);
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TTL))
 		GEN("	MATCH_IPV6_TTL		= %d,\n",
@@ -714,7 +714,7 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		    "");
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_TOS) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
-		GEN("	key->ipv6_tos = (ip6h->priority << 4) + (ip6h->flow_lbl[0] >> 4);\n");
+		GEN("	key->ipv6_tclass = (ip6h->priority << 4) + (ip6h->flow_lbl[0] >> 4);\n");
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_TTL) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_TTL))
 		GEN("	key->ipv6_ttl = ip6h->hop_limit;\n");
@@ -1103,10 +1103,10 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		    "");
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TOS))
 		GEN(""
-		    "		case MATCH_IPV6_TOS:\n"
+		    "		case MATCH_IPV6_TCLASS:\n"
 		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv6_tos,\n"
-		    "					    sizeof(key->ipv6_tos), match);\n"
+		    "				check_match(&key->ipv6_tclass,\n"
+		    "					    sizeof(key->ipv6_tclass), match);\n"
 		    "			break;\n"
 		    "");
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TTL))
