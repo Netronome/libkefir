@@ -50,21 +50,6 @@ static void bitmask_from_int(unsigned int mask, uint8_t *bitmask, size_t size)
 		bitmask[i] = mask > 8 ? 0xff : 0xff << (8 - mask);
 }
 
-static int parse_slash_mask(const char *input, uint8_t *mask)
-{
-	unsigned int mask_int;
-	char *endptr;
-
-	mask_int = strtoul(input, &endptr, 10);
-	if (*endptr != '\0' || mask_int > 32) {
-		err_fail("could not parse %s as int mask", input);
-		return -1;
-	}
-	bitmask_from_int(mask_int, mask, 4);
-
-	return 0;
-}
-
 int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
 			  uint8_t *mask)
 {
@@ -149,6 +134,23 @@ int parse_ipv6_addr(const char *input, uint32_t *output)
 }
 
 static int
+parse_slash_prefix_mask(const char *input, uint8_t *mask, uint8_t max_val)
+{
+	unsigned int mask_int;
+	char *endptr;
+
+	mask_int = strtoul(input, &endptr, 0);
+	if (*endptr != '\0' || mask_int > max_val) {
+		err_fail("could not parse %s as int mask (prefix length)",
+			 input);
+		return -1;
+	}
+	bitmask_from_int(mask_int, mask, max_val / 8);
+
+	return 0;
+}
+
+static int
 parse_ip_addr_slash_mask(int af, const char *input, uint32_t *output,
 			 uint8_t *mask)
 {
@@ -157,7 +159,8 @@ parse_ip_addr_slash_mask(int af, const char *input, uint32_t *output,
 
 	slash = strchr(input, '/');
 	if (slash) {
-		if (parse_slash_mask(slash + 1, mask))
+		if (parse_slash_prefix_mask(slash + 1, mask,
+					    af == AF_INET ? 32 : 128))
 			return -1;
 
 		input_cpy = strndup(input, slash - input);
