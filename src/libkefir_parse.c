@@ -73,7 +73,7 @@ int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
 
 	slash = strchr(input, '/');
 	if (slash)
-		if (parse_slash_mask(slash + 1, mask))
+		if (parse_uint(slash + 1, mask, nb_bits))
 			return -1;
 
 	res = strtoul(input, &endptr, 10);
