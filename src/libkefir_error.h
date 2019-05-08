@@ -21,8 +21,8 @@
 	}
 
 #define DEFINE_ERR_FUNCTIONS(COMPONENT)					\
-	__DO_ERR_FUNC(COMPONENT, fail, "parsing failed")		\
-	__DO_ERR_FUNC(COMPONENT, bug, "parsing bug")
+	__DO_ERR_FUNC(COMPONENT, fail, "failed")		\
+	__DO_ERR_FUNC(COMPONENT, bug, "bug")
 
 #define KEFIR_ERROR_STR_SIZE 1024
 

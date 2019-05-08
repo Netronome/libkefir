@@ -16,7 +16,7 @@
 		*argc -= 1;	\
 	} while (0)
 
-DEFINE_ERR_FUNCTIONS("tc flower")
+DEFINE_ERR_FUNCTIONS("tc flower parsing")
 
 enum ether_proto_type {
 	TCFLOWER_ETH_PROTO_UNSPEC,

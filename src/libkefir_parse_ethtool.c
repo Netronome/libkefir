@@ -12,7 +12,7 @@
 #include "libkefir_parse.h"
 #include "libkefir_parse_ethtool.h"
 
-DEFINE_ERR_FUNCTIONS("ethtool")
+DEFINE_ERR_FUNCTIONS("ethtool parsing")
 
 enum ethtool_val_type {
 	ETHTOOL_VAL_TYPE_ETHER_SRC,
