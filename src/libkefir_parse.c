@@ -115,16 +115,14 @@ int parse_eth_addr_slash_mask(const char *input, struct ether_addr *output,
 
 		mask_bits = ether_aton(slash + 1);
 
-		if (mask_bits) {
+		if (mask_bits)
 			/* Mask expressed in the shape "/ff:ff:ff:00:00:00" */
 			memcpy(mask, mask_bits, sizeof(struct ether_addr));
-		} else if (parse_uint(slash + 1, &mask_int, 6)) {
+		else if (!parse_uint(slash + 1, &mask_int, 6))
 			/* Mask may be an integer, as in "/24" */
 			bitmask_from_int(mask_int, mask, 6);
-		} else {
-			err_fail("could not parse ether mask %s", slash + 1);
+		else
 			return -1;
-		}
 	}
 
 	return parse_eth_addr(input, output);
