@@ -10,8 +10,8 @@
 
 DEFINE_ERR_FUNCTIONS("parser")
 
-static int
-check_and_store_uint(unsigned int res, void *output, uint32_t nb_bits)
+int parse_check_and_store_uint(unsigned int res, void *output,
+			       uint32_t nb_bits)
 {
 	if (res > (unsigned long int)(2 << (nb_bits - 1)) - 1) {
 		err_fail("value %u is too big (expected lower than %u)", res,
@@ -39,7 +39,7 @@ int parse_uint(const char *input, void *output, uint32_t nb_bits)
 		return -1;
 	}
 
-	return check_and_store_uint(res, output, nb_bits);
+	return parse_check_and_store_uint(res, output, nb_bits);
 }
 
 static void bitmask_from_int(uint8_t mask, uint8_t *bitmask, size_t size)
@@ -67,7 +67,7 @@ int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
 		return -1;
 	}
 
-	return check_and_store_uint(res, output, nb_bits);
+	return parse_check_and_store_uint(res, output, nb_bits);
 }
 
 int parse_eth_addr(const char *input, struct ether_addr *output)

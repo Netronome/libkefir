@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <netinet/ip.h>
+
 #include "libkefir_error.h"
 #include "libkefir_parse.h"
 #include "libkefir_parse_tc.h"
@@ -25,16 +27,6 @@ enum ether_proto_type {
 	TCFLOWER_ETH_PROTO_OTHER,
 };
 
-/*
-enum l4_proto_type {
-	TCFLOWER_L4_PROTO_UNSPEC,
-	TCFLOWER_L4_PROTO_TCP,
-	TCFLOWER_L4_PROTO_UDP,
-	TCFLOWER_L4_PROTO_SCTP,
-	TCFLOWER_L4_PROTO_OTHER,
-};
-*/
-
 static int
 tcflower_parse_ethproto(const char ***argv, unsigned int *argc,
 			enum ether_proto_type *ethtype)
@@ -49,6 +41,31 @@ tcflower_parse_ethproto(const char ***argv, unsigned int *argc,
 	}
 
 	NEXT_ARG();
+	return 0;
+}
+
+static int tcflower_parse_ipproto(const char *input, void *output)
+{
+	int res = -1;
+
+	if (!strcmp(input, "tcp"))
+		res = parse_check_and_store_uint(IPPROTO_TCP, output, 8);
+	else if (!strcmp(input, "udp"))
+		res = parse_check_and_store_uint(IPPROTO_UDP, output, 8);
+	else if (!strcmp(input, "sctp"))
+		res = parse_check_and_store_uint(IPPROTO_SCTP, output, 8);
+	else if (!strcmp(input, "icmp"))
+		res = parse_check_and_store_uint(IPPROTO_ICMP, output, 8);
+	else if (!strcmp(input, "icmpv6"))
+		res = parse_check_and_store_uint(IPPROTO_ICMPV6, output, 8);
+	else
+		res = parse_uint(input, output, 8);
+
+	if (res) {
+		err_fail("unsupported protocol %s", input);
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -143,7 +160,7 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		match->value.format = KEFIR_VAL_FMT_UINT8;
 	} else if (!strcmp(**argv, "ip_proto")) {
 		NEXT_ARG();
-		if (parse_uint(**argv, &match->value.data.u8, 8))
+		if (tcflower_parse_ipproto(**argv, &match->value.data.u8))
 			return -1;
 		if (ipv6_flow)
 			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PROTO;

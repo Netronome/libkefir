@@ -6,6 +6,8 @@
 
 #include "libkefir_internals.h"
 
+int parse_check_and_store_uint(unsigned int res, void *output,
+			       uint32_t nb_bits);
 int parse_uint(const char *input, void *output, uint32_t nb_bits);
 int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
 			  uint8_t *mask);
