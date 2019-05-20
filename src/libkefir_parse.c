@@ -42,7 +42,7 @@ int parse_uint(const char *input, void *output, uint32_t nb_bits)
 	return check_and_store_uint(res, output, nb_bits);
 }
 
-static void bitmask_from_int(unsigned int mask, uint8_t *bitmask, size_t size)
+static void bitmask_from_int(uint8_t mask, uint8_t *bitmask, size_t size)
 {
 	size_t i;
 
@@ -96,18 +96,25 @@ int parse_eth_addr_slash_mask(const char *input, struct ether_addr *output,
 	slash = strchr(input, '/');
 	if (slash) {
 		struct ether_addr *mask_bits;
-		int mask_int;
 
 		mask_bits = ether_aton(slash + 1);
 
-		if (mask_bits)
+		if (mask_bits) {
 			/* Mask expressed in the shape "/ff:ff:ff:00:00:00" */
 			memcpy(mask, mask_bits, sizeof(struct ether_addr));
-		else if (!parse_uint(slash + 1, &mask_int, 6))
+		} else {
+			unsigned int mask_int;
+			char *endptr;
+
 			/* Mask may be an integer, as in "/24" */
+			mask_int = strtoul(slash + 1, &endptr, 10);
+			if (*endptr != '\0' || mask_int > 48) {
+				err_fail("could not parse %s as mask",
+					 slash + 1);
+				return -1;
+			}
 			bitmask_from_int(mask_int, mask, 6);
-		else
-			return -1;
+		}
 	}
 
 	return parse_eth_addr(input, output);
