@@ -230,6 +230,6 @@ struct kefir_cprog {
  */
 
 int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
-			     unsigned int index);
+			     ssize_t index);
 
 #endif /* LIBKEFIR_INTERNALS_H */

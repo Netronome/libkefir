@@ -109,9 +109,18 @@ size_t kefir_sizeof_filter(const kefir_filter *filter)
 
 /* Used in other files, but not UAPI */
 int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
-			     unsigned int index)
+			     ssize_t index)
 {
 	struct list *rule_list;
+	ssize_t filter_len;
+
+	filter_len = kefir_sizeof_filter(filter);
+	if (index < 0)
+		index = kefir_sizeof_filter(filter) + 1 + index;
+	if (index < 0 || index > filter_len) {
+		err_fail("index out of bounds (list has %zd filter%s)",
+			 filter_len, filter_len > 1 ? "s" : "");
+	}
 
 	if (!rule) {
 		err_fail("rule object is NULL");
