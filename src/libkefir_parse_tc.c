@@ -276,6 +276,44 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 	return 0;
 }
 
+static int tcflower_check_matchlist(struct kefir_match *match_list)
+{
+	bool found_l4_port = false, found_ipproto = false;
+	int i;
+
+	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE; i++) {
+		switch (match_list[i].match_type) {
+		case KEFIR_MATCH_TYPE_UNSPEC:
+			goto out;
+		case KEFIR_MATCH_TYPE_IP_4_L4PROTO:
+		case KEFIR_MATCH_TYPE_IP_6_L4PROTO:
+		case KEFIR_MATCH_TYPE_IP_ANY_L4PROTO:
+			found_ipproto = true;
+			break;
+		case KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC:
+		case KEFIR_MATCH_TYPE_IP_4_L4PORT_DST:
+		case KEFIR_MATCH_TYPE_IP_4_L4PORT_ANY:
+		case KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC:
+		case KEFIR_MATCH_TYPE_IP_6_L4PORT_DST:
+		case KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY:
+		case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC:
+		case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST:
+		case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY:
+			found_l4_port = true;
+			break;
+		default:
+			break;
+		}
+	}
+out:
+	if (found_l4_port && !found_ipproto) {
+		err_fail("src_port/dst_port requires ip_proto");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int
 tcflower_parse_action(const char ***argv, unsigned int *argc,
 		      enum action_code *action_code)
@@ -358,6 +396,8 @@ struct kefir_rule *tcflower_parse_rule(const char **user_rule, size_t rule_size)
 					 &matches[match_index++]))
 			return NULL;
 	}
+	if (tcflower_check_matchlist(matches))
+		return NULL;
 
 	if (tcflower_parse_action(&argv, &argc, &action_code))
 		return NULL;
