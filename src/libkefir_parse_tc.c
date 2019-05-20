@@ -159,6 +159,10 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		match->match_type = KEFIR_MATCH_TYPE_MPLS_TTL;
 		match->value.format = KEFIR_VAL_FMT_UINT8;
 	} else if (!strcmp(**argv, "ip_proto")) {
+		/*
+		 * Can be "tcp", "udp", "sctp", "icmp", "icmpv6", or an
+		 * unsigned 8bit value in hexadecimal format
+		 */
 		NEXT_ARG();
 		if (tcflower_parse_ipproto(**argv, &match->value.data.u8))
 			return -1;
@@ -246,22 +250,23 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		else
 			match->match_type = KEFIR_MATCH_TYPE_IP_4_TCP_FLAGS;
 		match->value.format = KEFIR_VAL_FMT_UINT12;
-	// } else if (!strcmp(**argv, "type")) {
-	// } else if (!strcmp(**argv, "code")) {
-	// } else if (!strcmp(**argv, "arp_tip")) {
-	// } else if (!strcmp(**argv, "arp_sip")) {
-	// } else if (!strcmp(**argv, "arp_op")) {
-	// } else if (!strcmp(**argv, "arp_tha")) {
-	// } else if (!strcmp(**argv, "arp_sha")) {
-	// } else if (!strcmp(**argv, "enc_key_id")) {
-	// } else if (!strcmp(**argv, "enc_dst_ip")) {
-	// } else if (!strcmp(**argv, "enc_src_ip")) {
-	// } else if (!strcmp(**argv, "enc_dst_port")) {
-	// } else if (!strcmp(**argv, "enc_tos")) {
-	// } else if (!strcmp(**argv, "enc_ttl")) {
-	// } else if (!strcmp(**argv, "geneve_opts")) {
-	// 	/* May have more than 1 arg */
-	// } else if (!strcmp(**argv, "ip_flags")) {
+	/*
+	} else if (!strcmp(**argv, "type")) {
+	} else if (!strcmp(**argv, "code")) {
+	} else if (!strcmp(**argv, "arp_tip")) {
+	} else if (!strcmp(**argv, "arp_sip")) {
+	} else if (!strcmp(**argv, "arp_op")) {
+	} else if (!strcmp(**argv, "arp_tha")) {
+	} else if (!strcmp(**argv, "arp_sha")) {
+	} else if (!strcmp(**argv, "enc_key_id")) {
+	} else if (!strcmp(**argv, "enc_dst_ip")) {
+	} else if (!strcmp(**argv, "enc_src_ip")) {
+	} else if (!strcmp(**argv, "enc_dst_port")) {
+	} else if (!strcmp(**argv, "enc_tos")) {
+	} else if (!strcmp(**argv, "enc_ttl")) {
+	} else if (!strcmp(**argv, "geneve_opts")) { // Possibly several args
+	} else if (!strcmp(**argv, "ip_flags")) {
+	*/
 	} else {
 		err_fail("unsupported match keyword %s", **argv);
 		return -1;
