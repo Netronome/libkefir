@@ -5,9 +5,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-// DEBUG??
-#include <stdio.h>
-
 #include "list.h"
 
 struct list *list_init(void *elem)
