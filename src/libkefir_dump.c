@@ -97,7 +97,10 @@ static void append(char **buf, size_t *buf_len, const char *fmt, ...)
 	len = strlen(*buf);
 
 	*buf += len;
-	*buf_len += len;
+	if (*buf_len >= len)
+		*buf_len -= len;
+	else
+		*buf_len = 0;
 }
 
 static const char *match_type_str(enum match_type match_type)
