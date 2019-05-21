@@ -14,6 +14,8 @@
 // TODO just used for comments at bottom of file
 #include "libkefir_dump.h"
 
+#define MAX_LABELS_FOR_UNROLL	3
+
 #define max(a, b)	(a > b ? a : b)
 
 DEFINE_ERR_FUNCTIONS("proggen")
@@ -269,6 +271,18 @@ filter_all_comp_equal(const kefir_filter *filter)
 {
 	return !list_for_each((struct list *)filter->rules,
 			      rule_has_comp_operator, OPER_EQUAL, 0);
+}
+
+static unsigned int filter_diff_matchtypes(const kefir_filter *filter)
+{
+	unsigned int res = 0;
+	enum match_type i;
+
+	for (i = KEFIR_MATCH_TYPE_UNSPEC + 1; i < __KEFIR_MAX_MATCH_TYPE; i++)
+		if (filter_has_matchtype(filter, i))
+			res++;
+
+	return res;
 }
 
 static int
@@ -885,12 +899,16 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	return 0;
 }
+
 static int
 cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	bool use_masks = prog->options.flags & OPT_FLAGS_USE_MASKS;
 	bool only_equal = filter_all_comp_equal(prog->filter);
 	const kefir_filter *filter = prog->filter;
+	size_t loop_cnt, loop_max = 1;
+	bool manual_unroll = false;
+	char indent[] = "	";
 
 	GEN(""
 	    "%sbool check_match(void *matchval, size_t matchlen, struct rule_match *match)\n"
@@ -986,371 +1004,436 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	if (!rule)\n"
 	    "		return 0;\n"
 	    "\n"
-	    "#pragma clang loop unroll(full)\n"
-	    "	for (i = 0; i < %d; i++) {\n"
-	    "		match = &rule->matches[i];\n"
-	    "\n"
-	    "		switch (match->match_type) {\n"
-	    "", cprog_attr_func_static_inline, cprog_attr_func_static_inline,
-	    prog->options.nb_matches);
+	    "", cprog_attr_func_static_inline, cprog_attr_func_static_inline);
 
-	// We should have the type (IPv4/IPv6) of packet by now, no need to
-	// test all cases every time
+	/*
+	 * Clang fails to unroll the loops if the switch contains 10 labels or
+	 * more. In such case, we must manually unroll the loop when generating
+	 * the program. Ugh.
+	 */
+	if (filter_diff_matchtypes(prog->filter) >= MAX_LABELS_FOR_UNROLL) {
+		manual_unroll = true;
+		loop_max = prog->options.nb_matches;
+		indent[0] = '\0';
+	}
 
-	/* Ether */
+	for (loop_cnt = 0; loop_cnt < loop_max; loop_cnt++) {
+		if (manual_unroll) {
+			/* Unroll loop */
+			GEN(""
+			    "	match = &rule->matches[%zd];\n"
+			    "\n"
+			    "", loop_cnt);
+		} else {
+			/*
+			 * Ask clang to unroll the loop for us. Same result,
+			 * but C code is much more readable.
+			 */
+			GEN(""
+			    "#pragma clang loop unroll(full)\n"
+			    "	for (i = 0; i < %d; i++) {\n"
+			    "		match = &rule->matches[i];\n"
+			    "\n"
+			    "", prog->options.nb_matches);
+		}
 
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_SRC))
-		GEN(""
-		    "		case MATCH_ETHER_SRC:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ether_src,\n"
-		    "					    sizeof(key->ether_src), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_DST))
-		GEN(""
-		    "		case MATCH_ETHER_DST:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ether_dst,\n"
-		    "					    sizeof(key->ether_dst), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_ANY))
-		GEN(""
-		    "		case MATCH_ETHER_ANY:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->ether_src,\n"
-		    "					     sizeof(key->ether_src), match) ||\n"
-		    "				 check_match(&key->ether_dst,\n"
-		    "					     sizeof(key->ether_dst), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
-		GEN(""
-		    "		case MATCH_ETHER_PROTO:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ether_proto,\n"
-		    "					    sizeof(key->ether_proto), match);\n"
-		    "			break;\n"
-		    "");
+		GEN("%s	switch (match->match_type) {\n",
+		    indent);
 
-	/* IPv4 */
+		/* Ether */
 
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_SRC))
-		GEN(""
-		    "		case MATCH_IPV4_SRC:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv4_src,\n"
-		    "					    sizeof(key->ipv4_src), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_DST))
-		GEN(""
-		    "		case MATCH_IPV4_DST:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv4_dst,\n"
-		    "					    sizeof(key->ipv4_dst), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY))
-		GEN(""
-		    "		case MATCH_IPV4_ANY:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->ipv4_src,\n"
-		    "					    sizeof(key->ipv4_src), match) ||\n"
-		    "				 check_match(&key->ipv4_dst,\n"
-		    "					    sizeof(key->ipv4_dst), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TOS))
-		GEN(""
-		    "		case MATCH_IPV4_TOS:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv4_tos,\n"
-		    "					    sizeof(key->ipv4_tos), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TTL))
-		GEN(""
-		    "		case MATCH_IPV4_TTL:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv4_ttl,\n"
-		    "					    sizeof(key->ipv4_ttl), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4PROTO))
-		GEN(""
-		    "		case MATCH_IPV4_L4PROTO:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IP) &&\n"
-		    "				check_match(&key->l4proto,\n"
-		    "					    sizeof(key->l4proto), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4DATA))
-		GEN(""
-		    "		case MATCH_IPV4_L4DATA:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IP) &&\n"
-		    "				check_match(&key->l4data,\n"
-		    "					    sizeof(key->l4data), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC))
-		GEN(""
-		    "		case MATCH_IPV4_L4PORT_SRC:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IP) &&\n"
-		    "				check_match(&key->l4port_src,\n"
-		    "					    sizeof(key->l4port_src), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4PORT_DST))
-		GEN(""
-		    "		case MATCH_IPV4_L4PORT_DST:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IP) &&\n"
-		    "				check_match(&key->l4port_dst,\n"
-		    "					    sizeof(key->l4port_dst), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4PORT_ANY))
-		GEN(""
-		    "		case MATCH_IPV4_L4PORT_ANY:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IP) &&\n"
-		    "				(check_match(&key->l4port_src,\n"
-		    "					    sizeof(key->l4port_src), match) ||\n"
-		    "				 check_match(&key->l4port_dst,\n"
-		    "					    sizeof(key->l4port_dst), match));\n"
-		    "			break;\n"
-		    "");
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_SRC))
+			GEN(""
+			    "%s	case MATCH_ETHER_SRC:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ether_src,\n"
+			    "%s				    sizeof(key->ether_src), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_DST))
+			GEN(""
+			    "%s	case MATCH_ETHER_DST:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ether_dst,\n"
+			    "%s				    sizeof(key->ether_dst), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_ANY))
+			GEN(""
+			    "%s	case MATCH_ETHER_ANY:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->ether_src,\n"
+			    "%s				     sizeof(key->ether_src), match) ||\n"
+			    "%s			 check_match(&key->ether_dst,\n"
+			    "%s				     sizeof(key->ether_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
+			GEN(""
+			    "%s	case MATCH_ETHER_PROTO:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ether_proto,\n"
+			    "%s				    sizeof(key->ether_proto), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
 
-	/* IPv6 */
+		/* IPv4 */
 
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_SRC) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
-		GEN(""
-		    "		case MATCH_IPV6_SRC:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv6_src,\n"
-		    "					    sizeof(key->ipv6_src), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_DST) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
-		GEN(""
-		    "		case MATCH_IPV6_DST:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv6_dst,\n"
-		    "					    sizeof(key->ipv6_dst), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
-		GEN(""
-		    "		case MATCH_IPV6_ANY:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->ipv6_src,\n"
-		    "					    sizeof(key->ipv6_src), match) ||\n"
-		    "				 check_match(&key->ipv6_dst,\n"
-		    "					    sizeof(key->ipv6_dst), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TOS))
-		GEN(""
-		    "		case MATCH_IPV6_TCLASS:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv6_tclass,\n"
-		    "					    sizeof(key->ipv6_tclass), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TTL))
-		GEN(""
-		    "		case MATCH_IPV6_TTL:\n"
-		    "			does_match = does_match &&\n"
-		    "				check_match(&key->ipv6_ttl,\n"
-		    "					    sizeof(key->ipv6_ttl), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4PROTO))
-		GEN(""
-		    "		case MATCH_IPV6_L4PROTO:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IPV6) &&\n"
-		    "				check_match(&key->l4proto,\n"
-		    "					    sizeof(key->l4proto), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4DATA))
-		GEN(""
-		    "		case MATCH_IPV6_L4DATA:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IPV6) &&\n"
-		    "				check_match(&key->l4data,\n"
-		    "					    sizeof(key->l4data), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC))
-		GEN(""
-		    "		case MATCH_IPV6_L4PORT_SRC:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IPV6) &&\n"
-		    "				check_match(&key->l4port_src,\n"
-		    "					    sizeof(key->l4port_src), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4PORT_DST))
-		GEN(""
-		    "		case MATCH_IPV6_L4PORT_DST:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IPV6) &&\n"
-		    "				check_match(&key->l4port_dst,\n"
-		    "					    sizeof(key->l4port_dst), match);\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY))
-		GEN(""
-		    "		case MATCH_IPV6_L4PORT_ANY:\n"
-		    "			does_match = does_match &&\n"
-		    "				(*eth_proto == ETH_P_IPV6) &&\n"
-		    "				(check_match(&key->l4port_src,\n"
-		    "					    sizeof(key->l4port_src), match) ||\n"
-		    "				 check_match(&key->l4port_dst,\n"
-		    "					    sizeof(key->l4port_dst), match));\n"
-		    "			break;\n"
-		    "");
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_SRC))
+			GEN(""
+			    "%s	case MATCH_IPV4_SRC:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ipv4_src,\n"
+			    "%s				    sizeof(key->ipv4_src), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_DST))
+			GEN(""
+			    "%s	case MATCH_IPV4_DST:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ipv4_dst,\n"
+			    "%s				    sizeof(key->ipv4_dst), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY))
+			GEN(""
+			    "%s	case MATCH_IPV4_ANY:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->ipv4_src,\n"
+			    "%s				    sizeof(key->ipv4_src), match) ||\n"
+			    "%s			 check_match(&key->ipv4_dst,\n"
+			    "%s				    sizeof(key->ipv4_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TOS))
+			GEN(""
+			    "%s	case MATCH_IPV4_TOS:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ipv4_tos,\n"
+			    "%s				    sizeof(key->ipv4_tos), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TTL))
+			GEN(""
+			    "%s	case MATCH_IPV4_TTL:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ipv4_ttl,\n"
+			    "%s				    sizeof(key->ipv4_ttl), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4PROTO))
+			GEN(""
+			    "%s	case MATCH_IPV4_L4PROTO:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			check_match(&key->l4proto,\n"
+			    "%s				    sizeof(key->l4proto), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4DATA))
+			GEN(""
+			    "%s	case MATCH_IPV4_L4DATA:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			check_match(&key->l4data,\n"
+			    "%s				    sizeof(key->l4data), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC))
+			GEN(""
+			    "%s	case MATCH_IPV4_L4PORT_SRC:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			check_match(&key->l4port_src,\n"
+			    "%s				    sizeof(key->l4port_src), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_4_L4PORT_DST))
+			GEN(""
+			    "%s	case MATCH_IPV4_L4PORT_DST:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			check_match(&key->l4port_dst,\n"
+			    "%s				    sizeof(key->l4port_dst), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_4_L4PORT_ANY))
+			GEN(""
+			    "%s	case MATCH_IPV4_L4PORT_ANY:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			(check_match(&key->l4port_src,\n"
+			    "%s				    sizeof(key->l4port_src), match) ||\n"
+			    "%s			 check_match(&key->l4port_dst,\n"
+			    "%s				    sizeof(key->l4port_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent, indent);
 
-	/* IPv4 or IPv6 */
+		/* IPv6 */
 
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_SRC))
-		GEN(""
-		    "		case MATCH_IP_ANY_SRC:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->ipv4_src,\n"
-		    "					    sizeof(key->ipv4_src), match) ||\n"
-		    "				 check_match(&key->ipv6_src,\n"
-		    "					    sizeof(key->ipv6_src), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_DST))
-		GEN(""
-		    "		case MATCH_IP_ANY_DST:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->ipv4_dst,\n"
-		    "					    sizeof(key->ipv4_dst), match) ||\n"
-		    "				 check_match(&key->ipv6_dst,\n"
-		    "					    sizeof(key->ipv6_dst), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
-		GEN(""
-		    "		case MATCH_IP_ANY_ANY:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->ipv4_src,\n"
-		    "					    sizeof(key->ipv4_src), match) ||\n"
-		    "				 check_match(&key->ipv4_dst,\n"
-		    "					    sizeof(key->ipv4_dst), match) ||\n"
-		    "				 check_match(&key->ipv6_src,\n"
-		    "					    sizeof(key->ipv6_src), match) ||\n"
-		    "				 check_match(&key->ipv6_dst,\n"
-		    "					    sizeof(key->ipv6_dst), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
-		GEN(""
-		    "		case MATCH_IP_ANY_TOS:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->ipv4_tos,\n"
-		    "					    sizeof(key->ipv4_tos), match) ||\n"
-		    "				 check_match(&key->ipv6_tclass,\n"
-		    "					    sizeof(key->ipv6_tclass), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TTL))
-		GEN(""
-		    "		case MATCH_IP_ANY_TTL:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->ipv4_ttl,\n"
-		    "					    sizeof(key->ipv4_ttl), match) ||\n"
-		    "				 check_match(&key->ipv6_ttl,\n"
-		    "					    sizeof(key->ipv6_ttl), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_L4PROTO))
-		GEN(""
-		    "		case MATCH_IP_ANY_L4PROTO:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->l4proto,\n"
-		    "					    sizeof(key->l4proto), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_L4DATA))
-		GEN(""
-		    "		case MATCH_IP_ANY_L4DATA:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->l4data,\n"
-		    "					    sizeof(key->l4data), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC))
-		GEN(""
-		    "		case MATCH_IP_ANY_L4PORT_SRC:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->l4port_src,\n"
-		    "					    sizeof(key->l4port_src), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST))
-		GEN(""
-		    "		case MATCH_IP_ANY_L4PORT_DST:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->l4port_dst,\n"
-		    "					    sizeof(key->l4port_dst), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY))
-		GEN(""
-		    "		case MATCH_IP_ANY_L4PORT_ANY:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->l4port_src,\n"
-		    "					    sizeof(key->l4port_src), match) ||\n"
-		    "				 check_match(&key->l4port_dst,\n"
-		    "					    sizeof(key->l4port_dst), match));\n"
-		    "			break;\n"
-		    "");
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_SRC) ||
+		    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
+			GEN(""
+			    "%s	case MATCH_IPV6_SRC:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ipv6_src,\n"
+			    "%s				    sizeof(key->ipv6_src), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_DST) ||
+		    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
+			GEN(""
+			    "%s	case MATCH_IPV6_DST:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ipv6_dst,\n"
+			    "%s				    sizeof(key->ipv6_dst), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
+			GEN(""
+			    "%s	case MATCH_IPV6_ANY:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->ipv6_src,\n"
+			    "%s				    sizeof(key->ipv6_src), match) ||\n"
+			    "%s			 check_match(&key->ipv6_dst,\n"
+			    "%s				    sizeof(key->ipv6_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TOS))
+			GEN(""
+			    "%s	case MATCH_IPV6_TCLASS:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ipv6_tclass,\n"
+			    "%s				    sizeof(key->ipv6_tclass), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TTL))
+			GEN(""
+			    "%s	case MATCH_IPV6_TTL:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			check_match(&key->ipv6_ttl,\n"
+			    "%s				    sizeof(key->ipv6_ttl), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4PROTO))
+			GEN(""
+			    "%s	case MATCH_IPV6_L4PROTO:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			check_match(&key->l4proto,\n"
+			    "%s				    sizeof(key->l4proto), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4DATA))
+			GEN(""
+			    "%s	case MATCH_IPV6_L4DATA:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			check_match(&key->l4data,\n"
+			    "%s				    sizeof(key->l4data), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC))
+			GEN(""
+			    "%s	case MATCH_IPV6_L4PORT_SRC:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			check_match(&key->l4port_src,\n"
+			    "%s				    sizeof(key->l4port_src), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_6_L4PORT_DST))
+			GEN(""
+			    "%s	case MATCH_IPV6_L4PORT_DST:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			check_match(&key->l4port_dst,\n"
+			    "%s				    sizeof(key->l4port_dst), match);\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY))
+			GEN(""
+			    "%s	case MATCH_IPV6_L4PORT_ANY:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			(check_match(&key->l4port_src,\n"
+			    "%s				    sizeof(key->l4port_src), match) ||\n"
+			    "%s			 check_match(&key->l4port_dst,\n"
+			    "%s				    sizeof(key->l4port_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent, indent);
 
-	/* VLAN */
+		/* IPv4 or IPv6 */
 
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ID))
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_SRC))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_SRC:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->ipv4_src,\n"
+			    "%s				    sizeof(key->ipv4_src), match) ||\n"
+			    "%s			 check_match(&key->ipv6_src,\n"
+			    "%s				    sizeof(key->ipv6_src), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_DST))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_DST:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->ipv4_dst,\n"
+			    "%s				    sizeof(key->ipv4_dst), match) ||\n"
+			    "%s			 check_match(&key->ipv6_dst,\n"
+			    "%s				    sizeof(key->ipv6_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_ANY:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->ipv4_src,\n"
+			    "%s				    sizeof(key->ipv4_src), match) ||\n"
+			    "%s			 check_match(&key->ipv4_dst,\n"
+			    "%s				    sizeof(key->ipv4_dst), match) ||\n"
+			    "%s			 check_match(&key->ipv6_src,\n"
+			    "%s				    sizeof(key->ipv6_src), match) ||\n"
+			    "%s			 check_match(&key->ipv6_dst,\n"
+			    "%s				    sizeof(key->ipv6_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_TOS:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->ipv4_tos,\n"
+			    "%s				    sizeof(key->ipv4_tos), match) ||\n"
+			    "%s			 check_match(&key->ipv6_tclass,\n"
+			    "%s				    sizeof(key->ipv6_tclass), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TTL))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_TTL:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->ipv4_ttl,\n"
+			    "%s				    sizeof(key->ipv4_ttl), match) ||\n"
+			    "%s			 check_match(&key->ipv6_ttl,\n"
+			    "%s				    sizeof(key->ipv6_ttl), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_ANY_L4PROTO))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_L4PROTO:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->l4proto,\n"
+			    "%s				    sizeof(key->l4proto), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_ANY_L4DATA))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_L4DATA:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->l4data,\n"
+			    "%s				    sizeof(key->l4data), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_L4PORT_SRC:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->l4port_src,\n"
+			    "%s				    sizeof(key->l4port_src), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_L4PORT_DST:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->l4port_dst,\n"
+			    "%s				    sizeof(key->l4port_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY))
+			GEN(""
+			    "%s	case MATCH_IP_ANY_L4PORT_ANY:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->l4port_src,\n"
+			    "%s				    sizeof(key->l4port_src), match) ||\n"
+			    "%s			 check_match(&key->l4port_dst,\n"
+			    "%s				    sizeof(key->l4port_dst), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+
+		/* VLAN */
+
+		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ID))
+			GEN(""
+			    "%s	case MATCH_VLAN_ID:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->vlan_id[0],\n"
+			    "%s				     sizeof(key->vlan_id[0]), match) ||\n"
+			    "%s			 check_match(&key->vlan_id[1],\n"
+			    "%s				     sizeof(key->vlan_id[1]), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+		if (filter_has_matchtype(filter,
+					 KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
+			GEN(""
+			    "%s	case MATCH_VLAN_ETHERTYPE:\n"
+			    "%s		does_match = does_match &&\n"
+			    "%s			(check_match(&key->vlan_etype[0],\n"
+			    "%s				     sizeof(key->vlan_etype[0]), match) ||\n"
+			    "%s			 check_match(&key->vlan_etype[1],\n"
+			    "%s				     sizeof(key->vlan_etype[1]), match));\n"
+			    "%s		break;\n"
+			    "", indent, indent, indent, indent, indent, indent,
+			    indent);
+
 		GEN(""
-		    "		case MATCH_VLAN_ID:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->vlan_id[0],\n"
-		    "					     sizeof(key->vlan_id[0]), match) ||\n"
-		    "				 check_match(&key->vlan_id[1],\n"
-		    "					     sizeof(key->vlan_id[1]), match));\n"
-		    "			break;\n"
-		    "");
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
-		GEN(""
-		    "		case MATCH_VLAN_ETHERTYPE:\n"
-		    "			does_match = does_match &&\n"
-		    "				(check_match(&key->vlan_etype[0],\n"
-		    "					     sizeof(key->vlan_etype[0]), match) ||\n"
-		    "				 check_match(&key->vlan_etype[1],\n"
-		    "					     sizeof(key->vlan_etype[1]), match));\n"
-		    "			break;\n"
-		    "");
+		    "%s	default:\n"
+		    "%s		break;\n"
+		    "%s	}\n"
+		    "\n"
+		    "", indent, indent, indent);
+
+		if (!manual_unroll) {
+			/* Clang unrolls: get out of loop if no match */
+			GEN(""
+			    "		if (!does_match)\n"
+			    "			break;\n"
+			    "	}\n"
+			    "\n");
+		} else if (loop_cnt < prog->options.nb_matches - 1) {
+			/* Manual unroll: exit early if no match */
+			GEN(""
+			    "	if (!does_match)\n"
+			    "		return 0;\n"
+			    "\n");
+		}
+	}
 
 	GEN(""
-	    "		default:\n"
-	    "			break;\n"
-	    "		}\n"
-	    "\n"
-	    "		if (!does_match)\n"
-	    "			break;\n"
-	    "	}\n"
-	    "\n"
 	    "	if (does_match) {\n"
 	    "		*res = get_retval(rule->action_code);\n"
 	    "		return 1;\n"

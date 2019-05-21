@@ -131,6 +131,8 @@ enum match_type {
 	KEFIR_MATCH_TYPE_ENC_TTL,
 
 	KEFIR_MATCH_TYPE_GENEVE_OPTIONS,
+
+	__KEFIR_MAX_MATCH_TYPE
 };
 
 enum value_format {
