@@ -4,11 +4,9 @@
 #ifndef LIBKEFIR_COMPILE_H
 #define LIBKEFIR_COMPILE_H
 
-#include <stdint.h>
-
-#include <bpf/libbpf.h>
-
 #include "libkefir.h"
+
+struct bpf_object;
 
 int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 			 const char *opt_ll_file, const char *opt_clang_bin,

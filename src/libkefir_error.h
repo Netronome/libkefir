@@ -5,9 +5,6 @@
 #define LIBKEFIR_ERROR_H
 
 #include <stdarg.h>
-#include <stdio.h>
-
-#include "libkefir.h"
 
 #define __DO_ERR_FUNC(COMPONENT, NAME, CONTEXT)				\
 	__attribute__((unused)) __attribute__((format(printf, 1, 2)))	\

@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
+#include <bits/stdint-uintn.h>
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <arpa/inet.h>
+#include <netinet/ether.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
+#include "list.h"
+#include "libkefir.h"
 #include "libkefir_dump.h"
+#include "libkefir_internals.h"
 
 static const char *comp_operator_str(enum comp_operator op)
 {

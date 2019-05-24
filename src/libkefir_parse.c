@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include <arpa/inet.h>
+#include <net/ethernet.h>
+#include <netinet/ether.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "libkefir_error.h"
 #include "libkefir_parse.h"

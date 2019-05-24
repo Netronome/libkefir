@@ -4,7 +4,9 @@
 #ifndef LIBKEFIR_PARSE_H
 #define LIBKEFIR_PARSE_H
 
-#include "libkefir_internals.h"
+#include <bits/stdint-uintn.h>
+
+struct ether_addr;
 
 int parse_check_and_store_uint(unsigned int res, void *output,
 			       uint32_t nb_bits);

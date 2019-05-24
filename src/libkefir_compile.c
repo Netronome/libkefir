@@ -1,24 +1,26 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
+#include <bits/stdint-uintn.h>
 #include <errno.h>
-#include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <bpf/bpf.h>
-#include <bpf/libbpf.h>
 #include <linux/bpf.h>
-#include <linux/if_link.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
+
+#include "list.h"
 #include "libkefir.h"
+#include "libkefir_compile.h"
 #include "libkefir_error.h"
 #include "libkefir_internals.h"
-#include "list.h"
 
 DEFINE_ERR_FUNCTIONS("compilation")
 

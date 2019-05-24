@@ -4,9 +4,10 @@
 #ifndef LIBKEFIR_H
 #define LIBKEFIR_H
 
-#include <stdlib.h>
+#include <stddef.h>
+#include <sys/types.h>
 
-#include <bpf/libbpf.h>
+struct bpf_object;
 
 typedef struct kefir_filter kefir_filter;
 

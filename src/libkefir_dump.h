@@ -4,8 +4,9 @@
 #ifndef LIBKEFIR_DUMP_H
 #define LIBKEFIR_DUMP_H
 
+#include <stddef.h>
+
 #include "libkefir.h"
-#include "libkefir_internals.h"
 
 void dump_filter_to_buf(const kefir_filter *filter, char *buf, size_t buf_len);
 

@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include <sys/types.h>
+
 struct list {
 	struct list	*prev;
 	struct list	*next;

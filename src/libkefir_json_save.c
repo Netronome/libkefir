@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
+#include <bits/stdint-uintn.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "json_writer.h"
+#include "list.h"
+#include "libkefir.h"
 #include "libkefir_error.h"
 #include "libkefir_internals.h"
 #include "libkefir_json_save.h"
