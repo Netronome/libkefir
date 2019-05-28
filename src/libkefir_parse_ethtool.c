@@ -248,10 +248,6 @@ static int get_flow_type(const char *input)
 		return ETHTOOL_FLOW_TYPE_UDP4;
 	else if (!strcmp(input, "sctp4"))
 		return ETHTOOL_FLOW_TYPE_SCTP4;
-	else if (!strcmp(input, "ah4"))
-		return ETHTOOL_FLOW_TYPE_AH4;
-	else if (!strcmp(input, "esp4"))
-		return ETHTOOL_FLOW_TYPE_ESP4;
 	else if (!strcmp(input, "ip6"))
 		return ETHTOOL_FLOW_TYPE_IP6;
 	else if (!strcmp(input, "tcp6"))
@@ -260,10 +256,7 @@ static int get_flow_type(const char *input)
 		return ETHTOOL_FLOW_TYPE_UDP6;
 	else if (!strcmp(input, "sctp6"))
 		return ETHTOOL_FLOW_TYPE_SCTP6;
-	else if (!strcmp(input, "ah6"))
-		return ETHTOOL_FLOW_TYPE_AH6;
-	else if (!strcmp(input, "esp6"))
-		return ETHTOOL_FLOW_TYPE_ESP6;
+	/* TODO: Add support for ah4, esp4, ah6, esp6 */
 	else
 		err_fail("unsupported flow type: %s", input);
 
@@ -351,7 +344,7 @@ account_for_flow_type(struct kefir_match *match,
 		break;
 	case ETHTOOL_FLOW_TYPE_AH4:
 	case ETHTOOL_FLOW_TYPE_ESP4:
-		// TODO
+		/* TODO: Complete here when adding support for ah4, esp4 */
 		break;
 	case ETHTOOL_FLOW_TYPE_IP6:
 		*ipv6_flow = true;
@@ -373,7 +366,7 @@ account_for_flow_type(struct kefir_match *match,
 		break;
 	case ETHTOOL_FLOW_TYPE_AH6:
 	case ETHTOOL_FLOW_TYPE_ESP6:
-		// TODO
+		/* TODO: Complete here when adding support for ah6, esp6 */
 		*ipv6_flow = true;
 		break;
 	default:
@@ -446,7 +439,7 @@ set_match_type(struct kefir_match *match, bool ipv6_flow,
 		match->match_type = KEFIR_MATCH_TYPE_VLAN_ID;
 		break;
 	case ETHTOOL_VAL_TYPE_IP_SPI:
-		// TODO: needs two matchs, one on SPI, one on flow type
+		/* TODO: Add support for spi. For now, fall through */
 	default:
 		err_bug("unknown enum value for value type: %d", val_type);
 		return -1;
@@ -607,9 +600,11 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 		user_rule++;
 	}
 
-	// TODO: Some rules can have different parameters. This is the case for
-	// vlan, vlan-etype, and dst-mac, which are considered as extensions by
-	// ethtool.
+	/*
+	 * TODO: Support rules with two parameters. Some fields are considered
+	 * as "extensions" by ethtool, and can be used in combination with
+	 * regular fields. Extensions include vlan, vlan-etype and dst-mac.
+	 */
 
 	rule->matches[match_index].comp_operator = OPER_EQUAL;
 	match_index++;

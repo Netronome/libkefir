@@ -190,16 +190,8 @@ struct kefir_match {
 	uint64_t		flags;
 };
 
-/*
-struct kefir_action {
-	enum action_code	code;
-	uint64_t		value;
-};
-*/
-
 struct kefir_rule {
 	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE];
-//	struct kefir_action action;
 	enum action_code action;
 };
 

@@ -203,10 +203,10 @@ int kefir_compile_to_bpf(const char *c_file,
  * @ifindex: interface index, for indicating where the filter should be
  *           attached (or where the map should be allocated, for hardware
  *           offload, even if the program is simply loaded)
- * @log_level: TODO
+ * @log_level: log level to pass to kernel verifier when loading the program
  * @flags for XDP: passed to netlink to set XDP mode (socket buffer, driver,
  *        hardware) (see <linux/if_link.h>)
- *        for TC: TODO
+ *        for TC: TODO (No support yet for TC)
  */
 struct kefir_load_attr {
 	int ifindex;

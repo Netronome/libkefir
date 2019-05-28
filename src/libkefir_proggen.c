@@ -941,6 +941,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		    "\n"
 		    "");
 	}
+	/* Default action: let packet pass. TODO: Provide a way to change it? */
 	GEN(""
 	    "	return false;\n"
 	    "}\n"
@@ -953,7 +954,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	case ACTION_CODE_PASS:\n"
 	    "		return RET_PASS;\n"
 	    "	default:\n"
-	    "		return RET_PASS;\n" // ABORT?
+	    "		return RET_PASS;\n"
 	    "	}\n"
 	    "}\n"
 	    "\n"
@@ -1418,6 +1419,7 @@ make_cprog_main(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	GEN("%s", cprog_prog_starts[prog->options.target]);
 
+	/* Default action: let packet pass. TODO: Provide a way to change it? */
 	GEN(""
 	    "{\n"
 	    "	void *data_end = (void *)(long)ctx->data_end;\n"
@@ -1429,7 +1431,7 @@ make_cprog_main(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	int res;\n"
 	    "\n"
 	    "	if (extract_key(data, data_end, &key, &eth_proto))\n"
-	    "		return RET_PASS;\n" // OR ABORT?
+	    "		return RET_PASS;\n"
 	    "\n"
 	    "");
 

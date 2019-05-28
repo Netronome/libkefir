@@ -323,7 +323,6 @@ parse_rule(kefir_filter *filter, int index, const char *str,
 		offset += count_nested_children(&tokens[offset]);
 	}
 
-	// TODO: move action_code to an object in case more gets added later
 	if (!json_streq(str, &tokens[offset], "action_code")) {
 		err_fail("could not find action code for rule %d", index);
 		return -1;
@@ -506,6 +505,13 @@ kefir_filter *json_restore_filter_from_file(const char *filename)
 		kefir_destroy_filter(filter);
 		filter = NULL;
 	}
+
+	/*
+	 * TODO: Apply here whatever optimisation of the set is added in the
+	 * future when finilizing a filter object (e.g. removing duplicate
+	 * rules), as we have no guarantee users have not been tinkering with
+	 * the JSON file before reloading.
+	 */
 
 free_tokens:
 	free(tokens);

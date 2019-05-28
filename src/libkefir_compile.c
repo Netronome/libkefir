@@ -281,9 +281,7 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 
 	load_attr.file = objfile;
 	load_attr.ifindex = attr->ifindex;
-	// TODO: Alexei's patch not passed yet
-	// TODO: add guard for libbpf version?? How to check it???
-	// load_attr.log_level = attr->log_level;
+	load_attr.log_level = attr->log_level;
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:
 		load_attr.prog_type = BPF_PROG_TYPE_XDP;
@@ -337,11 +335,10 @@ int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:
 		if (bpf_set_link_xdp_fd(attr->ifindex, prog_fd, attr->flags))
-			// Message needed?
+			/* libbpf should print extack messages on error */
 			return -1;
 		break;
-	case KEFIR_CPROG_TARGET_TC:
-		// TODO
+	/* TODO: Add support for TC */
 	default:
 		err_bug("unknown attach target: %d", cprog->options.target);
 		return -1;
