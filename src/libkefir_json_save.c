@@ -169,7 +169,12 @@ int json_save_filter_to_file(const kefir_filter *filter, const char *filename)
 
 	jsonw_start_object(jw);	/* root */
 
-	jsonw_string_field(jw, "libkefir_version", "WIP");
+	jsonw_name(jw, "libkefir_version");
+	jsonw_start_array(jw);	/* version number */
+	jsonw_uint(jw, KEFIR_VERSION);
+	jsonw_uint(jw, KEFIR_PATCHLEVEL);
+	jsonw_uint(jw, KEFIR_EXTRAVERSION);
+	jsonw_end_array(jw);	/* version number */
 	jsonw_name(jw, "libkefir_filter");
 
 	if (save_filter_object(filter, jw))

@@ -87,7 +87,8 @@ static int parse_int(const char *str, const jsmntok_t *token, int *dest)
 static int
 parse_version(const char *str, const jsmntok_t *tokens, int nb_tokens)
 {
-	char *version = NULL;
+	int version, patchlevel, extraversion;
+	bool found = false;
 	int i;
 
 	/*
@@ -101,27 +102,34 @@ parse_version(const char *str, const jsmntok_t *tokens, int nb_tokens)
 		if (!json_streq(str, &tokens[i], "libkefir_version"))
 			continue;
 
-		if (tokens[i + 1].parent != i)
-			continue;
+		if (tokens[i].size != 1)
+			break;
 
-		if (tokens[i + 1].type != JSMN_STRING)
-			continue;
+		if (tokens[i + 1].type != JSMN_ARRAY)
+			break;
 
-		version = strndup(str + tokens[i + 1].start,
-				  tokens[i + 1].end - tokens[i + 1].start);
-		break;
+		if (tokens[i + 1].size < 3)
+			break;
+
+		if (parse_int(str, &tokens[i + 1 + 1], &version) ||
+		    parse_int(str, &tokens[i + 1 + 2], &patchlevel) ||
+		    parse_int(str, &tokens[i + 1 + 3], &extraversion))
+			return -1;
+
+		found = true;
 	}
-	if (!version) {
+	if (!found) {
 		/* Not found or alloc error */
-		err_fail("failed to retrieve libkefir version number");
+		err_fail("libkefir version number is missing from JSON");
 		return -1;
 	}
 
-	// printf("libkefir version for file: %s\n", version);
-	// TODO: check version somehow
-	// Must be easier if we store version as array of int, probably
+	/*
+	 * TODO: We just checked version for consistency. In the future, we
+	 * might actually check the number and see if support the file, or
+	 * process some fields differently based on the version number.
+	 */
 
-	free(version);
 	return 0;
 }
 
