@@ -7,6 +7,7 @@ KEFIR_EXTRAVERSION	= 0
 KEFIR_FULLVERSION	= $(KEFIR_VERSION).$(KEFIR_PATCHLEVEL).$(KEFIR_EXTRAVERSION)
 
 SRC	= src/
+TESTS	= tests/
 OUTPUT	= build/
 PREFIX	?= /usr/local
 OBJECTS	:= $(wildcard $(SRC)*.c)
@@ -114,6 +115,16 @@ azan: CC = $(CLANG) -fsanitize=address -fno-omit-frame-pointer
 azan: kefir-clean all
 
 .PHONY: azan
+
+# Tests
+
+tests: $(LIBKEFIR_A) $(LIBBPF_OBJECT) $(LIBBPF_HDRS)
+	$(Q)$(MAKE) -C $(TESTS)
+
+tests-clean:
+	$(Q)$(MAKE) -C $(TESTS) clean
+
+.PHONY: tests tests-clean
 
 # Package config file
 
