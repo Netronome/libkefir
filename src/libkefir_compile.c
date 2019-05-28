@@ -304,25 +304,11 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 	return prog_fd;
 }
 
-int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
-			   int prog_fd, struct kefir_load_attr *attr)
+int compile_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
 {
 	struct bpf_map *rule_map;
 	int rule_map_fd;
 	int index = 0;
-
-	switch (cprog->options.target) {
-	case KEFIR_CPROG_TARGET_XDP:
-		if (bpf_set_link_xdp_fd(attr->ifindex, prog_fd, attr->flags))
-			// Message needed?
-			return -1;
-		break;
-	case KEFIR_CPROG_TARGET_TC:
-		// TODO
-	default:
-		err_bug("unknown attach target: %d", cprog->options.target);
-		return -1;
-	}
 
 	/* Fill map */
 	rule_map = bpf_object__find_map_by_name(bpf_obj, "rules");
@@ -341,4 +327,23 @@ int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 		return -1;
 
 	return 0;
+}
+
+int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
+			   int prog_fd, struct kefir_load_attr *attr)
+{
+	switch (cprog->options.target) {
+	case KEFIR_CPROG_TARGET_XDP:
+		if (bpf_set_link_xdp_fd(attr->ifindex, prog_fd, attr->flags))
+			// Message needed?
+			return -1;
+		break;
+	case KEFIR_CPROG_TARGET_TC:
+		// TODO
+	default:
+		err_bug("unknown attach target: %d", cprog->options.target);
+		return -1;
+	}
+
+	return compile_fill_map(cprog, bpf_obj);
 }

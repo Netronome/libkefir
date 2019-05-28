@@ -356,24 +356,34 @@ int kefir_compile_to_bpf(const char *c_file, const char *opt_object_file,
 				    opt_clang_bin, opt_llc_bin);
 }
 
-int kefir_load_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
-				  struct kefir_load_attr *attr)
+void kefir_destroy_bpf_object(struct bpf_object *obj)
 {
-	struct bpf_object *bpf_obj;
-	int prog_fd;
-
-	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, attr);
-	if (prog_fd < 0)
-		return -1;
-
-	bpf_object__close(bpf_obj);
-
-	return prog_fd;
+	bpf_object__close(obj);
 }
 
-int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
-				    const char *objfile,
-				    struct kefir_load_attr *attr)
+int kefir_get_prog_fd(struct bpf_object *obj)
+{
+	struct bpf_program *prog;
+
+	prog = bpf_program__next(NULL, obj);
+	return bpf_program__fd(prog);
+}
+
+struct bpf_object *
+kefir_load_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
+			      struct kefir_load_attr *attr)
+{
+	struct bpf_object *bpf_obj;
+
+	if (compile_load_from_objfile(cprog, objfile, &bpf_obj, attr) < 0)
+		return NULL;
+
+	return bpf_obj;
+}
+
+struct bpf_object *
+kefir_attach_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
+				struct kefir_load_attr *attr)
 {
 	struct bpf_object *bpf_obj;
 	int prog_fd, ifindex;
@@ -384,12 +394,15 @@ int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
 	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, attr);
 	attr->ifindex = ifindex;
 	if (prog_fd < 0)
-		return -1;
+		return NULL;
 
 	if (compile_attach_program(cprog, bpf_obj, prog_fd, attr))
-		prog_fd = -1;
+		return NULL;
 
-	bpf_object__close(bpf_obj);
+	return bpf_obj;
+}
 
-	return prog_fd;
+int kefir_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
+{
+	return compile_fill_map(cprog, bpf_obj);
 }

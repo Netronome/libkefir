@@ -6,6 +6,8 @@
 
 #include <stdlib.h>
 
+#include <bpf/libbpf.h>
+
 typedef struct kefir_filter kefir_filter;
 
 /*
@@ -211,29 +213,58 @@ struct kefir_load_attr {
 };
 
 /**
+ * Unload and destroy a BPF object and free all associated memory.
+ * @obj: pointer to the BPF object to destroy
+ */
+void kefir_destroy_bpf_object(struct bpf_object *obj);
+
+/**
+ * Retrieve the file descriptor of the filter program associated with a BPF
+ * object.
+ * @obj the BPF object resulting from a program load or attachment
+ * @return a file descriptor related to that program
+ */
+int kefir_get_prog_fd(struct bpf_object *obj);
+
+/**
  * Load the BPF program associated to a C program object into the kernel.
  * @cprog cprog used to generate the BPF program
  * @objfile name of ELF object file containing the BPF program generated from
  *          the filter
  * @attr object containing optional attributes to use when loading the program
- * @return file descriptor to the BPF program, or negative error
+ * @return a BPF object containing information related to the loaded program,
+ *         NULL on error
  */
-int kefir_load_cprog_from_objfile(const kefir_cprog *cprog,
-				  const char *objfile,
-				  struct kefir_load_attr *attr);
+struct bpf_object *
+kefir_load_cprog_from_objfile(const kefir_cprog *cprog,
+			      const char *objfile,
+			      struct kefir_load_attr *attr);
 
 /**
  * Load the BPF program associated to a C program object into the kernel, then
- * immediately attach it to a given interface.
+ * immediately attach it to a given interface and fill the map with rules
+ * associated to the filter.
  * @cprog cprog used to generate the BPF program
  * @objfile name of ELF object file containing the BPF program generated from
  *          the filter
  * @attr object containing optional attributes to use when loading the program
- * @return file descriptor to the BPF program, or negative error
+ * @return a BPF object containing information related to the loaded program,
+ *         NULL on error
  */
-int kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
-				    const char *objfile,
-				    struct kefir_load_attr *attr);
+struct bpf_object *
+kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
+				const char *objfile,
+				struct kefir_load_attr *attr);
+
+/**
+ * Fill the map associated to a filter loaded in the kernel with the rules
+ * associated with that filter.
+ * @cprog: cprog used to generate the BPF program loaded on the system
+ * @bpf_obj: BPF object resulting from program load
+ * @return 0 on success, error code otherwise
+ */
+int kefir_fill_map(const kefir_cprog *cprog,
+		   struct bpf_object *bpf_obj);
 
 /*
  *
