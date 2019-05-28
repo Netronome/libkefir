@@ -12,7 +12,7 @@
 
 DEFINE_ERR_FUNCTIONS("buffers")
 
-__attribute__((format(printf, 3, 4)))
+__printf(3, 4)
 int buf_append(char **buf, size_t *buf_len, const char *fmt, ...)
 {
 	size_t offset, maxlen, reqlen;

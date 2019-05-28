@@ -21,7 +21,7 @@ void kefir_strerror_reset()
 	kefir_strerror_index = 0;
 }
 
-__attribute__((format(printf, 2, 0)))
+__printf(2, 0)
 void error_vset_str(const char *prefix, const char *format, va_list ap)
 {
 	size_t len;
@@ -33,7 +33,7 @@ void error_vset_str(const char *prefix, const char *format, va_list ap)
 		  ap);
 }
 
-__attribute__((format(printf, 2, 3)))
+__printf(2, 3)
 void error_set_str(const char *prefix, const char *format, ...)
 {
 	va_list ap;
@@ -43,7 +43,7 @@ void error_set_str(const char *prefix, const char *format, ...)
 	va_end(ap);
 }
 
-__attribute__((format(printf, 2, 0)))
+__printf(2, 0)
 void error_vappend_str(const char *prefix, const char *format, va_list ap)
 {
 	if (kefir_strerror_index >= KEFIR_ERROR_STR_SIZE - strlen(prefix) - 1)
@@ -60,7 +60,7 @@ void error_vappend_str(const char *prefix, const char *format, va_list ap)
 	kefir_strerror_index += strlen(kefir_error_str + kefir_strerror_index);
 }
 
-__attribute__((format(printf, 2, 3)))
+__printf(2, 3)
 void error_append_str(const char *prefix, const char *format, ...)
 {
 	va_list ap;

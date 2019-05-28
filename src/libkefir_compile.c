@@ -62,7 +62,7 @@ struct bpf_map_filter_rule_with_masks {
 	struct bpf_map_match_with_masks	matches[KEFIR_MAX_MATCH_PER_RULE];
 };
 
-__attribute__((format(printf, 2, 0)))
+__printf(2, 0)
 static int
 libbpf_output_to_buf(enum libbpf_print_level level, const char *format,
 		     va_list ap)

@@ -32,6 +32,10 @@
 #define sizeof_member(TYPE, MEMBER) sizeof(*(&((TYPE *)0)->MEMBER))
 #endif
 
+#ifndef __printf
+#define __printf(a, b) __attribute__((format(printf, a, b)))
+#endif
+
 #define KEFIR_MAX_MATCH_PER_RULE	5
 #define KEFIR_CPROG_INIT_BUFLEN		8192
 

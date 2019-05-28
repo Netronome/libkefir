@@ -5,9 +5,10 @@
 #define LIBKEFIR_ERROR_H
 
 #include <stdarg.h>
+#include "libkefir_internals.h"
 
 #define __DO_ERR_FUNC(COMPONENT, NAME, CONTEXT)				\
-	__attribute__((unused)) __attribute__((format(printf, 1, 2)))	\
+	__attribute__((unused)) __printf(1, 2)	\
 	static void err_ ## NAME(const char *format, ...)		\
 	{								\
 		va_list ap;						\
