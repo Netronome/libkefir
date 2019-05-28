@@ -1,0 +1,57 @@
+{
+    "libkefir_version": [ 0,0,0 ],
+    "libkefir_filter": {
+        "rules": [ {
+                "matches": [ {
+                        "match_type": 5,
+                        "comp_operator": 0,
+                        "value": [ 10,10,10,0 ],
+                        "max_value": 0,
+                        "mask": [ 255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0 ],
+                        "flags": 1
+                    },{
+                        "match_type": 10,
+                        "comp_operator": 0,
+                        "value": [ 17 ],
+                        "max_value": 0,
+                        "mask": 0,
+                        "flags": 0
+                    },{
+                        "match_type": 13,
+                        "comp_operator": 0,
+                        "value": [ 34,184 ],
+                        "max_value": 0,
+                        "mask": 0,
+                        "flags": 0
+                    } ],
+                "action_code": 1
+            },{
+                "matches": [ {
+                        "match_type": 10,
+                        "comp_operator": 0,
+                        "value": [ 17 ],
+                        "max_value": 0,
+                        "mask": 0,
+                        "flags": 0
+                    },{
+                        "match_type": 13,
+                        "comp_operator": 0,
+                        "value": [ 7,208 ],
+                        "max_value": 0,
+                        "mask": 0,
+                        "flags": 0
+                    } ],
+                "action_code": 1
+            },{
+                "matches": [ {
+                        "match_type": 6,
+                        "comp_operator": 0,
+                        "value": [ 10,99,1,1 ],
+                        "max_value": 0,
+                        "mask": 0,
+                        "flags": 0
+                    } ],
+                "action_code": 0
+            } ]
+    }
+}
