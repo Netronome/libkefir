@@ -263,10 +263,14 @@ int kefir_delete_rule_by_id(kefir_filter *filter, ssize_t index)
 
 void kefir_dump_filter(const kefir_filter *filter)
 {
-	char buf[1024] = {0};
+	size_t buf_len;
+	char *buf;
 
-	dump_filter_to_buf(filter, buf, sizeof(buf));
+	if (dump_filter_to_buf(filter, &buf, &buf_len, ""))
+		return;
+
 	printf("%s", buf);
+	free(buf);
 }
 
 int kefir_save_filter_to_file(const kefir_filter *filter, const char *filename)
@@ -297,12 +301,9 @@ kefir_convert_filter_to_cprog(const kefir_filter *filter,
 
 void kefir_dump_cprog(const kefir_cprog *cprog)
 {
-	size_t buf_len = KEFIR_CPROG_INIT_BUFLEN;
+	size_t buf_len;
 	char *buf;
 
-	buf = calloc(buf_len, sizeof(char));
-	if (!buf)
-		return;
 	proggen_cprog_to_buf(cprog, &buf, &buf_len);
 	printf("%s", buf);
 }
@@ -314,7 +315,7 @@ int kefir_cprog_to_buf(const kefir_cprog *cprog, char **buf, size_t *buf_len)
 
 int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 {
-	size_t buf_len = KEFIR_CPROG_INIT_BUFLEN;
+	size_t buf_len;
 	size_t res;
 	FILE *file;
 	char *buf;
@@ -324,11 +325,6 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 		return -1;
 	}
 
-	buf = calloc(buf_len, sizeof(char));
-	if (!buf) {
-		err_fail("failed to allocate buffer for cprog");
-		return -1;
-	}
 	if (proggen_cprog_to_buf(cprog, &buf, &buf_len))
 		return -1;
 

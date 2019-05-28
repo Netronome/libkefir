@@ -10,18 +10,24 @@
 #include <linux/bpf.h>
 
 #include "list.h"
+#include "libkefir_buffer.h"
 #include "libkefir_error.h"
+#include "libkefir_dump.h"
 #include "libkefir_internals.h"
 #include "libkefir_proggen.h"
-
-// TODO just used for comments at bottom of file
-#include "libkefir_dump.h"
 
 #define MAX_LABELS_FOR_UNROLL	3
 
 #define max(a, b)	(a > b ? a : b)
 
 DEFINE_ERR_FUNCTIONS("proggen")
+
+/*
+ * Note the use of magic variable names, and the conditional "return -1"
+ * embedded in this macro
+ */
+#define GEN(...)	\
+	{ if (buf_append(buf, buf_len, __VA_ARGS__)) return -1; }
 
 static char cprog_attr_func_static_inline[] = ""
 	"static __attribute__((always_inline))\n"
@@ -107,51 +113,6 @@ static const char * const cprog_helpers[] = {
 		"			 ##__VA_ARGS__);		\\\n"
 		"})\n",
 };
-
- __attribute__((format (printf, 3, 4)))
-static int buf_append(char **buf, size_t *buf_len, const char *fmt, ...)
-{
-	size_t offset, maxlen, reqlen;
-	va_list ap;
-
-	// Should not be required as long as we don't take buffer from caller,
-	// in kefir_dump_cprog().
-	//if (!*buf) {
-	//	*buf = calloc(*buf_len ? *buf_len : 1024, sizeof(char));
-	//	if (!*buf) {
-	//		err_fail("failed to allocate memory for C prog buffer");
-	//		return -1;
-	//	}
-	//}
-
-	offset = strlen(*buf);
-	maxlen = *buf_len - offset;
-
-	va_start(ap, fmt);
-	reqlen = vsnprintf(*buf + offset, maxlen, fmt, ap);
-	va_end(ap);
-
-	while (reqlen >= maxlen) {
-		/* Output was truncated. Reallocate buffer and retry. */
-		*buf_len *= 2;
-		*buf = realloc(*buf, *buf_len);
-		if (!*buf) {
-			err_fail("failed to reallocate memory for C prog buffer");
-			return -1;
-		}
-
-		maxlen = *buf_len - offset;
-		va_start(ap, fmt);
-		reqlen = vsnprintf(*buf + offset, maxlen, fmt, ap);
-		va_end(ap);
-	}
-
-	return 0;
-}
-
-/* Note the conditional "return -1" embedded in the macro */
-#define GEN(...)	\
-	{ if (buf_append(buf, buf_len, __VA_ARGS__)) return -1; }
 
 static kefir_cprog *cprog_create(void)
 {
@@ -1618,115 +1579,22 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 	return prog;
 }
 
-/*
-static int load_rule_to_table(void *rule_ptr, va_list ap)
+static int cprog_comment(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
-	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
-	unsigned int *index;
-	size_t *buf_len;
-	char value[256];
-	char **buf;
+	size_t rules_buf_len;
+	char *rules_buf;
 
-	buf = va_arg(ap, char **);
-	buf_len = va_arg(ap, size_t *);
-	index = va_arg(ap, unsigned int *);
-
-	if (buf_append(buf, buf_len, ""
-		       "bpftool map update id $MAP_ID "
-		       "key %d %d %d %d "
-		       "value hex  "
-		       "",
-		       *index & 0xff,
-		       (*index >> 8) & 0xff,
-		       (*index >> 16) & 0xff,
-		       *index >> 24))
-		return -1;
-	*index += 1;
-
-	sprintf(value,
-		"%02x %02x %02x %02x  "
-		"%02x %02x %02x %02x  "
-		"%02x %02x %02x %02x  "
-		"%02x %02x %02x %02x  "
-		"%02x %02x %02x %02x  "
-		"%02x %02x %02x %02x  "
-		"%02x %02x %02x %02x  "
-		"00 00 00 00\n", / * padding * /
-		rule->match.match_type & 0xff,
-		(rule->match.match_type >> 8) & 0xff,
-		(rule->match.match_type >> 16) & 0xff,
-		rule->match.match_type >> 24,
-		rule->match.comp_operator & 0xff,
-		(rule->match.comp_operator >> 8) & 0xff,
-		(rule->match.comp_operator >> 16) & 0xff,
-		rule->match.comp_operator >> 24,
-		rule->match.value.data.raw[0],
-		rule->match.value.data.raw[1],
-		rule->match.value.data.raw[2],
-		rule->match.value.data.raw[3],
-		rule->match.value.data.raw[4],
-		rule->match.value.data.raw[5],
-		rule->match.value.data.raw[6],
-		rule->match.value.data.raw[7],
-		rule->match.value.data.raw[8],
-		rule->match.value.data.raw[9],
-		rule->match.value.data.raw[10],
-		rule->match.value.data.raw[11],
-		rule->match.value.data.raw[12],
-		rule->match.value.data.raw[13],
-		rule->match.value.data.raw[14],
-		rule->match.value.data.raw[15],
-		rule->action & 0xff,
-		(rule->action >> 8) & 0xff,
-		(rule->action >> 16) & 0xff,
-		rule->action >> 24);
-
-	if (buf_append(buf, buf_len, "%s", value))
-		return -1;
-
-	return 0;
-}
-*/
-
-static int
-cprog_fill_table(const kefir_cprog *prog, char **buf, size_t *buf_len)
-{
-	// unsigned int i = 0;
-	GEN("\n/******\n");
-
-	/******/
-	size_t rules_buf_len = 1024;
-	char rules_buf[rules_buf_len];
-
-	rules_buf[0] = '\0';
-
-	dump_filter_to_buf(prog->filter, rules_buf, rules_buf_len);
+	dump_filter_to_buf(prog->filter, &rules_buf, &rules_buf_len, " * ");
 
 	GEN(""
-	    "This BPF program was generated from the following filter:\n"
-	    "\n"
+	    "/*\n"
+	    " * This BPF program was generated from the following filter:\n"
+	    " *\n"
 	    "%s"
-	    "\n"
-	    "Load it with the following commands:\n"
-	    "\n"
+	    " */\n"
 	    "", rules_buf);
-	/******/
 
-	GEN(""
-	    "IFACE=nfp_p1\n"
-	    "ip -force link set dev $IFACE xdpoffload obj /tmp/libkefir_tmp_cprog.o section xdp\n"
-	    "\n"
-	    "MAP_ID=$(bpftool -jp prog show | jq '.[]|select(.dev.ifname == \"'$IFACE'\")|.map_ids[0]')\n"
-	    "");
-
-	/*
-	if (list_for_each(prog->filter->rules, load_rule_to_table,
-			  buf, buf_len, &i))
-		return -1;
-	*/
-
-	GEN("******/\n");
-
+	free(rules_buf);
 	return 0;
 }
 
@@ -1734,6 +1602,13 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	if (!prog) {
 		err_fail("cannot dump NULL C prog object");
+		return -1;
+	}
+
+	*buf_len = KEFIR_CPROG_INIT_BUFLEN;
+	*buf = calloc(*buf_len, sizeof(char));
+	if (!*buf) {
+		err_fail("failed to allocate memory for C prog buffer");
 		return -1;
 	}
 
@@ -1780,8 +1655,7 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	GEN("%s", cprog_license);
 
-	//// MOVE THIS
-	if (cprog_fill_table(prog, buf, buf_len))
+	if (cprog_comment(prog, buf, buf_len))
 		return -1;
 
 	return 0;

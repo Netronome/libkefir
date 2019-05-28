@@ -154,8 +154,9 @@ void kefir_dump_cprog(const kefir_cprog *cprog);
 /**
  * Write a generated C program into a buffer.
  * @cprog C program to write
- * @buf buffer to write to, will be realloc()'ed if required
- * @buf_len length of the buffer, will be updated if realloc() occurs
+ * @buf will be set to a pointer to an allocated buffer containing the program,
+ *	must be freed afterwards by the caller
+ * @buf_len pointed value will be set to the length of the buffer
  */
 int kefir_cprog_to_buf(const kefir_cprog *cprog,
 		       char **buf,

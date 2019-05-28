@@ -8,6 +8,7 @@
 
 #include "libkefir.h"
 
-void dump_filter_to_buf(const kefir_filter *filter, char *buf, size_t buf_len);
+int dump_filter_to_buf(const kefir_filter *filter, char **buf, size_t *buf_len,
+		       const char *prefix);
 
 #endif /* LIBKEFIR_DUMP_H */

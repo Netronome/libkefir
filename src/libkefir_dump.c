@@ -13,8 +13,12 @@
 
 #include "list.h"
 #include "libkefir.h"
+#include "libkefir_buffer.h"
+#include "libkefir_error.h"
 #include "libkefir_dump.h"
 #include "libkefir_internals.h"
+
+DEFINE_ERR_FUNCTIONS("dump")
 
 static const char *comp_operator_str(enum comp_operator op)
 {
@@ -22,11 +26,11 @@ static const char *comp_operator_str(enum comp_operator op)
 	case OPER_EQUAL:
 		return "==";
 	case OPER_LT:
-		return "< ";
+		return "<";
 	case OPER_LEQ:
 		return "<=";
 	case OPER_GT:
-		return "> ";
+		return ">";
 	case OPER_GEQ:
 		return ">=";
 	default:
@@ -41,7 +45,7 @@ static void value_str(struct kefir_value val, char *buf, size_t buf_len)
 	case KEFIR_VAL_FMT_UINT3:
 	case KEFIR_VAL_FMT_UINT6:
 	case KEFIR_VAL_FMT_UINT8:
-		snprintf(buf, buf_len, "%c", ntohs(val.data.u8));
+		snprintf(buf, buf_len, "%hhd", val.data.u8);
 		break;
 	case KEFIR_VAL_FMT_UINT12:
 	case KEFIR_VAL_FMT_UINT16:
@@ -88,24 +92,6 @@ static const char *action_str(enum action_code ac)
 	default:
 		return "";
 	}
-}
-
-__attribute__((format(printf, 3, 4)))
-static void append(char **buf, size_t *buf_len, const char *fmt, ...)
-{
-	size_t len;
-	va_list ap;
-
-	va_start(ap, fmt);
-	vsnprintf(*buf, *buf_len, fmt, ap);
-	va_end(ap);
-	len = strlen(*buf);
-
-	*buf += len;
-	if (*buf_len >= len)
-		*buf_len -= len;
-	else
-		*buf_len = 0;
 }
 
 static const char *match_type_str(enum match_type match_type)
@@ -259,36 +245,64 @@ static int dump_rule(void *rule_ptr, va_list ap)
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
 	size_t strval_len = 128;
 	char strval[strval_len];
+	unsigned int *rule_nb;
+	const char *prefix;
 	size_t *buf_len;
 	char **buf_ptr;
 	size_t i;
 
 	buf_ptr = va_arg(ap, char **);
 	buf_len = va_arg(ap, size_t *);
+	prefix = va_arg(ap, const char *);
+	rule_nb = va_arg(ap, unsigned int *);
 
+	if (buf_append(buf_ptr, buf_len, "%s - rule %2zd\n", prefix, *rule_nb))
+		return -1;
 	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
 	     rule->matches[i].match_type != KEFIR_MATCH_TYPE_UNSPEC; i++) {
-		append(buf_ptr, buf_len, "match %zd: %s\t| ", i,
-		       match_type_str(rule->matches[i].match_type));
-		append(buf_ptr, buf_len, "operator %zd: %s | ", i,
-		       comp_operator_str(rule->matches[i].comp_operator));
-		value_str(rule->matches[i].value, strval, strval_len);
-		append(buf_ptr, buf_len, "value %zd: %s\t| ", i, strval);
-		if (rule->matches[i].flags & MATCH_FLAGS_USE_MASK) {
-			mask_str(rule->matches[i].mask,
-				 sizeof(rule->matches[i].mask), strval,
+		struct kefir_match *match = &rule->matches[i];
+
+		if (buf_append(buf_ptr, buf_len, "%s\tmatch %2zd: %-32s",
+			       prefix, i, match_type_str(match->match_type)))
+			return -1;
+		if (buf_append(buf_ptr, buf_len, " | operator %2zd: %2s", i,
+			       comp_operator_str(match->comp_operator)))
+			return -1;
+		value_str(match->value, strval, strval_len);
+		if (buf_append(buf_ptr, buf_len, " | value %2zd: %-16s", i,
+			       strval))
+			return -1;
+		if (match->flags & MATCH_FLAGS_USE_MASK) {
+			mask_str(match->mask,
+				 sizeof(match->mask), strval,
 				 strval_len);
-			append(buf_ptr, buf_len, "mask %zd: %s\t| ", i, strval);
+			if (buf_append(buf_ptr, buf_len, " | mask %2zd: %s",
+				       i, strval))
+				return -1;
 		}
+		if (buf_append(buf_ptr, buf_len, "\n"))
+			return -1;
 	}
-	append(buf_ptr, buf_len, "action: %s | ", action_str(rule->action));
+	if (buf_append(buf_ptr, buf_len, "%s\taction: %s\n", prefix,
+		       action_str(rule->action)))
+		return -1;
 
-	append(buf_ptr, buf_len, "\n");
-
+	*rule_nb += 1;
 	return 0;
 }
 
-void dump_filter_to_buf(const kefir_filter *filter, char *buf, size_t buf_len)
+int dump_filter_to_buf(const kefir_filter *filter, char **buf, size_t *buf_len,
+		       const char *prefix)
 {
-	list_for_each((struct list *)filter->rules, dump_rule, &buf, &buf_len);
+	unsigned int count = 0;
+
+	*buf_len = KEFIR_CPROG_INIT_BUFLEN;
+	*buf = calloc(*buf_len, sizeof(char));
+	if (!*buf) {
+		err_fail("failed to allocate memory for dumping filter");
+		return -1;
+	}
+
+	return list_for_each((struct list *)filter->rules, dump_rule, buf,
+			     buf_len, prefix, &count);
 }
