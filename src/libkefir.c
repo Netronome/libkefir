@@ -390,7 +390,7 @@ kefir_attach_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
 
 	/* Ifindex must be 0 for loading if no hardware offload is required */
 	ifindex = attr->ifindex;
-	attr->ifindex = attr->flags && XDP_FLAGS_HW_MODE ? ifindex : 0;
+	attr->ifindex = attr->flags & XDP_FLAGS_HW_MODE ? ifindex : 0;
 	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, attr);
 	attr->ifindex = ifindex;
 	if (prog_fd < 0)

@@ -15,8 +15,8 @@
 #include "libkefir_error.h"
 #include "list.h"
 
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#ifndef array_size
+#define array_size(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
 #ifndef offsetof
@@ -25,7 +25,7 @@
 
 #ifndef container_of
 #define container_of(POINTER, TYPE, MEMBER)	\
-	(TYPE *)(POINTER) - offsetof(TYPE, MEMBER)
+	((TYPE *)(POINTER) - offsetof(TYPE, MEMBER))
 #endif
 
 #ifndef sizeof_member
@@ -52,8 +52,8 @@ enum action_code {
 	ACTION_CODE_PASS,
 };
 
-#define KEFIR_MATCH_FLAG_IPV4	1 << 0
-#define KEFIR_MATCH_FLAG_IPV6	1 << 1
+#define KEFIR_MATCH_FLAG_IPV4	(1 << 0)
+#define KEFIR_MATCH_FLAG_IPV6	(1 << 1)
 
 enum match_type {
 	KEFIR_MATCH_TYPE_UNSPEC = 0,
@@ -170,12 +170,16 @@ struct kefir_value {
 #define MATCH_FLAGS_USE_RANGE	(1 << 1)
 
 /*
- * - A type for the match, indicating the semantics of the data to match (semantics needed for optimizations).
- * - An operator to indicate what type of comparison should be performed (equality, or other arithmetic or logic operator).
- * - A value to match. If matching against a range of values, this should be the minimum value of the range.
+ * - A type for the match, indicating the semantics of the data to match
+ *   (semantics needed for optimizations).
+ * - An operator to indicate what type of comparison should be performed
+ *   (equality, or other arithmetic or logic operator).
+ * - A value to match. If matching against a range of values, this should be
+ *   the minimum value of the range.
  * - A maximum value to match, for ranges.
  * - One mask to apply to the field.
- * - Option flags, indicating for example that the match is against a range of values instead of a single value.
+ * - Option flags, indicating for example that the match is against a range of
+ *   values instead of a single value.
  */
 struct kefir_match {
 	enum match_type		match_type;

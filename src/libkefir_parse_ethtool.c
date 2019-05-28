@@ -277,37 +277,37 @@ get_flow_opts(enum ethtool_flow_type flow_type, ethtool_opts_t **opts_res,
 	switch (flow_type) {
 	case ETHTOOL_FLOW_TYPE_ETHER:
 		*opts_res = ethtool_ether_opts;
-		*opts_len_res = ARRAY_SIZE(ethtool_ether_opts);
+		*opts_len_res = array_size(ethtool_ether_opts);
 		break;
 	case ETHTOOL_FLOW_TYPE_IP4:
 		*opts_res = ethtool_ip4_opts;
-		*opts_len_res = ARRAY_SIZE(ethtool_ip4_opts);
+		*opts_len_res = array_size(ethtool_ip4_opts);
 		break;
 	case ETHTOOL_FLOW_TYPE_TCP4:
 	case ETHTOOL_FLOW_TYPE_UDP4:
 	case ETHTOOL_FLOW_TYPE_SCTP4:
 		*opts_res = ethtool_tcp4_opts;
-		*opts_len_res = ARRAY_SIZE(ethtool_tcp4_opts);
+		*opts_len_res = array_size(ethtool_tcp4_opts);
 		break;
 	case ETHTOOL_FLOW_TYPE_AH4:
 	case ETHTOOL_FLOW_TYPE_ESP4:
 		*opts_res = ethtool_esp4_opts;
-		*opts_len_res = ARRAY_SIZE(ethtool_esp4_opts);
+		*opts_len_res = array_size(ethtool_esp4_opts);
 		break;
 	case ETHTOOL_FLOW_TYPE_IP6:
 		*opts_res = ethtool_ip6_opts;
-		*opts_len_res = ARRAY_SIZE(ethtool_ip6_opts);
+		*opts_len_res = array_size(ethtool_ip6_opts);
 		break;
 	case ETHTOOL_FLOW_TYPE_TCP6:
 	case ETHTOOL_FLOW_TYPE_UDP6:
 	case ETHTOOL_FLOW_TYPE_SCTP6:
 		*opts_res = ethtool_tcp6_opts;
-		*opts_len_res = ARRAY_SIZE(ethtool_tcp6_opts);
+		*opts_len_res = array_size(ethtool_tcp6_opts);
 		break;
 	case ETHTOOL_FLOW_TYPE_AH6:
 	case ETHTOOL_FLOW_TYPE_ESP6:
 		*opts_res = ethtool_esp6_opts;
-		*opts_len_res = ARRAY_SIZE(ethtool_esp6_opts);
+		*opts_len_res = array_size(ethtool_esp6_opts);
 		break;
 	default:
 		err_bug("unknown flow type: %d", flow_type);
@@ -502,8 +502,8 @@ parse_value(const char *input, enum value_format format, void *output)
 
 static int get_action_code(const char *input, enum action_code *action)
 {
-	long int code;
 	char *endptr;
+	long code;
 
 	code = strtol(input, &endptr, 10);
 

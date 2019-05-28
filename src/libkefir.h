@@ -279,12 +279,12 @@ int kefir_fill_map(const kefir_cprog *cprog,
  * @return pointer to a buffer containing all error messages produced by the
  *         library
  */
-const char *kefir_strerror();
+const char *kefir_strerror(void);
 
 /**
  * Reset the error string. This is useful to get rid of libbpf warnings that
  * may get incrementally appended to the string.
  */
-void kefir_strerror_reset();
+void kefir_strerror_reset(void);
 
 #endif /* LIBKEFIR_H */

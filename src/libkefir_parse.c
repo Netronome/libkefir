@@ -18,7 +18,7 @@ DEFINE_ERR_FUNCTIONS("parser")
 int parse_check_and_store_uint(unsigned int res, void *output,
 			       uint32_t nb_bits)
 {
-	if (res > (unsigned long int)(2 << (nb_bits - 1)) - 1) {
+	if (res > (unsigned long)(2 << (nb_bits - 1)) - 1) {
 		err_fail("value %u is too big (expected lower than %u)", res,
 			 2 << (nb_bits - 1));
 		return -1;

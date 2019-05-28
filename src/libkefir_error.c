@@ -7,15 +7,16 @@
 
 #include "libkefir.h"
 #include "libkefir_error.h"
+#include "libkefir_internals.h"
 
 static size_t kefir_strerror_index;
 
-const char *kefir_strerror()
+const char *kefir_strerror(void)
 {
 	return kefir_error_str;
 }
 
-void kefir_strerror_reset()
+void kefir_strerror_reset(void)
 {
 	*kefir_error_str = '\0';
 	kefir_strerror_index = 0;

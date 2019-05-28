@@ -192,7 +192,7 @@ static int rule_has_matchtype(void *rule_ptr, va_list ap)
 }
 
 static bool
-filter_has_matchtype(const kefir_filter* filter, enum match_type type)
+filter_has_matchtype(const kefir_filter *filter, enum match_type type)
 {
 	return !!list_for_each((struct list *)filter->rules, rule_has_matchtype,
 			       type);
@@ -872,7 +872,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	const kefir_filter *filter = prog->filter;
 	size_t loop_cnt, loop_max = 1;
 	bool manual_unroll = false;
-	char indent[] = "	";
+	char indent[] = "\t";
 
 	GEN(""
 	    "%sbool check_match(void *matchval, size_t matchlen, struct rule_match *match)\n"
@@ -886,7 +886,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	if (use_masks)
 		GEN(""
 		    "#pragma clang loop unroll(full)\n"
-		    "	for (i = 0; i < 2; i++) \n"
+		    "	for (i = 0; i < 2; i++)\n"
 		    "		copy[i] &= (match->flags * MATCH_FLAGS_USE_MASK) ?\n"
 		    "			match->mask[i] : 0xffffffffffffffff;\n"
 		    "\n"
