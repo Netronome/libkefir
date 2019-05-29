@@ -18,8 +18,6 @@
 
 #define MAX_LABELS_FOR_UNROLL	3
 
-#define max(a, b)	(a > b ? a : b)
-
 DEFINE_ERR_FUNCTIONS("proggen")
 
 /*

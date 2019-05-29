@@ -15,25 +15,33 @@
 #include "libkefir_error.h"
 #include "list.h"
 
+#ifndef max
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
 #ifndef array_size
 #define array_size(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-#ifndef offsetof
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#ifndef offset_of
+#define offset_of(type, member) ((size_t)&((type *)0)->member)
 #endif
 
 #ifndef container_of
-#define container_of(POINTER, TYPE, MEMBER)	\
-	((TYPE *)(POINTER) - offsetof(TYPE, MEMBER))
+#define container_of(pointer, type, member)	\
+	((type *)(pointer) - offset_of(type, member))
 #endif
 
 #ifndef sizeof_member
-#define sizeof_member(TYPE, MEMBER) sizeof(*(&((TYPE *)0)->MEMBER))
+#define sizeof_member(type, member) sizeof(*(&((type *)0)->member))
 #endif
 
 #ifndef __printf
 #define __printf(a, b) __attribute__((format(printf, a, b)))
+#endif
+
+#ifndef bit
+#define bit(n) (1 << (n))
 #endif
 
 #define KEFIR_MAX_MATCH_PER_RULE	5
@@ -52,8 +60,8 @@ enum action_code {
 	ACTION_CODE_PASS,
 };
 
-#define KEFIR_MATCH_FLAG_IPV4	(1 << 0)
-#define KEFIR_MATCH_FLAG_IPV6	(1 << 1)
+#define KEFIR_MATCH_FLAG_IPV4	bit(0)
+#define KEFIR_MATCH_FLAG_IPV6	bit(1)
 
 enum match_type {
 	KEFIR_MATCH_TYPE_UNSPEC = 0,
@@ -166,8 +174,8 @@ struct kefir_value {
 	enum value_format	format;
 };
 
-#define MATCH_FLAGS_USE_MASK	(1 << 0)
-#define MATCH_FLAGS_USE_RANGE	(1 << 1)
+#define MATCH_FLAGS_USE_MASK	bit(0)
+#define MATCH_FLAGS_USE_RANGE	bit(1)
 
 /*
  * - A type for the match, indicating the semantics of the data to match
@@ -203,15 +211,15 @@ struct kefir_filter {
  * kefir_cprog
  */
 
-#define OPT_FLAGS_NEED_ETHER	(1 << 0)
-#define OPT_FLAGS_NEED_IPV4	(1 << 1)
-#define OPT_FLAGS_NEED_IPV6	(1 << 2)
-#define OPT_FLAGS_NEED_UDP	(1 << 3)
-#define OPT_FLAGS_NEED_TCP	(1 << 4)
-#define OPT_FLAGS_NEED_SCTP	(1 << 5)
+#define OPT_FLAGS_NEED_ETHER	bit(0)
+#define OPT_FLAGS_NEED_IPV4	bit(1)
+#define OPT_FLAGS_NEED_IPV6	bit(2)
+#define OPT_FLAGS_NEED_UDP	bit(3)
+#define OPT_FLAGS_NEED_TCP	bit(4)
+#define OPT_FLAGS_NEED_SCTP	bit(5)
 #define OPT_FLAGS_NEED_L4	\
 	(OPT_FLAGS_NEED_UDP + OPT_FLAGS_NEED_TCP + OPT_FLAGS_NEED_SCTP)
-#define OPT_FLAGS_USE_MASKS	(1 << 6)
+#define OPT_FLAGS_USE_MASKS	bit(6)
 
 struct kefir_cprog_options {
 	uint64_t		flags;

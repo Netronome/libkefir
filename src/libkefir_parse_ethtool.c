@@ -589,7 +589,7 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 		 * kefir_value.data, this assumes that "data" attribute is the
 		 * first attribute of struct kefir_value (null offset).
 		 */
-		if (offsetof(struct kefir_value, data) != 0) {
+		if (offset_of(struct kefir_value, data) != 0) {
 			err_bug("data offset in struct kefir_value should be null");
 			goto err_free_rule;
 		}
