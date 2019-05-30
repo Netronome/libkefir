@@ -94,8 +94,10 @@ kefir_filter *kefir_clone_filter(const kefir_filter *filter)
 	}
 
 	copy = kefir_init_filter();
-	if (!copy)
+	if (!copy) {
+		err_fail("failed to allocate memory for filter clone");
 		return NULL;
+	}
 
 	if (list_for_each((struct list *)filter->rules, clone_rule, copy,
 			  &index)) {
@@ -304,8 +306,11 @@ void kefir_dump_cprog(const kefir_cprog *cprog)
 	size_t buf_len;
 	char *buf;
 
-	proggen_cprog_to_buf(cprog, &buf, &buf_len);
+	if (proggen_cprog_to_buf(cprog, &buf, &buf_len))
+		return;
+
 	printf("%s", buf);
+	free(buf);
 }
 
 int kefir_cprog_to_buf(const kefir_cprog *cprog, char **buf, size_t *buf_len)
@@ -315,8 +320,8 @@ int kefir_cprog_to_buf(const kefir_cprog *cprog, char **buf, size_t *buf_len)
 
 int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 {
-	size_t buf_len;
-	size_t res;
+	size_t len, res;
+	int ret = -1;
 	FILE *file;
 	char *buf;
 
@@ -325,23 +330,28 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 		return -1;
 	}
 
-	if (proggen_cprog_to_buf(cprog, &buf, &buf_len))
+	if (proggen_cprog_to_buf(cprog, &buf, &len))
 		return -1;
 
 	file = fopen(filename, "w");
 	if (!file) {
 		err_fail("fail to open file %s: %s", filename, strerror(errno));
-		return -1;
+		goto free_buf;
 	}
-	res = fprintf(file, "%s", buf);
+
+	len = strlen(buf);
+	res = fwrite(buf, 1, len, file);
 	fclose(file);
-
-	if (res != strlen(buf)) {
+	if (res != len) {
 		err_fail("failed to write cprog to file %s", filename);
-		return -1;
+		goto free_buf;
 	}
 
-	return 0;
+	ret = 0;
+
+free_buf:
+	free(buf);
+	return ret;
 }
 
 /*

@@ -1598,6 +1598,7 @@ static int cprog_comment(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	return 0;
 }
 
+/* On success, caller is responsible for freeing buffer */
 int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	if (!prog) {
@@ -1609,6 +1610,7 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	*buf = calloc(*buf_len, sizeof(char));
 	if (!*buf) {
 		err_fail("failed to allocate memory for C prog buffer");
+		*buf_len = 0;
 		return -1;
 	}
 
@@ -1618,45 +1620,53 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		snprintf(cprog_attr_func_static_inline,
 			 sizeof(cprog_attr_func_static_inline), "static ");
 
-	GEN("%s", cprog_header);
+	if (buf_append(buf, buf_len, "%s", cprog_header))
+		goto err_free_buf;
 
 	if (make_helpers_decl(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (make_retval_decl(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (make_key_decl(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (make_rule_table_decl(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (cprog_func_process_l4(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (cprog_func_process_ipv4(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (cprog_func_process_ipv6(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (cprog_func_process_ether(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (cprog_func_extract_key(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (cprog_func_check_rules(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	if (make_cprog_main(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
-	GEN("%s", cprog_license);
+	if (buf_append(buf, buf_len, "%s", cprog_license))
+		goto err_free_buf;
 
 	if (cprog_comment(prog, buf, buf_len))
-		return -1;
+		goto err_free_buf;
 
 	return 0;
+
+err_free_buf:
+	free(*buf);
+	*buf = NULL;
+	*buf_len = 0;
+	return -1;
 }
