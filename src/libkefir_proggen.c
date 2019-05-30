@@ -32,6 +32,10 @@ DEFINE_ERR_FUNCTIONS("proggen")
 	 "static __attribute__((always_inline))\n" : \
 	 "static ")
 
+#define trace_printk(flags, ...)	\
+	((flags) & OPT_FLAGS_USE_PRINTK ? \
+	 "\ttrace_printk(" #__VA_ARGS__ ");\n" : "")
+
 static const char *cprog_header = ""
 	"/*\n"
 	" * This program was automatically generated with libkefir.\n"
@@ -629,12 +633,14 @@ cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "{\n"
 	    "	struct iphdr *iph = data + nh_off;\n"
 	    "\n"
+	    "%s"
 	    "	if ((void *)(iph + 1) > data_end)\n"
 	    "		return -1;\n"
 	    "	if ((void *)iph + 4 * iph->ihl > data_end)\n"
 	    "		return -1;\n"
 	    "\n"
-	    "", static_inline_attr(prog->options.flags));
+	    "", static_inline_attr(prog->options.flags),
+	    trace_printk(prog->options.flags, "process IPv4 header\n"));
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_SRC) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_ANY) ||
@@ -685,10 +691,12 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "{\n"
 	    "	struct ipv6hdr *ip6h = data + nh_off;\n"
 	    "\n"
+	    "%s"
 	    "	if ((void *)(ip6h + 1) > data_end)\n"
 	    "		return -1;\n"
 	    "\n"
-	    "", static_inline_attr(prog->options.flags));
+	    "", static_inline_attr(prog->options.flags),
+	    trace_printk(prog->options.flags, "process IPv6 header\n"));
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_SRC) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_ANY) ||
@@ -751,7 +759,9 @@ cprog_func_process_ether(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "{\n"
 	    "	struct ethhdr *eth = data;\n"
 	    "\n"
-	    "", static_inline_attr(prog->options.flags));
+	    "%s"
+	    "", static_inline_attr(prog->options.flags),
+	    trace_printk(prog->options.flags, "process L2 header\n"));
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_SRC) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_ANY))
@@ -882,9 +892,16 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "{\n"
 	    "	uint64_t copy[2] = {0};\n"
 	    "	size_t i;\n"
+	    "\n"
 	    "	memcpy(copy, matchval, matchlen);\n"
 	    "\n"
-	    "", static_inline_attr(prog->options.flags));
+	    "%s"
+	    "%s"
+	    "", static_inline_attr(prog->options.flags),
+	    trace_printk(prog->options.flags, "collected value: %x %x\n",
+			 copy[0], copy[1]),
+	    trace_printk(prog->options.flags, "compared with:   %x %x\n",
+			 match->value[0], match->value[1]));
 
 	if (use_masks)
 		GEN(""
@@ -980,7 +997,8 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	 * more. In such case, we must manually unroll the loop when generating
 	 * the program. Ugh.
 	 */
-	if (filter_diff_matchtypes(prog->filter) >= MAX_LABELS_FOR_UNROLL) {
+	if (filter_diff_matchtypes(prog->filter) >= MAX_LABELS_FOR_UNROLL ||
+	    prog->options.flags & OPT_FLAGS_USE_PRINTK) {
 		manual_unroll = true;
 		loop_max = prog->options.nb_matches;
 		indent[0] = '\0';
@@ -1419,11 +1437,11 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 static int
 make_cprog_main(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
+	bool use_printk = prog->options.flags & OPT_FLAGS_USE_PRINTK;
 	size_t i, nb_rules;
 
 	GEN("%s", cprog_prog_starts[prog->options.target]);
 
-	/* Default action: let packet pass. TODO: Provide a way to change it? */
 	GEN(""
 	    "{\n"
 	    "	void *data_end = (void *)(long)ctx->data_end;\n"
@@ -1432,7 +1450,19 @@ make_cprog_main(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	struct ethhdr *eth = data;\n"
 	    "	__u16 eth_proto;\n"
 	    "	uint8_t nh_off;\n"
-	    "	int res;\n"
+	    "");
+
+	if (use_printk) {
+		GEN(""
+		    "	int res = 0;\n"
+		    "	int tmp, i = 0;\n"
+		    "");
+	} else {
+		GEN("	int res;\n");
+	}
+
+	/* Default action: let packet pass. TODO: Provide a way to change it? */
+	GEN(""
 	    "\n"
 	    "	if (extract_key(data, data_end, &key, &eth_proto))\n"
 	    "		return RET_PASS;\n"
@@ -1441,12 +1471,26 @@ make_cprog_main(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	nb_rules = list_count(prog->filter->rules);
 
-	for (i = 0; i < nb_rules; i++)
-		GEN(""
-		    "	if (check_nth_rule(&key, %zd, &eth_proto, &res))\n"
-		    "		return res;\n"
-		    "\n"
-		    "", i);
+	if (use_printk) {
+		for (i = 0; i < nb_rules; i++)
+			GEN(""
+			    "	trace_printk(\"check rule %%d\\n\", i++);\n"
+			    "	tmp = check_nth_rule(&key, %zd, &eth_proto, &res);\n"
+			    "	trace_printk(\"> match?: %%d\\n\", tmp);\n"
+			    "	if (tmp) {\n"
+			    "		trace_printk(\"> action: %%d\\n\", res);\n"
+			    "		return res;\n"
+			    "	}\n"
+			    "\n"
+			    "", i);
+	} else {
+		for (i = 0; i < nb_rules; i++)
+			GEN(""
+			    "	if (check_nth_rule(&key, %zd, &eth_proto, &res))\n"
+			    "		return res;\n"
+			    "\n"
+			    "", i);
+	}
 
 	GEN(""
 	    "	return RET_PASS;\n"
