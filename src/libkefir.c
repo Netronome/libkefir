@@ -294,9 +294,9 @@ void kefir_destroy_cprog(kefir_cprog *cprog)
 
 kefir_cprog *
 kefir_convert_filter_to_cprog(const kefir_filter *filter,
-			      enum kefir_cprog_target target)
+			      struct kefir_cprog_attr *attr)
 {
-	return proggen_make_cprog_from_filter(filter, target);
+	return proggen_make_cprog_from_filter(filter, attr);
 }
 
 void kefir_dump_cprog(const kefir_cprog *cprog)
