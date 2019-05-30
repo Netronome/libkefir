@@ -9,6 +9,10 @@
 
 struct bpf_object;
 
+#ifndef bit
+#define bit(n) (1 << (n))
+#endif
+
 typedef struct kefir_filter kefir_filter;
 
 /*
@@ -136,11 +140,34 @@ enum kefir_cprog_target {
 void kefir_destroy_cprog(kefir_cprog *cprog);
 
 /*
+ * Flags for a struct kefir_cprog_attr.
+ *
+ * KEFIR_CPROG_FLAG_INLINE_FUNC
+ *     Force inlining of functions (no BPF-to-BPF calls).
+ * KEFIR_CPROG_FLAG_CLONE_FILTER
+ *     The filter object is normally attached to the cprog object created. Use
+ *     this flag to create and attach a clone instead. Use if you intend to
+ *     further edit the filter afterwards, but wish to keep the cprog object
+ *     unchanged.
+ * KEFIR_CPROG_FLAG_NO_VLAN
+ *     Disable generation of VLAN-related code (use if traffic and filter rules
+ *     never rely on VLAN tags).
+ * KEFIR_CPROG_FLAG_USE_PRINTK
+ *     Generate some calls to bpf_trace_printk() to help with debug.
+ */
+#define KEFIR_CPROG_FLAG_INLINE_FUNC	bit(0)
+#define KEFIR_CPROG_FLAG_CLONE_FILTER	bit(1)
+#define KEFIR_CPROG_FLAG_NO_VLAN	bit(2)
+#define KEFIR_CPROG_FLAG_USE_PRINTK	bit(3)
+
+/*
  * Struct containing attributes used when converting a filter into a C program.
  * @target target for conversion (TC/XDP)
+ * @flags option flags for conversion
  */
 struct kefir_cprog_attr {
 	enum kefir_cprog_target target;
+	unsigned int flags;
 };
 
 /**

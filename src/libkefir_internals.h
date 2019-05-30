@@ -40,10 +40,6 @@
 #define __printf(a, b) __attribute__((format(printf, a, b)))
 #endif
 
-#ifndef bit
-#define bit(n) (1 << (n))
-#endif
-
 #define KEFIR_MAX_MATCH_PER_RULE	5
 #define KEFIR_CPROG_INIT_BUFLEN		8192
 
@@ -220,6 +216,10 @@ struct kefir_filter {
 #define OPT_FLAGS_NEED_L4	\
 	(OPT_FLAGS_NEED_UDP + OPT_FLAGS_NEED_TCP + OPT_FLAGS_NEED_SCTP)
 #define OPT_FLAGS_USE_MASKS	bit(6)
+#define OPT_FLAGS_INLINE_FUNC	bit(7)
+#define OPT_FLAGS_CLONE_FILTER	bit(8)
+#define OPT_FLAGS_NO_VLAN	bit(9)
+#define OPT_FLAGS_USE_PRINTK	bit(10)
 
 struct kefir_cprog_options {
 	uint64_t		flags;

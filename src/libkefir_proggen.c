@@ -27,9 +27,10 @@ DEFINE_ERR_FUNCTIONS("proggen")
 #define GEN(...)	\
 	{ if (buf_append(buf, buf_len, __VA_ARGS__)) return -1; }
 
-static char cprog_attr_func_static_inline[] = ""
-	"static __attribute__((always_inline))\n"
-	"";
+#define static_inline_attr(flags)	\
+	((flags) & OPT_FLAGS_INLINE_FUNC ? \
+	 "static __attribute__((always_inline))\n" : \
+	 "static ")
 
 static const char *cprog_header = ""
 	"/*\n"
@@ -122,8 +123,9 @@ static kefir_cprog *cprog_create(void)
 
 void proggen_cprog_destroy(kefir_cprog *cprog)
 {
-	// TODO: If someday we copy the filter instead of just pointing to the
-	// original, don't forget to free it here
+	if (cprog->options.flags & OPT_FLAGS_CLONE_FILTER)
+		kefir_destroy_filter((kefir_filter *)cprog->filter);
+
 	free(cprog);
 }
 
@@ -560,7 +562,7 @@ cprog_func_process_l4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "{\n"
 	    "	struct tcphdr *tcph = data + l4_off;\n"
 	    "\n"
-	    "", cprog_attr_func_static_inline);
+	    "", static_inline_attr(prog->options.flags));
 
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4DATA) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4DATA) ||
@@ -632,7 +634,7 @@ cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	if ((void *)iph + 4 * iph->ihl > data_end)\n"
 	    "		return -1;\n"
 	    "\n"
-	    "", cprog_attr_func_static_inline);
+	    "", static_inline_attr(prog->options.flags));
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_SRC) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_ANY) ||
@@ -686,7 +688,7 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	if ((void *)(ip6h + 1) > data_end)\n"
 	    "		return -1;\n"
 	    "\n"
-	    "", cprog_attr_func_static_inline);
+	    "", static_inline_attr(prog->options.flags));
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_SRC) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_ANY) ||
@@ -749,7 +751,7 @@ cprog_func_process_ether(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "{\n"
 	    "	struct ethhdr *eth = data;\n"
 	    "\n"
-	    "", cprog_attr_func_static_inline);
+	    "", static_inline_attr(prog->options.flags));
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_SRC) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_ANY))
@@ -788,33 +790,36 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "		return -1;\n"
 	    "	*eth_proto = bpf_ntohs(eth->h_proto);\n"
 	    "\n"
-	    "", cprog_attr_func_static_inline);
+	    "", static_inline_attr(prog->options.flags));
 
-	// TODO: add switch to deactivate VLAN stuff
-	GEN(""
-	    "#pragma clang loop unroll(full)\n"
-	    "	for (i = 0; i < 2; i++) {\n"
-	    "		if (*eth_proto == ETH_P_8021Q || *eth_proto == ETH_P_8021AD) {\n"
-	    "			void *vlan_hdr;\n"
-	    "\n"
-	    "			vlan_hdr = data + nh_off;\n"
-	    "			nh_off += 4;\n"
-	    "			if (data + nh_off > data_end)\n"
-	    "				return -1;\n"
-	    "			*eth_proto = *(uint16_t *)(data + nh_off - 2);\n"
-	    "			*eth_proto = bpf_ntohs(*eth_proto);\n"
-	    "");
+	if (!(prog->options.flags & OPT_FLAGS_NO_VLAN)) {
+		GEN(""
+		    "#pragma clang loop unroll(full)\n"
+		    "	for (i = 0; i < 2; i++) {\n"
+		    "		if (*eth_proto == ETH_P_8021Q || *eth_proto == ETH_P_8021AD) {\n"
+		    "			void *vlan_hdr;\n"
+		    "\n"
+		    "			vlan_hdr = data + nh_off;\n"
+		    "			nh_off += 4;\n"
+		    "			if (data + nh_off > data_end)\n"
+		    "				return -1;\n"
+		    "			*eth_proto = *(uint16_t *)(data + nh_off - 2);\n"
+		    "			*eth_proto = bpf_ntohs(*eth_proto);\n"
+		    "");
+	}
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_VLAN_ID))
 		GEN("			key->vlan_id[i] = *(uint16_t *)(vlan_hdr);\n");
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
 		GEN("			key->vlan_etype[i] = *(uint16_t *)(vlan_hdr + 2);\n");
 
-	GEN(""
-	    "		}\n"
-	    "	}\n"
-	    "\n"
-	    "");
+	if (!(prog->options.flags & OPT_FLAGS_NO_VLAN)) {
+		GEN(""
+		    "		}\n"
+		    "	}\n"
+		    "\n"
+		    "");
+	}
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_ETHER_PROTO))
 		GEN("	key->ether_proto = *(uint16_t *)(data + nh_off - 2);\n");
@@ -879,7 +884,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	size_t i;\n"
 	    "	memcpy(copy, matchval, matchlen);\n"
 	    "\n"
-	    "", cprog_attr_func_static_inline);
+	    "", static_inline_attr(prog->options.flags));
 
 	if (use_masks)
 		GEN(""
@@ -967,7 +972,8 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	if (!rule)\n"
 	    "		return 0;\n"
 	    "\n"
-	    "", cprog_attr_func_static_inline, cprog_attr_func_static_inline);
+	    "", static_inline_attr(prog->options.flags),
+	    static_inline_attr(prog->options.flags));
 
 	/*
 	 * Clang fails to unroll the loops if the switch contains 10 labels or
@@ -1521,15 +1527,17 @@ update_options_from_matchtype(enum match_type match_type,
 
 /*
  * Should be called as
- * int update_cprog_options(struct kefir_rule *rule_ptr, kefir_cprog *prog)
+ * int update_cprog_options(struct kefir_rule *rule_ptr, kefir_cprog *prog, struct kefir_cprog_attr *attr);
  */
 static int update_cprog_options(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
+	struct kefir_cprog_attr *attr;
 	kefir_cprog *prog;
 	size_t i;
 
 	prog = va_arg(ap, kefir_cprog *);
+	attr = va_arg(ap, struct kefir_cprog_attr *);
 
 	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
 	     rule->matches[i].match_type != KEFIR_MATCH_TYPE_UNSPEC; i++) {
@@ -1542,11 +1550,24 @@ static int update_cprog_options(void *rule_ptr, va_list ap)
 
 	prog->options.nb_matches = max(prog->options.nb_matches, i);
 
-	// FIXME
-	/************* for test */
+	if (attr->flags & KEFIR_CPROG_FLAG_INLINE_FUNC)
+		prog->options.flags |= OPT_FLAGS_INLINE_FUNC;
+
+	if (attr->flags & KEFIR_CPROG_FLAG_CLONE_FILTER)
+		prog->options.flags |= OPT_FLAGS_CLONE_FILTER;
+
+	if (attr->flags & KEFIR_CPROG_FLAG_NO_VLAN &&
+	    !filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_VLAN_ID) &&
+	    !filter_has_matchtype(prog->filter,
+				  KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
+		prog->options.flags |= OPT_FLAGS_NO_VLAN;
+
+	if (attr->flags & KEFIR_CPROG_FLAG_USE_PRINTK) {
+		prog->options.flags |= OPT_FLAGS_USE_PRINTK;
+		add_req_helper(prog, BPF_FUNC_trace_printk);
+	}
+
 	add_req_helper(prog, BPF_FUNC_map_lookup_elem);
-	add_req_helper(prog, BPF_FUNC_trace_printk);
-	/************* for test */
 
 	return 0;
 }
@@ -1557,24 +1578,34 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 {
 	kefir_cprog *prog;
 
+	if (!filter || !kefir_sizeof_filter(filter)) {
+		err_fail("cannot convert NULL or empty filter");
+		return NULL;
+	}
+
 	prog = cprog_create();
 	if (!prog) {
 		err_fail("failed to allocate memory for C prog object");
 		return NULL;
 	}
 
-	if (!filter || !kefir_sizeof_filter(filter)) {
-		err_fail("cannot convert NULL or empty filter");
-		return NULL;
+	if (attr->flags & KEFIR_CPROG_FLAG_CLONE_FILTER) {
+		kefir_filter *clone;
+
+		clone = kefir_clone_filter(filter);
+		if (!clone) {
+			proggen_cprog_destroy(prog);
+			return NULL;
+		}
+		prog->filter = clone;
+	} else {
+		prog->filter = filter;
 	}
 
 	prog->options.target = attr->target;
 
-	list_for_each((struct list *)filter->rules, update_cprog_options, prog);
-
-	// TODO: We probably want to copy the filter to avoid bad surprises
-	// Needs to move init filter function somewhere accessible from here
-	prog->filter = filter;
+	list_for_each((struct list *)prog->filter->rules, update_cprog_options,
+		      prog, attr);
 
 	return prog;
 }
@@ -1613,12 +1644,6 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		*buf_len = 0;
 		return -1;
 	}
-
-	/* Deactivate inlining */
-	// TODO: add a switch to trigger this
-	if (false)
-		snprintf(cprog_attr_func_static_inline,
-			 sizeof(cprog_attr_func_static_inline), "static ");
 
 	if (buf_append(buf, buf_len, "%s", cprog_header))
 		goto err_free_buf;
