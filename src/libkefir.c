@@ -50,17 +50,17 @@ void kefir_destroy_filter(kefir_filter *filter)
 
 /*
  * Should be called as
- * int clone_rule(void *rule_ptr, kefir_filter *cpy_filter, size_t index)
+ * int clone_rule(void *rule_ptr, kefir_filter *cpy_filter, size_t *index)
  */
 static int clone_rule(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *ref_rule = (struct kefir_rule *)rule_ptr;
 	struct kefir_rule *cpy_rule;
 	kefir_filter *cpy_filter;
-	size_t index;
+	size_t *index;
 
 	cpy_filter = va_arg(ap, kefir_filter *);
-	index = va_arg(ap, size_t);
+	index = va_arg(ap, size_t *);
 
 	cpy_rule = malloc(sizeof(struct kefir_rule));
 	if (!cpy_rule) {
@@ -70,7 +70,13 @@ static int clone_rule(void *rule_ptr, va_list ap)
 
 	memcpy(cpy_rule, ref_rule, sizeof(struct kefir_rule));
 
-	return kefir_add_rule_to_filter(cpy_filter, cpy_rule, index);
+	if (kefir_add_rule_to_filter(cpy_filter, cpy_rule, *index)) {
+		free(cpy_rule);
+		return -1;
+	}
+
+	*index += 1;
+	return 0;
 }
 
 kefir_filter *kefir_clone_filter(const kefir_filter *filter)
@@ -88,7 +94,7 @@ kefir_filter *kefir_clone_filter(const kefir_filter *filter)
 		return NULL;
 
 	if (list_for_each((struct list *)filter->rules, clone_rule, copy,
-			  index++)) {
+			  &index)) {
 		kefir_destroy_filter(copy);
 		return NULL;
 	}
