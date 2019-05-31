@@ -53,8 +53,9 @@ void kefir_destroy_filter(kefir_filter *filter)
 }
 
 /*
- * Should be called as
- * int clone_rule(void *rule_ptr, kefir_filter *cpy_filter, size_t *index)
+ * Variadic list should contain:
+ *     kefir_kefir *cpy_filter
+ *     size_t *index
  */
 static int clone_rule(void *rule_ptr, va_list ap)
 {

@@ -174,8 +174,8 @@ make_retval_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 /*
- * Should be called as
- * int rule_has_matchtype(void *rule_ptr, enum match_type type);
+ * Variadic list should contain:
+ *     enum match_type type
  */
 static int rule_has_matchtype(void *rule_ptr, va_list ap)
 {
@@ -203,8 +203,9 @@ filter_has_matchtype(const kefir_filter *filter, enum match_type type)
 }
 
 /*
- * Should be called as
- * int rule_has_matchtype(void *rule_ptr, enum comp_operator op, int expect_op);
+ * Variadic list should contain:
+ *     enum comp_operator op
+ *     int expect_op
  */
 static int rule_has_comp_operator(void *rule_ptr, va_list ap)
 {
@@ -1570,8 +1571,9 @@ update_options_from_matchtype(enum match_type match_type,
 }
 
 /*
- * Should be called as
- * int update_cprog_options(struct kefir_rule *rule_ptr, kefir_cprog *prog, struct kefir_cprog_attr *attr);
+ * Variadic list should contain:
+ *     kefir_cprog *prog
+ *     struct kefir_cprog_attr *attr
  */
 static int update_cprog_options(void *rule_ptr, va_list ap)
 {

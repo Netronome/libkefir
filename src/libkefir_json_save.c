@@ -103,8 +103,8 @@ static int save_match(const struct kefir_match *match, json_writer_t *jw)
 }
 
 /*
- * Should be called as
- * int save_rule(struct kefir_rule *rule_ptr, json_writer_t *jw)
+ * Variadic list should contain:
+ *     json_writer_t *jw
  */
 static int save_rule(void *rule_ptr, va_list ap)
 {

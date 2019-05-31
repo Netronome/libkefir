@@ -237,8 +237,11 @@ static const char *match_type_str(enum match_type match_type)
 }
 
 /*
- * Should be called as
- * int dump_rule(struct kefir_rule *rule_ptr, char **buf_ptr, size_t *buf_len)
+ * Variadic list should contain:
+ *     char **buf_ptr
+ *     size_t *buf_len
+ *     const char *prefix
+ *     unsigned int *rule_nb
  */
 static int dump_rule(void *rule_ptr, va_list ap)
 {

@@ -191,8 +191,11 @@ err_free_objfile:
 }
 
 /*
- * Should be called as
- * int fill_one_rule(void *rule_ptr, int map_fd, int *index, unsigned int nb_matches, uint64_t flags);
+ * Variadic list should contain:
+ *     int map_fd
+ *     int *index
+ *     unsigned int nb_matches
+ *     uint64_t flags
  */
 static int fill_one_rule(void *rule_ptr, va_list ap)
 {
