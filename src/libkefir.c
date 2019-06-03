@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #include <bpf/libbpf.h>
 
@@ -412,4 +414,63 @@ kefir_cprog_load_attach_to_kernel(const kefir_cprog *cprog, const char *objfile,
 int kefir_cprog_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
 {
 	return compile_fill_map(cprog, bpf_obj);
+}
+
+struct bpf_object *kefir_filter_attach(const kefir_filter *filter, int ifindex)
+{
+	struct kefir_compil_attr compil_attr = {0};
+	struct kefir_cprog_attr cprog_attr = {
+		.target = KEFIR_CPROG_TARGET_XDP,
+	};
+	struct kefir_load_attr load_attr = {
+		.ifindex = ifindex,
+	};
+
+	return kefir_filter_attach_attr(filter, &cprog_attr, &compil_attr,
+					&load_attr);
+}
+
+struct bpf_object *
+kefir_filter_attach_attr(const kefir_filter *filter,
+			 const struct kefir_cprog_attr *cprog_attr,
+			 const struct kefir_compil_attr *compil_attr,
+			 const struct kefir_load_attr *load_attr)
+{
+	char tmpfile[] = "/tmp/kefir_filter_XXXXXXXXXX.YZ";
+	time_t cur_time = time(NULL);
+	struct bpf_object *obj;
+	kefir_cprog *cprog;
+
+	if (cur_time == (time_t) -1) {
+		snprintf(tmpfile, sizeof(tmpfile),
+			 "/tmp/kefir_filter_0000000000.c");
+		errno = 0;
+	} else {
+		snprintf(tmpfile, sizeof(tmpfile),
+			 "/tmp/kefir_filter_%ld.c", cur_time);
+	}
+
+	cprog = kefir_filter_convert_to_cprog(filter, cprog_attr);
+	if (!cprog)
+		return NULL;
+
+	if (kefir_cprog_to_file(cprog, tmpfile))
+		goto destroy_cprog;
+
+	if (kefir_cfile_compile_to_bpf(tmpfile, compil_attr))
+		goto delete_cfile;
+
+	*(tmpfile + strlen(tmpfile) - 1) = 'o';
+	obj = kefir_cprog_load_attach_to_kernel(cprog, tmpfile, load_attr);
+
+	unlink(tmpfile);
+	sprintf(tmpfile + strlen(tmpfile) - 1, "ll");
+	unlink(tmpfile);
+	sprintf(tmpfile + strlen(tmpfile) - 2, "c");
+delete_cfile:
+	unlink(tmpfile);
+destroy_cprog:
+	kefir_cprog_destroy(cprog);
+
+	return obj;
 }

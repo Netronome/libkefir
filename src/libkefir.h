@@ -312,6 +312,36 @@ kefir_cprog_load_attach_to_kernel(const kefir_cprog *cprog,
 int kefir_cprog_fill_map(const kefir_cprog *cprog,
 			 struct bpf_object *bpf_obj);
 
+/**
+ * All-in-one shortcut function to turn a filter into a cprog object, convert
+ * it into a BPF program, load it, and attach it to an interface.
+ * @filter: filter to use
+ * @ifindex: interface to which the filter should be attached
+ * @return a BPF object containing information related to the loaded program,
+ *         NULL on error
+ */
+struct bpf_object *
+kefir_filter_attach(const kefir_filter *filter,
+		    int ifindex);
+
+/**
+ * All-in-one shortcut function to turn a filter into a cprog object, convert
+ * it into a BPF program, load it, and attach it to an interface.
+ * @filter: filter to use
+ * @cprog_attr: object containing attributes to use when generating C code from
+ *              filter
+ * @compil_attr: object containing optional attributes to use when compiling
+ *               the filter into BPF
+ * @load_attr: object containing attributes to use when loading the program
+ * @return a BPF object containing information related to the loaded program,
+ *         NULL on error
+ */
+struct bpf_object *
+kefir_filter_attach_attr(const kefir_filter *filter,
+			 const struct kefir_cprog_attr *cprog_attr,
+			 const struct kefir_compil_attr *compil_attr,
+			 const struct kefir_load_attr *load_attr);
+
 /*
  *
  * Other
