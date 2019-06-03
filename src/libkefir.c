@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <linux/if_link.h>
-
 #include <bpf/libbpf.h>
 
 #include "list.h"
@@ -359,12 +357,14 @@ free_buf:
  * Compile to eBPF, load, attach programs
  */
 
-int kefir_compile_to_bpf(const char *c_file, const char *opt_object_file,
-			 const char *opt_ll_file, const char *opt_clang_bin,
-			 const char *opt_llc_bin)
+int kefir_cfile_compile_to_bpf(const char *c_file,
+			       const struct kefir_compil_attr *attr)
 {
-	return compile_cfile_to_bpf(c_file, opt_object_file, opt_ll_file,
-				    opt_clang_bin, opt_llc_bin);
+	return compile_cfile_to_bpf(c_file,
+				    attr ? attr->object_file : NULL,
+				    attr ? attr->ll_file : NULL,
+				    attr ? attr->clang_bin : NULL,
+				    attr ? attr->llc_bin : NULL);
 }
 
 void kefir_bpfobj_destroy(struct bpf_object *obj)
@@ -381,8 +381,8 @@ int kefir_bpfobj_get_prog_fd(struct bpf_object *obj)
 }
 
 struct bpf_object *
-kefir_load_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
-			      struct kefir_load_attr *attr)
+kefir_cprog_load_to_kernel(const kefir_cprog *cprog, const char *objfile,
+			   const struct kefir_load_attr *attr)
 {
 	struct bpf_object *bpf_obj;
 
@@ -393,17 +393,13 @@ kefir_load_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
 }
 
 struct bpf_object *
-kefir_attach_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
-				struct kefir_load_attr *attr)
+kefir_cprog_load_attach_to_kernel(const kefir_cprog *cprog, const char *objfile,
+				  const struct kefir_load_attr *attr)
 {
 	struct bpf_object *bpf_obj;
-	int prog_fd, ifindex;
+	int prog_fd;
 
-	/* Ifindex must be 0 for loading if no hardware offload is required */
-	ifindex = attr->ifindex;
-	attr->ifindex = attr->flags & XDP_FLAGS_HW_MODE ? ifindex : 0;
 	prog_fd = compile_load_from_objfile(cprog, objfile, &bpf_obj, attr);
-	attr->ifindex = ifindex;
 	if (prog_fd < 0)
 		return NULL;
 

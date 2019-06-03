@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include <linux/bpf.h>
+#include <linux/if_link.h>
 #include <sys/wait.h>
 
 #include <bpf/bpf.h>
@@ -275,7 +276,7 @@ static int fill_one_rule(void *rule_ptr, va_list ap)
 
 int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 			      struct bpf_object **bpf_obj,
-			      struct kefir_load_attr *attr)
+			      const struct kefir_load_attr *attr)
 {
 	struct bpf_prog_load_attr load_attr = {0};
 	int prog_fd;
@@ -283,7 +284,8 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 	libbpf_set_print(libbpf_output_to_buf);
 
 	load_attr.file = objfile;
-	load_attr.ifindex = attr->ifindex;
+	/* Ifindex must be 0 for loading if no hardware offload is required */
+	load_attr.ifindex = attr->flags & XDP_FLAGS_HW_MODE ? attr->ifindex : 0;
 	load_attr.log_level = attr->log_level;
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:
@@ -333,7 +335,7 @@ int compile_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
 }
 
 int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
-			   int prog_fd, struct kefir_load_attr *attr)
+			   int prog_fd, const struct kefir_load_attr *attr)
 {
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:

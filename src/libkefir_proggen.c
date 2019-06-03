@@ -1620,7 +1620,7 @@ static int update_cprog_options(void *rule_ptr, va_list ap)
 
 kefir_cprog *
 proggen_make_cprog_from_filter(const kefir_filter *filter,
-			       struct kefir_cprog_attr *attr)
+			       const struct kefir_cprog_attr *attr)
 {
 	kefir_cprog *prog;
 
