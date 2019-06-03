@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-struct bpf_object;
+#include <bpf/libbpf.h>
 
 #ifndef bit
 #define bit(n) (1 << (n))
@@ -33,37 +33,38 @@ enum kefir_rule_type {
  * Create and initialize a new filter object.
  * @return a pointer to the filter (or NULL and sets errno if an error occurred)
  */
-kefir_filter *kefir_init_filter(void);
+kefir_filter *kefir_filter_init(void);
 
 /**
  * Destroy a filter object and free all associated memory.
+ * @filter: filter to destroy
  */
-void kefir_destroy_filter(kefir_filter *filter);
+void kefir_filter_destroy(kefir_filter *filter);
 
 /**
  * Copy a filter object.
- * @filter the filter to copy
+ * @filter: the filter to copy
  * @return a new filter object (the caller is responsible for its destruction)
  */
-kefir_filter *kefir_clone_filter(const kefir_filter *filter);
+kefir_filter *kefir_filter_clone(const kefir_filter *filter);
 
 /**
  * Count the number of rules present in the list of a filter.
- * @filter the filter for which to count the rules
+ * @filter: the filter for which to count the rules
  * @return the number of rules in that filter
  */
-size_t kefir_sizeof_filter(const kefir_filter *filter);
+size_t kefir_filter_size(const kefir_filter *filter);
 
 /**
  * Add a rule to a filter.
- * @filter object to add the rule to
- * @rule_type type of the rule to add
- * @user_rule array of words defining the rule in the format for rule_type
- * @rule_size number of words in user_rule
- * @index index of the rule in the list (overwrite if pre-existing)
+ * @filter: object to add the rule to
+ * @rule_type: type of the rule to add
+ * @user_rule: array of words defining the rule in the format for rule_type
+ * @rule_size: number of words in user_rule
+ * @index: index of the rule in the list (overwrite if pre-existing)
  * @return 0 on success, error code otherwise
  */
-int kefir_load_rule(kefir_filter *filter,
+int kefir_rule_load(kefir_filter *filter,
 		    enum kefir_rule_type rule_type,
 		    const char **user_rule,
 		    size_t rule_size,
@@ -71,13 +72,13 @@ int kefir_load_rule(kefir_filter *filter,
 
 /**
  * Add a rule to a filter.
- * @filter object to add the rule to
- * @rule_type type of the rule to add
- * @user_rule single string defining the rule in the format for rule_type
- * @index index of the rule in the list (overwrite if pre-existing)
+ * @filter: object to add the rule to
+ * @rule_type: type of the rule to add
+ * @user_rule: single string defining the rule in the format for rule_type
+ * @index: index of the rule in the list (overwrite if pre-existing)
  * @return 0 on success, error code otherwise
  */
-int kefir_load_rule_l(kefir_filter *filter,
+int kefir_rule_load_l(kefir_filter *filter,
 		      enum kefir_rule_type rule_type,
 		      const char *user_rule,
 		      ssize_t index);
@@ -85,16 +86,16 @@ int kefir_load_rule_l(kefir_filter *filter,
 /**
  * Delete a rule at given index from a filter.
  * @filter: object to remove the rule from
- * @index index of the rule to delete
+ * @index: index of the rule to delete
  * @return 0 on success, error code otherwise
  */
-int kefir_delete_rule_by_id(kefir_filter *filter,
+int kefir_rule_delete_by_id(kefir_filter *filter,
 			    ssize_t index);
 
 /** Dump all rules of a filter to the console.
  * @filter: object to dump
  */
-void kefir_dump_filter(const kefir_filter *filter);
+void kefir_filter_dump(const kefir_filter *filter);
 
 /*
  *
@@ -104,21 +105,21 @@ void kefir_dump_filter(const kefir_filter *filter);
 
 /**
  * Save a filter to a file
- * @filter filter to save
- * @filename name of the file where to save the filter (it will be created
- *           if necessary, overwritten overwise)
+ * @filter: filter to save
+ * @filename: name of the file where to save the filter (it will be created
+ *            if necessary, overwritten overwise)
  * @return 0 on success, error code otherwise
  */
-int kefir_save_filter_to_file(const kefir_filter *filter,
+int kefir_filter_save_to_file(const kefir_filter *filter,
 			      const char *filename);
 
 /**
  * Load a filter from a backup
- * @filename name of the file to load the filter from
+ * @filename: name of the file to load the filter from
  * @return filter object on success (to be freed by the user on exit), NULL
  *         and sets errno otherwise
  */
-kefir_filter *kefir_load_filter_from_file(const char *filename);
+kefir_filter *kefir_filter_load_from_file(const char *filename);
 
 /*
  *
@@ -135,9 +136,9 @@ enum kefir_cprog_target {
 
 /**
  * Destroy and free allocated memory for a C program object.
- * @cprog C program object to destroy
+ * @cprog: C program object to destroy
  */
-void kefir_destroy_cprog(kefir_cprog *cprog);
+void kefir_cprog_destroy(kefir_cprog *cprog);
 
 /*
  * Flags for a struct kefir_cprog_attr.
@@ -172,8 +173,8 @@ struct kefir_cprog_attr {
 
 /**
  * Convert a filter into an eBPF-compatible C program.
- * @filter filter to convert
- * @target target for conversion (TC/XDP)
+ * @filter: filter to convert
+ * @target: target for conversion (TC/XDP)
  * @return an object containing all parameters required to create an
  *         eBPF-compatible C program
  */
@@ -182,15 +183,15 @@ kefir_cprog *kefir_convert_filter_to_cprog(const kefir_filter *filter,
 
 /**
  * Dump a C program generated by the library.
- * @cprog program to dump
+ * @cprog: program to dump
  */
-void kefir_dump_cprog(const kefir_cprog *cprog);
+void kefir_cprog_to_stdout(const kefir_cprog *cprog);
 
 /**
  * Write a generated C program into a buffer.
- * @cprog C program to write
- * @buf will be set to a pointer to an allocated buffer containing the program,
- *	must be freed afterwards by the caller
+ * @cprog: C program to write
+ * @buf: will be set to a pointer to an allocated buffer containing the program,
+ *       must be freed afterwards by the caller
  * @buf_len pointed value will be set to the length of the buffer
  */
 int kefir_cprog_to_buf(const kefir_cprog *cprog,
@@ -199,8 +200,8 @@ int kefir_cprog_to_buf(const kefir_cprog *cprog,
 
 /**
  * Save a C program to a file on the disk.
- * @cprog C program to save
- * @filename name of file to write into (existing file will be overwritten)
+ * @cprog: C program to save
+ * @filename: name of file to write into (existing file will be overwritten)
  * @return 0 on success, error code otherwise
  */
 int kefir_cprog_to_file(const kefir_cprog *cprog,
@@ -239,9 +240,9 @@ int kefir_compile_to_bpf(const char *c_file,
  *           attached (or where the map should be allocated, for hardware
  *           offload, even if the program is simply loaded)
  * @log_level: log level to pass to kernel verifier when loading the program
- * @flags for XDP: passed to netlink to set XDP mode (socket buffer, driver,
- *        hardware) (see <linux/if_link.h>)
- *        for TC: TODO (No support yet for TC)
+ * @flags: for XDP: passed to netlink to set XDP mode (socket buffer, driver,
+ *         hardware) (see <linux/if_link.h>)
+ *         for TC: TODO (No support yet for TC)
  */
 struct kefir_load_attr {
 	int ifindex;
@@ -253,22 +254,22 @@ struct kefir_load_attr {
  * Unload and destroy a BPF object and free all associated memory.
  * @obj: pointer to the BPF object to destroy
  */
-void kefir_destroy_bpf_object(struct bpf_object *obj);
+void kefir_bpfobj_destroy(struct bpf_object *obj);
 
 /**
  * Retrieve the file descriptor of the filter program associated with a BPF
  * object.
- * @obj the BPF object resulting from a program load or attachment
+ * @obj: the BPF object resulting from a program load or attachment
  * @return a file descriptor related to that program
  */
-int kefir_get_prog_fd(struct bpf_object *obj);
+int kefir_bpfobj_get_prog_fd(struct bpf_object *obj);
 
 /**
  * Load the BPF program associated to a C program object into the kernel.
- * @cprog cprog used to generate the BPF program
- * @objfile name of ELF object file containing the BPF program generated from
- *          the filter
- * @attr object containing optional attributes to use when loading the program
+ * @cprog: cprog used to generate the BPF program
+ * @objfile: name of ELF object file containing the BPF program generated from
+ *           the filter
+ * @attr: object containing optional attributes to use when loading the program
  * @return a BPF object containing information related to the loaded program,
  *         NULL on error
  */
@@ -281,10 +282,10 @@ kefir_load_cprog_from_objfile(const kefir_cprog *cprog,
  * Load the BPF program associated to a C program object into the kernel, then
  * immediately attach it to a given interface and fill the map with rules
  * associated to the filter.
- * @cprog cprog used to generate the BPF program
- * @objfile name of ELF object file containing the BPF program generated from
- *          the filter
- * @attr object containing optional attributes to use when loading the program
+ * @cprog: cprog used to generate the BPF program
+ * @objfile: name of ELF object file containing the BPF program generated from
+ *           the filter
+ * @attr: object containing optional attributes to use when loading the program
  * @return a BPF object containing information related to the loaded program,
  *         NULL on error
  */
@@ -300,8 +301,8 @@ kefir_attach_cprog_from_objfile(const kefir_cprog *cprog,
  * @bpf_obj: BPF object resulting from program load
  * @return 0 on success, error code otherwise
  */
-int kefir_fill_map(const kefir_cprog *cprog,
-		   struct bpf_object *bpf_obj);
+int kefir_cprog_fill_map(const kefir_cprog *cprog,
+			 struct bpf_object *bpf_obj);
 
 /*
  *

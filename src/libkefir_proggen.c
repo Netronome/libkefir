@@ -128,7 +128,7 @@ static kefir_cprog *cprog_create(void)
 void proggen_cprog_destroy(kefir_cprog *cprog)
 {
 	if (cprog->options.flags & OPT_FLAGS_CLONE_FILTER)
-		kefir_destroy_filter((kefir_filter *)cprog->filter);
+		kefir_filter_destroy((kefir_filter *)cprog->filter);
 
 	free(cprog);
 }
@@ -1624,7 +1624,7 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 {
 	kefir_cprog *prog;
 
-	if (!filter || !kefir_sizeof_filter(filter)) {
+	if (!filter || !kefir_filter_size(filter)) {
 		err_fail("cannot convert NULL or empty filter");
 		return NULL;
 	}
@@ -1638,7 +1638,7 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 	if (attr->flags & KEFIR_CPROG_FLAG_CLONE_FILTER) {
 		kefir_filter *clone;
 
-		clone = kefir_clone_filter(filter);
+		clone = kefir_filter_clone(filter);
 		if (!clone) {
 			proggen_cprog_destroy(prog);
 			return NULL;

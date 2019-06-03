@@ -30,7 +30,7 @@ DEFINE_ERR_FUNCTIONS("core")
  * Filter management
  */
 
-kefir_filter *kefir_init_filter(void)
+kefir_filter *kefir_filter_init(void)
 {
 	kefir_filter *filter;
 
@@ -43,7 +43,7 @@ static void destroy_rule(void *rule)
 	free(rule);
 }
 
-void kefir_destroy_filter(kefir_filter *filter)
+void kefir_filter_destroy(kefir_filter *filter)
 {
 	if (!filter)
 		return;
@@ -84,9 +84,9 @@ static int clone_rule(void *rule_ptr, va_list ap)
 	return 0;
 }
 
-kefir_filter *kefir_clone_filter(const kefir_filter *filter)
+kefir_filter *kefir_filter_clone(const kefir_filter *filter)
 {
-	struct kefir_filter *copy;
+	kefir_filter *copy;
 	size_t index = 0;
 
 	if (!filter) {
@@ -94,7 +94,7 @@ kefir_filter *kefir_clone_filter(const kefir_filter *filter)
 		return NULL;
 	}
 
-	copy = kefir_init_filter();
+	copy = kefir_filter_init();
 	if (!copy) {
 		err_fail("failed to allocate memory for filter clone");
 		return NULL;
@@ -102,14 +102,14 @@ kefir_filter *kefir_clone_filter(const kefir_filter *filter)
 
 	if (list_for_each((struct list *)filter->rules, clone_rule, copy,
 			  &index)) {
-		kefir_destroy_filter(copy);
+		kefir_filter_destroy(copy);
 		return NULL;
 	}
 
 	return copy;
 }
 
-size_t kefir_sizeof_filter(const kefir_filter *filter)
+size_t kefir_filter_size(const kefir_filter *filter)
 {
 	return list_count(filter->rules);
 }
@@ -121,9 +121,9 @@ int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
 	struct list *rule_list;
 	ssize_t filter_len;
 
-	filter_len = kefir_sizeof_filter(filter);
+	filter_len = kefir_filter_size(filter);
 	if (index < 0)
-		index = kefir_sizeof_filter(filter) + 1 + index;
+		index = kefir_filter_size(filter) + 1 + index;
 	if (index < 0 || index > filter_len) {
 		err_fail("index out of bounds (list has %zd filter%s)",
 			 filter_len, filter_len > 1 ? "s" : "");
@@ -164,7 +164,7 @@ static void update_from_mask(struct kefir_rule *rule)
 	}
 }
 
-int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
+int kefir_rule_load(kefir_filter *filter, enum kefir_rule_type rule_type,
 		    const char **user_rule, size_t rule_size, ssize_t index)
 {
 	struct kefir_rule *rule;
@@ -189,7 +189,7 @@ int kefir_load_rule(kefir_filter *filter, enum kefir_rule_type rule_type,
 	return kefir_add_rule_to_filter(filter, rule, index);
 }
 
-int kefir_load_rule_l(kefir_filter *filter, enum kefir_rule_type rule_type,
+int kefir_rule_load_l(kefir_filter *filter, enum kefir_rule_type rule_type,
 		      const char *user_rule, ssize_t index)
 {
 	size_t rule_size = 1, i = 0;
@@ -230,7 +230,7 @@ int kefir_load_rule_l(kefir_filter *filter, enum kefir_rule_type rule_type,
 		rule_words[i] = word;
 	}
 
-	res = kefir_load_rule(filter, rule_type, rule_words, rule_size, index);
+	res = kefir_rule_load(filter, rule_type, rule_words, rule_size, index);
 	free(rule_words);
 
 free_rule_cpy:
@@ -255,7 +255,7 @@ free_rule_cpy:
  * rule to keep the order in which it was added, so we could instead match on
  * this user id in the future.
  */
-int kefir_delete_rule_by_id(kefir_filter *filter, ssize_t index)
+int kefir_rule_delete_by_id(kefir_filter *filter, ssize_t index)
 {
 	return list_delete(filter->rules, index, destroy_rule);
 }
@@ -264,7 +264,7 @@ int kefir_delete_rule_by_id(kefir_filter *filter, ssize_t index)
  * Dump, save and restore filter
  */
 
-void kefir_dump_filter(const kefir_filter *filter)
+void kefir_filter_dump(const kefir_filter *filter)
 {
 	size_t buf_len;
 	char *buf;
@@ -276,12 +276,12 @@ void kefir_dump_filter(const kefir_filter *filter)
 	free(buf);
 }
 
-int kefir_save_filter_to_file(const kefir_filter *filter, const char *filename)
+int kefir_filter_save_to_file(const kefir_filter *filter, const char *filename)
 {
 	return json_save_filter_to_file(filter, filename);
 }
 
-kefir_filter *kefir_load_filter_from_file(const char *filename)
+kefir_filter *kefir_filter_load_from_file(const char *filename)
 {
 	return json_restore_filter_from_file(filename);
 }
@@ -290,19 +290,19 @@ kefir_filter *kefir_load_filter_from_file(const char *filename)
  * Back end: Conversion to C
  */
 
-void kefir_destroy_cprog(kefir_cprog *cprog)
+void kefir_cprog_destroy(kefir_cprog *cprog)
 {
 	proggen_cprog_destroy(cprog);
 }
 
 kefir_cprog *
-kefir_convert_filter_to_cprog(const kefir_filter *filter,
-			      struct kefir_cprog_attr *attr)
+kefir_filter_convert_to_cprog(const kefir_filter *filter,
+			      const struct kefir_cprog_attr *attr)
 {
 	return proggen_make_cprog_from_filter(filter, attr);
 }
 
-void kefir_dump_cprog(const kefir_cprog *cprog)
+void kefir_cprog_to_stdout(const kefir_cprog *cprog)
 {
 	size_t buf_len;
 	char *buf;
@@ -367,12 +367,12 @@ int kefir_compile_to_bpf(const char *c_file, const char *opt_object_file,
 				    opt_clang_bin, opt_llc_bin);
 }
 
-void kefir_destroy_bpf_object(struct bpf_object *obj)
+void kefir_bpfobj_destroy(struct bpf_object *obj)
 {
 	bpf_object__close(obj);
 }
 
-int kefir_get_prog_fd(struct bpf_object *obj)
+int kefir_bpfobj_get_prog_fd(struct bpf_object *obj)
 {
 	struct bpf_program *prog;
 
@@ -413,7 +413,7 @@ kefir_attach_cprog_from_objfile(const kefir_cprog *cprog, const char *objfile,
 	return bpf_obj;
 }
 
-int kefir_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
+int kefir_cprog_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
 {
 	return compile_fill_map(cprog, bpf_obj);
 }

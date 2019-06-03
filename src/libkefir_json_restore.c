@@ -506,14 +506,14 @@ kefir_filter *json_restore_filter_from_file(const char *filename)
 		goto free_tokens;
 	}
 
-	filter = kefir_init_filter();
+	filter = kefir_filter_init();
 	if (!filter) {
 		err_fail("failed to allocate memory for filter object");
 		goto free_tokens;
 	}
 
 	if (parse_json_as_filter(filter, input_str, tokens, nb_tokens)) {
-		kefir_destroy_filter(filter);
+		kefir_filter_destroy(filter);
 		filter = NULL;
 	}
 
