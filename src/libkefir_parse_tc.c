@@ -353,7 +353,7 @@ tcflower_compose_rule(struct kefir_match *matches, enum action_code action_code)
 {
 	struct kefir_rule *rule;
 
-	rule = calloc(1, sizeof(struct kefir_rule));
+	rule = calloc(1, sizeof(*rule));
 	if (!rule) {
 		err_fail("failed to allocate memory for rule");
 		return NULL;

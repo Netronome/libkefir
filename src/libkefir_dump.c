@@ -300,7 +300,7 @@ int dump_filter_to_buf(const kefir_filter *filter, char **buf, size_t *buf_len,
 	unsigned int count = 0;
 
 	*buf_len = KEFIR_CPROG_INIT_BUFLEN;
-	*buf = calloc(*buf_len, sizeof(char));
+	*buf = calloc(*buf_len, sizeof(*buf));
 	if (!*buf) {
 		err_fail("failed to allocate memory for dumping filter");
 		return -1;

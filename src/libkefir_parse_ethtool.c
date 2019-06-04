@@ -544,7 +544,7 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 	}
 	user_rule++;
 
-	rule = calloc(1, sizeof(struct kefir_rule));
+	rule = calloc(1, sizeof(*rule));
 	if (!rule) {
 		err_fail("failed to allocate memory for rule");
 		return NULL;

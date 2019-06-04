@@ -34,7 +34,7 @@ kefir_filter *kefir_filter_init(void)
 {
 	kefir_filter *filter;
 
-	filter = calloc(1, sizeof(kefir_filter));
+	filter = calloc(1, sizeof(*filter));
 	return filter;
 }
 
@@ -218,7 +218,7 @@ int kefir_rule_load_l(kefir_filter *filter, enum kefir_rule_type rule_type,
 		err_fail("failed to allocate buffer for splitting rule");
 		return -1;
 	}
-	rule_words = calloc(rule_size, sizeof(char *));
+	rule_words = calloc(rule_size, sizeof(*rule_words));
 	if (!rule_words) {
 		err_fail("failed to allocate array for splitting rule");
 		goto free_rule_cpy;

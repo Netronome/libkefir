@@ -215,7 +215,7 @@ static int fill_one_rule(void *rule_ptr, va_list ap)
 	flags = va_arg(ap, uint64_t);
 	use_masks = flags & OPT_FLAGS_USE_MASKS;
 
-	map_entry = calloc(1, sizeof(struct bpf_map_filter_rule_with_masks));
+	map_entry = calloc(1, sizeof(*map_entry));
 	if (!map_entry) {
 		err_fail("failed to allocate buffer for map entry");
 		return -1;

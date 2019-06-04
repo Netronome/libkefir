@@ -121,7 +121,7 @@ static kefir_cprog *cprog_create(void)
 {
 	kefir_cprog *prog;
 
-	prog = calloc(1, sizeof(kefir_cprog));
+	prog = calloc(1, sizeof(*prog));
 	return prog;
 }
 
@@ -1684,7 +1684,7 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	}
 
 	*buf_len = KEFIR_CPROG_INIT_BUFLEN;
-	*buf = calloc(*buf_len, sizeof(char));
+	*buf = calloc(*buf_len, sizeof(*buf));
 	if (!*buf) {
 		err_fail("failed to allocate memory for C prog buffer");
 		*buf_len = 0;

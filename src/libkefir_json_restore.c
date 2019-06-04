@@ -323,7 +323,7 @@ parse_rule(kefir_filter *filter, int index, const char *str,
 		return -1;
 	}
 
-	rule = calloc(1, sizeof(struct kefir_rule));
+	rule = calloc(1, sizeof(*rule));
 	if (!rule) {
 		err_fail("failed to allocate memory for rule");
 		return -1;
@@ -465,7 +465,7 @@ kefir_filter *json_restore_filter_from_file(const char *filename)
 	}
 	input_size = statbuf.st_size;
 
-	input_str = calloc(input_size + 1, sizeof(char));
+	input_str = calloc(input_size + 1, sizeof(*input_str));
 	if (!input_str) {
 		err_fail("failed to allocate memory for reading input file");
 		goto close_file;
@@ -487,7 +487,7 @@ kefir_filter *json_restore_filter_from_file(const char *filename)
 		goto free_input_str;
 	}
 
-	tokens = calloc(nb_tokens, sizeof(jsmntok_t));
+	tokens = calloc(nb_tokens, sizeof(*tokens));
 	if (!tokens) {
 		err_fail("failed to allocate memory for JSON tokens in file %s",
 			 filename);

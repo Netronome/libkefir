@@ -13,7 +13,7 @@ struct list *list_init(void *elem)
 {
 	struct list *l;
 
-	l = (struct list *)calloc(1, sizeof(struct list));
+	l = calloc(1, sizeof(*l));
 	if (!l)
 		return NULL;
 
