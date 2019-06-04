@@ -161,10 +161,10 @@ parse_int_or_array(const char *str, const jsmntok_t *tokens, uint8_t *dest)
 		unsigned int i, nb_bytes;
 
 		nb_bytes = tokens[offset].size;
-		if (nb_bytes > sizeof_member(struct kefir_match, max_value)) {
+		if (nb_bytes > sizeof_member(struct kefir_match, mask)) {
 			err_fail("found %d bytes at offset %d, expected %ld or less",
 				 nb_bytes, tokens[offset].start,
-				 sizeof_member(struct kefir_match, max_value));
+				 sizeof_member(struct kefir_match, mask));
 			return -1;
 		}
 		for (i = 0; i < nb_bytes; i++) {
@@ -218,12 +218,6 @@ parse_match(struct kefir_match *match, const char *str, const jsmntok_t *tokens)
 			offset++;
 			if (parse_int_or_array(str, &tokens[offset],
 					       match->value.raw))
-				return -1;
-			offset += count_nested_children(&tokens[offset]);
-		} else if (json_streq(str, &tokens[offset], "max_value")) {
-			offset++;
-			if (parse_int_or_array(str, &tokens[offset],
-					       match->max_value))
 				return -1;
 			offset += count_nested_children(&tokens[offset]);
 		} else if (json_streq(str, &tokens[offset], "mask")) {

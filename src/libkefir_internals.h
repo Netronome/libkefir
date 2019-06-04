@@ -226,25 +226,20 @@ union kefir_value {
 };
 
 #define MATCH_FLAGS_USE_MASK	bit(0)
-#define MATCH_FLAGS_USE_RANGE	bit(1)
 
 /*
  * - A type for the match, indicating the semantics of the data to match
  *   (semantics needed for optimizations).
  * - An operator to indicate what type of comparison should be performed
  *   (equality, or other arithmetic or logic operator).
- * - A value to match. If matching against a range of values, this should be
- *   the minimum value of the range.
- * - A maximum value to match, for ranges.
+ * - A value to match.
  * - One mask to apply to the field.
- * - Option flags, indicating for example that the match is against a range of
- *   values instead of a single value.
+ * - Option flags, indicating for example that masks are used for this match.
  */
 struct kefir_match {
 	enum match_type		match_type;
 	enum comp_operator	comp_operator;
 	union kefir_value	value;
-	uint8_t			max_value[16];
 	uint8_t			mask[16];
 	uint64_t		flags;
 };

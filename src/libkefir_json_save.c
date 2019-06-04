@@ -48,16 +48,6 @@ static int save_match(const struct kefir_match *match, json_writer_t *jw)
 	if (save_value(&match->value, type_format[match->match_type], jw))
 		return -1;
 
-	jsonw_name(jw, "max_value");
-	if (match->flags & MATCH_FLAGS_USE_RANGE) {
-		jsonw_start_array(jw);	/* max_value */
-		for (i = 0; i < sizeof(match->max_value); i++)
-			jsonw_hhu(jw, match->max_value[i]);
-		jsonw_end_array(jw);	/* max_value */
-	} else {
-		jsonw_uint(jw, 0);
-	}
-
 	jsonw_name(jw, "mask");
 	if (match->flags & MATCH_FLAGS_USE_MASK) {
 		jsonw_start_array(jw);	/* mask */
