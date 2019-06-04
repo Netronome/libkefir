@@ -160,7 +160,7 @@ static void update_from_mask(struct kefir_rule *rule)
 
 		if (match->flags & MATCH_FLAGS_USE_MASK)
 			for (j = 0; j < sizeof(match->mask); j++)
-				match->value.data.raw[j] &= match->mask[j];
+				match->value.raw[j] &= match->mask[j];
 	}
 }
 

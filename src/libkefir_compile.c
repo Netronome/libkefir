@@ -249,7 +249,7 @@ static int fill_one_rule(void *rule_ptr, va_list ap)
 
 		map_match->match_type = rule_match->match_type;
 		map_match->comp_operator = rule_match->comp_operator;
-		memcpy(map_match->value.u8, rule_match->value.data.raw,
+		memcpy(map_match->value.u8, rule_match->value.raw,
 		       sizeof(map_match->value));
 
 		if (use_masks && rule_match->flags & MATCH_FLAGS_USE_MASK) {

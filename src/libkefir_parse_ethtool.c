@@ -318,8 +318,7 @@ create_match_l4proto(struct kefir_match *match, bool ipv6_flow, uint8_t value)
 	else
 		match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PROTO;
 	match->comp_operator = OPER_EQUAL;
-	match->value.data.u8 = value;
-	match->value.format = KEFIR_VAL_FMT_UINT8;
+	match->value.u8 = value;
 }
 
 static int
@@ -449,39 +448,36 @@ set_match_type(struct kefir_match *match, bool ipv6_flow,
 }
 
 static int
-parse_value(const char *input, enum value_format format, void *output)
+parse_value(const char *input, enum value_format format,
+	    union kefir_value *val)
 {
-	struct kefir_value *val;
-
-	val = container_of(output, struct kefir_value, data);
-
 	switch (format) {
 	case KEFIR_VAL_FMT_UINT6:
-		if (parse_uint(input, &val->data.u8, 6))
+		if (parse_uint(input, &val->u8, 6))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_UINT8:
-		if (parse_uint(input, &val->data.u8, 8))
+		if (parse_uint(input, &val->u8, 8))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_UINT16:
-		if (parse_uint(input, &val->data.u16, 16))
+		if (parse_uint(input, &val->u16, 16))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_UINT32:
-		if (parse_uint(input, &val->data.u32, 32))
+		if (parse_uint(input, &val->u32, 32))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_MAC_ADDR:
-		if (parse_eth_addr(input, &val->data.eth))
+		if (parse_eth_addr(input, &val->eth))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_IPV4_ADDR:
-		if (parse_ipv4_addr(input, &val->data.ipv4.s_addr))
+		if (parse_ipv4_addr(input, &val->ipv4.s_addr))
 			return -1;
 		break;
 	case KEFIR_VAL_FMT_IPV6_ADDR:
-		if (parse_ipv6_addr(input, val->data.ipv6.__in6_u.__u6_addr32))
+		if (parse_ipv6_addr(input, val->ipv6.__in6_u.__u6_addr32))
 			return -1;
 		break;
 	default:
@@ -527,6 +523,7 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 	enum ethtool_flow_type flow_type;
 	enum action_code action_code;
 	ethtool_opts_t *flow_opts;
+	struct kefir_match *match;
 	struct kefir_rule *rule;
 	bool ipv6_flow;
 
@@ -572,30 +569,18 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 	}
 	user_rule++;
 
-	if (set_match_type(&rule->matches[match_index], ipv6_flow,
-			   current_opt.type))
+	match = &rule->matches[match_index];
+	if (set_match_type(match, ipv6_flow, current_opt.type))
 		goto err_free_rule;
 
-	if (parse_value(*user_rule, current_opt.format,
-			&rule->matches[match_index].value.data))
+	if (parse_value(*user_rule, current_opt.format, &match->value))
 		goto err_free_rule;
-	rule->matches[match_index].value.format = current_opt.format;
 	user_rule++;
 
 	if (!strcmp(*user_rule, "m")) {
 		user_rule++;
-		/*
-		 * In parse_value() below, Mask will be cast as a struct
-		 * kefir_value.data, this assumes that "data" attribute is the
-		 * first attribute of struct kefir_value (null offset).
-		 */
-		if (offset_of(struct kefir_value, data) != 0) {
-			err_bug("data offset in struct kefir_value should be null");
-			goto err_free_rule;
-		}
-		if (parse_value(*user_rule,
-				rule->matches[match_index].value.format,
-				&rule->matches[match_index].mask))
+		if (parse_value(*user_rule, type_format[match->match_type],
+				(union kefir_value *)match->mask))
 			goto err_free_rule;
 		user_rule++;
 	}

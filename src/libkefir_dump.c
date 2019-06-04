@@ -38,31 +38,33 @@ static const char *comp_operator_str(enum comp_operator op)
 	}
 }
 
-static void value_str(struct kefir_value val, char *buf, size_t buf_len)
+static void
+value_str(union kefir_value val, enum value_format format, char *buf,
+	  size_t buf_len)
 {
-	switch (val.format) {
+	switch (format) {
 	case KEFIR_VAL_FMT_BIT:
 	case KEFIR_VAL_FMT_UINT3:
 	case KEFIR_VAL_FMT_UINT6:
 	case KEFIR_VAL_FMT_UINT8:
-		snprintf(buf, buf_len, "%hhd", val.data.u8);
+		snprintf(buf, buf_len, "%hhd", val.u8);
 		break;
 	case KEFIR_VAL_FMT_UINT12:
 	case KEFIR_VAL_FMT_UINT16:
-		snprintf(buf, buf_len, "%hd", ntohs(val.data.u16));
+		snprintf(buf, buf_len, "%hd", ntohs(val.u16));
 		break;
 	case KEFIR_VAL_FMT_UINT20:
 	case KEFIR_VAL_FMT_UINT32:
-		snprintf(buf, buf_len, "%d", ntohl(val.data.u32));
+		snprintf(buf, buf_len, "%d", ntohl(val.u32));
 		break;
 	case KEFIR_VAL_FMT_MAC_ADDR:
-		snprintf(buf, buf_len, "%s", ether_ntoa(&val.data.eth));
+		snprintf(buf, buf_len, "%s", ether_ntoa(&val.eth));
 		break;
 	case KEFIR_VAL_FMT_IPV4_ADDR:
-		inet_ntop(AF_INET, &val.data.ipv4, buf, buf_len);
+		inet_ntop(AF_INET, &val.ipv4, buf, buf_len);
 		break;
 	case KEFIR_VAL_FMT_IPV6_ADDR:
-		inet_ntop(AF_INET6, &val.data.ipv6, buf, buf_len);
+		inet_ntop(AF_INET6, &val.ipv6, buf, buf_len);
 		break;
 	default:
 		return;
@@ -271,7 +273,8 @@ static int dump_rule(void *rule_ptr, va_list ap)
 		if (buf_append(buf_ptr, buf_len, " | operator %2zd: %2s", i,
 			       comp_operator_str(match->comp_operator)))
 			return -1;
-		value_str(match->value, strval, strval_len);
+		value_str(match->value, type_format[match->match_type], strval,
+			  strval_len);
 		if (buf_append(buf_ptr, buf_len, " | value %2zd: %-16s", i,
 			       strval))
 			return -1;

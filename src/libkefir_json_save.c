@@ -17,47 +17,20 @@
 
 DEFINE_ERR_FUNCTIONS("JSON_save")
 
-static int save_value(const struct kefir_value *value, json_writer_t *jw)
+static int
+save_value(const union kefir_value *value, enum value_format format,
+	   json_writer_t *jw)
 {
 	size_t i, nb_bytes;
 
-	jsonw_start_object(jw);	/* value */
-	jsonw_uint_field(jw, "format", value->format);
-	jsonw_name(jw, "data");
-	jsonw_start_array(jw);	/* data */
+	jsonw_start_array(jw);	/* value */
 
-	switch (value->format) {
-	case KEFIR_VAL_FMT_BIT:
-	case KEFIR_VAL_FMT_UINT3:
-	case KEFIR_VAL_FMT_UINT6:
-	case KEFIR_VAL_FMT_UINT8:
-		nb_bytes = 1;
-		break;
-	case KEFIR_VAL_FMT_UINT12:
-	case KEFIR_VAL_FMT_UINT16:
-		nb_bytes = 2;
-		break;
-	case KEFIR_VAL_FMT_UINT20:
-	case KEFIR_VAL_FMT_UINT32:
-	case KEFIR_VAL_FMT_IPV4_ADDR:
-		nb_bytes = 4;
-		break;
-	case KEFIR_VAL_FMT_MAC_ADDR:
-		nb_bytes = 6;
-		break;
-	case KEFIR_VAL_FMT_IPV6_ADDR:
-		nb_bytes = 16;
-		break;
-	default:
-		err_bug("unknown value format: %d", value->format);
-		return -1;
-	}
+	nb_bytes = bytes_for_format(format);
 
 	for (i = 0; i < nb_bytes; i++)
-		jsonw_hhu(jw, value->data.raw[i]);
+		jsonw_hhu(jw, value->raw[i]);
 
-	jsonw_end_array(jw);	/* data */
-	jsonw_end_object(jw);	/* value */
+	jsonw_end_array(jw);	/* value */
 
 	return 0;
 }
@@ -72,7 +45,7 @@ static int save_match(const struct kefir_match *match, json_writer_t *jw)
 	jsonw_uint_field(jw, "comp_operator", match->comp_operator);
 
 	jsonw_name(jw, "value");
-	if (save_value(&match->value, jw))
+	if (save_value(&match->value, type_format[match->match_type], jw))
 		return -1;
 
 	jsonw_name(jw, "max_value");

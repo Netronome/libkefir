@@ -157,17 +157,72 @@ enum value_format {
 	KEFIR_VAL_FMT_IPV6_ADDR,
 };
 
-struct kefir_value {
-	union {
-		struct ether_addr	eth;
-		struct in6_addr		ipv6;
-		struct in_addr		ipv4;
-		uint32_t		u32;
-		uint16_t		u16;
-		uint8_t			u8;
-		uint8_t			raw[sizeof(struct in6_addr)];
-	}			data;
-	enum value_format	format;
+static const size_t format_size[] = {
+	[KEFIR_VAL_FMT_BIT]		= 1,
+	[KEFIR_VAL_FMT_UINT3]		= 3,
+	[KEFIR_VAL_FMT_UINT6]		= 6,
+	[KEFIR_VAL_FMT_UINT8]		= 8,
+	[KEFIR_VAL_FMT_UINT12]		= 12,
+	[KEFIR_VAL_FMT_UINT16]		= 16,
+	[KEFIR_VAL_FMT_UINT20]		= 20,
+	[KEFIR_VAL_FMT_UINT32]		= 32,
+	[KEFIR_VAL_FMT_IPV4_ADDR]	= 32,
+	[KEFIR_VAL_FMT_MAC_ADDR]	= 48,
+	[KEFIR_VAL_FMT_IPV6_ADDR]	= 128,
+};
+
+static const enum value_format type_format[] = {
+	[KEFIR_MATCH_TYPE_ETHER_SRC]		= KEFIR_VAL_FMT_MAC_ADDR,
+	[KEFIR_MATCH_TYPE_ETHER_DST]		= KEFIR_VAL_FMT_MAC_ADDR,
+	[KEFIR_MATCH_TYPE_ETHER_ANY]		= KEFIR_VAL_FMT_MAC_ADDR,
+	[KEFIR_MATCH_TYPE_ETHER_PROTO]		= KEFIR_VAL_FMT_UINT16,
+
+	[KEFIR_MATCH_TYPE_IP_4_SRC]		= KEFIR_VAL_FMT_IPV4_ADDR,
+	[KEFIR_MATCH_TYPE_IP_4_DST]		= KEFIR_VAL_FMT_IPV4_ADDR,
+	[KEFIR_MATCH_TYPE_IP_4_ANY]		= KEFIR_VAL_FMT_IPV4_ADDR,
+	[KEFIR_MATCH_TYPE_IP_4_TOS]		= KEFIR_VAL_FMT_UINT6,
+	[KEFIR_MATCH_TYPE_IP_4_TTL]		= KEFIR_VAL_FMT_UINT8,
+	[KEFIR_MATCH_TYPE_IP_4_L4PROTO]		= KEFIR_VAL_FMT_UINT8,
+	[KEFIR_MATCH_TYPE_IP_4_L4DATA]		= KEFIR_VAL_FMT_UINT32,
+	[KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC]	= KEFIR_VAL_FMT_UINT16,
+	[KEFIR_MATCH_TYPE_IP_4_L4PORT_DST]	= KEFIR_VAL_FMT_UINT16,
+	[KEFIR_MATCH_TYPE_IP_4_L4PORT_ANY]	= KEFIR_VAL_FMT_UINT16,
+
+	[KEFIR_MATCH_TYPE_IP_6_SRC]		= KEFIR_VAL_FMT_IPV6_ADDR,
+	[KEFIR_MATCH_TYPE_IP_6_DST]		= KEFIR_VAL_FMT_IPV6_ADDR,
+	[KEFIR_MATCH_TYPE_IP_6_ANY]		= KEFIR_VAL_FMT_IPV6_ADDR,
+	[KEFIR_MATCH_TYPE_IP_6_TOS]		= KEFIR_VAL_FMT_UINT8,
+	[KEFIR_MATCH_TYPE_IP_6_TTL]		= KEFIR_VAL_FMT_UINT8,
+	[KEFIR_MATCH_TYPE_IP_6_L4PROTO]		= KEFIR_VAL_FMT_UINT8,
+	[KEFIR_MATCH_TYPE_IP_6_L4DATA]		= KEFIR_VAL_FMT_UINT32,
+	[KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC]	= KEFIR_VAL_FMT_UINT16,
+	[KEFIR_MATCH_TYPE_IP_6_L4PORT_DST]	= KEFIR_VAL_FMT_UINT16,
+	[KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY]	= KEFIR_VAL_FMT_UINT16,
+
+	[KEFIR_MATCH_TYPE_IP_ANY_SRC]		= KEFIR_VAL_FMT_IPV6_ADDR,
+	[KEFIR_MATCH_TYPE_IP_ANY_DST]		= KEFIR_VAL_FMT_IPV6_ADDR,
+	[KEFIR_MATCH_TYPE_IP_ANY_ANY]		= KEFIR_VAL_FMT_IPV6_ADDR,
+	[KEFIR_MATCH_TYPE_IP_ANY_TOS]		= KEFIR_VAL_FMT_UINT8,
+	[KEFIR_MATCH_TYPE_IP_ANY_TTL]		= KEFIR_VAL_FMT_UINT8,
+	[KEFIR_MATCH_TYPE_IP_ANY_L4PROTO]	= KEFIR_VAL_FMT_UINT8,
+	[KEFIR_MATCH_TYPE_IP_ANY_L4DATA]	= KEFIR_VAL_FMT_UINT32,
+	[KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC]	= KEFIR_VAL_FMT_UINT16,
+	[KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST]	= KEFIR_VAL_FMT_UINT16,
+	[KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY]	= KEFIR_VAL_FMT_UINT16,
+
+	[KEFIR_MATCH_TYPE_VLAN_ID]		= KEFIR_VAL_FMT_UINT12,
+	[KEFIR_MATCH_TYPE_VLAN_PRIO]		= KEFIR_VAL_FMT_UINT3,
+	[KEFIR_MATCH_TYPE_VLAN_ETHERTYPE]	= KEFIR_VAL_FMT_UINT16,
+};
+
+union kefir_value {
+	struct ether_addr	eth;
+	struct in6_addr		ipv6;
+	struct in_addr		ipv4;
+	uint32_t		u32;
+	uint16_t		u16;
+	uint8_t			u8;
+	uint8_t			raw[sizeof(struct in6_addr)];
 };
 
 #define MATCH_FLAGS_USE_MASK	bit(0)
@@ -188,7 +243,7 @@ struct kefir_value {
 struct kefir_match {
 	enum match_type		match_type;
 	enum comp_operator	comp_operator;
-	struct kefir_value	value;
+	union kefir_value	value;
 	uint8_t			max_value[16];
 	uint8_t			mask[16];
 	uint64_t		flags;
@@ -239,5 +294,10 @@ struct kefir_cprog {
 
 int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
 			     ssize_t index);
+
+static inline size_t bytes_for_format(enum value_format format)
+{
+	return (format_size[format] + 7) / 8;
+}
 
 #endif /* LIBKEFIR_INTERNALS_H */

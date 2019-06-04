@@ -183,47 +183,12 @@ parse_int_or_array(const char *str, const jsmntok_t *tokens, uint8_t *dest)
 }
 
 static int
-parse_value(struct kefir_value *value, const char *str, const jsmntok_t *tokens)
-{
-	int i, offset = 0, tmp, nb_attr;
-
-	nb_attr = tokens[offset].size;
-	if (nb_attr < 2) {
-		err_fail("missing elements in value starting at offset %d",
-			 tokens[offset].start);
-		return -1;
-	}
-
-	offset++;
-	for (i = 0; i < nb_attr; i++) {
-		if (json_streq(str, &tokens[offset], "format")) {
-			offset++;
-			if (parse_int(str, &tokens[offset], &tmp))
-				return -1;
-			value->format = tmp;
-			offset++;
-		} else if (json_streq(str, &tokens[offset], "data")) {
-			offset++;
-			if (parse_int_or_array(str, &tokens[offset],
-					       value->data.raw))
-				return -1;
-			offset += count_nested_children(&tokens[offset]);
-		} else {
-			/* Ignore unknown token, just update offset */
-			offset += count_nested_children(&tokens[offset]);
-		}
-	}
-
-	return 0;
-}
-
-static int
 parse_match(struct kefir_match *match, const char *str, const jsmntok_t *tokens)
 {
 	int i, offset = 0, tmp, nb_attr;
 
 	nb_attr = tokens[offset].size;
-	if (nb_attr < 6) {
+	if (nb_attr < 5) {
 		err_fail("missing elements in match starting at offset %d",
 			 tokens[offset].start);
 		return -1;
@@ -251,7 +216,8 @@ parse_match(struct kefir_match *match, const char *str, const jsmntok_t *tokens)
 			offset++;
 		} else if (json_streq(str, &tokens[offset], "value")) {
 			offset++;
-			if (parse_value(&match->value, str, &tokens[offset]))
+			if (parse_int_or_array(str, &tokens[offset],
+					       match->value.raw))
 				return -1;
 			offset += count_nested_children(&tokens[offset]);
 		} else if (json_streq(str, &tokens[offset], "max_value")) {
