@@ -23,15 +23,6 @@
 #define array_size(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-#ifndef offset_of
-#define offset_of(type, member) ((size_t)&((type *)0)->member)
-#endif
-
-#ifndef container_of
-#define container_of(pointer, type, member)	\
-	((type *)(pointer) - offset_of(type, member))
-#endif
-
 #ifndef sizeof_member
 #define sizeof_member(type, member) sizeof(*(&((type *)0)->member))
 #endif
