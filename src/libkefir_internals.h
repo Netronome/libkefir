@@ -47,9 +47,6 @@ enum action_code {
 	ACTION_CODE_PASS,
 };
 
-#define KEFIR_MATCH_FLAG_IPV4	bit(0)
-#define KEFIR_MATCH_FLAG_IPV6	bit(1)
-
 enum match_type {
 	KEFIR_MATCH_TYPE_UNSPEC = 0,
 
