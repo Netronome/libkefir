@@ -97,6 +97,19 @@ clean: kefir-clean
 
 .PHONY: all kefir-clean clean
 
+# Code checks
+
+IWYU_DEP := $(shell command -v include-what-you-use 2>/dev/null)
+iwyu-dep:
+ifndef IWYU_DEP
+	$(error "include-what-you-use not found, cannot check included headers")
+endif
+
+iwyu: CC = include-what-you-use
+iwyu: iwyu-dep kefir-clean all
+
+.PHONY: iwyu-dep iwyu
+
 # Package config file
 
 $(PC_FILE):
