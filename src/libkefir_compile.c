@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
-#include <bits/stdint-uintn.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,8 +30,8 @@ struct bpf_map_match {
 	enum match_type		match_type;
 	enum comp_operator	comp_operator;
 	union {
-		__u8	u8[16];
-		__u64	u64[2];
+		uint8_t		u8[16];
+		uint64_t	u64[2];
 	} value;
 };
 
@@ -40,11 +40,11 @@ struct bpf_map_match_with_masks {
 	enum match_type		match_type;
 	enum comp_operator	comp_operator;
 	union {
-		__u8	u8[16];
-		__u64	u64[2];
+		uint8_t		u8[16];
+		uint64_t	u64[2];
 	} value;
-	__u64	flags;
-	__u8	mask[16];
+	uint64_t	flags;
+	uint8_t		mask[16];
 };
 
 /*

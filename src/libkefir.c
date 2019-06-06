@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
-#include <bits/stdint-uintn.h>
 #include <endian.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -571,8 +571,8 @@ kefir_filter_attach_attr(const kefir_filter *filter,
 			 const struct kefir_load_attr *load_attr)
 {
 	char tmpfile[] = "/tmp/kefir_filter_XXXXXXXXXX.YZ";
+	struct bpf_object *obj = NULL;
 	time_t cur_time = time(NULL);
-	struct bpf_object *obj;
 	kefir_cprog *cprog;
 
 	if (cur_time == (time_t) -1) {

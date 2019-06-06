@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
-#include <bits/stdint-uintn.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -9,9 +9,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include <bpf/libbpf.h>
 #include <net/ethernet.h>
 #include <netinet/in.h>
+
+struct bpf_object;
 
 #ifndef bit
 #define bit(n) (1 << (n))
@@ -330,8 +331,8 @@ int kefir_filter_save_to_file(const kefir_filter *filter,
 /**
  * Load a filter from a backup
  * @filename: name of the file to load the filter from
- * @return filter object on success (to be freed by the user on exit), NULL
- *         and sets errno otherwise
+ * @return a pointer to the filter object on success (to be free()-d by the
+ *         caller), NULL otherwise
  */
 kefir_filter *kefir_filter_load_from_file(const char *filename);
 

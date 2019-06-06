@@ -4,8 +4,8 @@
 #ifndef LIBKEFIR_PARSE_H
 #define LIBKEFIR_PARSE_H
 
-#include <bits/stdint-uintn.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 struct ether_addr;
 
