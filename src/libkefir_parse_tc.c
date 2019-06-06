@@ -50,15 +50,18 @@ static int tcflower_parse_ipproto(const char *input, void *output)
 	int res = -1;
 
 	if (!strcmp(input, "tcp"))
-		res = parse_check_and_store_uint(IPPROTO_TCP, output, 8);
+		res = parse_check_and_store_uint(IPPROTO_TCP, output, 8, false);
 	else if (!strcmp(input, "udp"))
-		res = parse_check_and_store_uint(IPPROTO_UDP, output, 8);
+		res = parse_check_and_store_uint(IPPROTO_UDP, output, 8, false);
 	else if (!strcmp(input, "sctp"))
-		res = parse_check_and_store_uint(IPPROTO_SCTP, output, 8);
+		res = parse_check_and_store_uint(IPPROTO_SCTP, output, 8,
+						 false);
 	else if (!strcmp(input, "icmp"))
-		res = parse_check_and_store_uint(IPPROTO_ICMP, output, 8);
+		res = parse_check_and_store_uint(IPPROTO_ICMP, output, 8,
+						 false);
 	else if (!strcmp(input, "icmpv6"))
-		res = parse_check_and_store_uint(IPPROTO_ICMPV6, output, 8);
+		res = parse_check_and_store_uint(IPPROTO_ICMPV6, output, 8,
+						 false);
 	else
 		res = parse_uint(input, output, 8);
 

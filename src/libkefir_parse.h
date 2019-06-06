@@ -5,11 +5,12 @@
 #define LIBKEFIR_PARSE_H
 
 #include <bits/stdint-uintn.h>
+#include <stdbool.h>
 
 struct ether_addr;
 
-int parse_check_and_store_uint(unsigned int res, void *output,
-			       uint32_t nb_bits);
+int parse_check_and_store_uint(unsigned int res, void *output, uint32_t nb_bits,
+			       bool is_net_byte_order);
 int parse_uint(const char *input, void *output, uint32_t nb_bits);
 int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
 			  uint8_t *mask);

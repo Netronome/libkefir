@@ -303,7 +303,7 @@ parse_rule(kefir_filter *filter, int index, const char *str,
 	}
 
 	rule->action = action;
-	if (kefir_add_rule_to_filter(filter, rule, index))
+	if (kefir_filter_add_rule(filter, rule, index))
 		goto err_free_rule;
 
 	return 0;

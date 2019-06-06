@@ -2,8 +2,10 @@
 /* Copyright (c) 2019 Netronome Systems, Inc. */
 
 #include <bits/stdint-uintn.h>
+#include <endian.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,17 +16,137 @@
 #include <bpf/libbpf.h>
 
 #include "list.h"
+#include "libkefir.h"
 #include "libkefir_compile.h"
 #include "libkefir_dump.h"
 #include "libkefir_error.h"
 #include "libkefir_internals.h"
 #include "libkefir_json_restore.h"
 #include "libkefir_json_save.h"
+#include "libkefir_parse.h"
 #include "libkefir_parse_ethtool.h"
 #include "libkefir_parse_tc.h"
 #include "libkefir_proggen.h"
 
 DEFINE_ERR_FUNCTIONS("core")
+
+/*
+ * Rule crafting
+ */
+
+size_t kefir_bytes_for_type(enum match_type type)
+{
+	return (format_size[type_format[type]] + 7) / 8;
+}
+
+struct kefir_match *
+kefir_match_create(struct kefir_match *match, enum match_type type,
+		   enum comp_operator oper, const void *value,
+		   const uint8_t *mask, bool is_net_byte_order)
+{
+	size_t nb_bytes = kefir_bytes_for_type(type);
+	size_t nb_bits = bits_for_type(type);
+	bool match_alloc = false;
+	size_t i;
+
+	if (type >= __KEFIR_MAX_MATCH_TYPE) {
+		err_fail("unknown match type %d", type);
+		return NULL;
+	}
+
+	if (oper >= __KEFIR_MAX_OPER) {
+		err_fail("unknown comparison operator %d", oper);
+		return NULL;
+	}
+
+	if (!match) {
+		match = calloc(1, sizeof(*match));
+		match_alloc = true;
+	}
+	if (!match) {
+		err_fail("failed to allocate memory for match");
+		return NULL;
+	}
+
+	match->match_type = type;
+	match->comp_operator = oper;
+
+	if (!value)
+		return match;
+
+	if (nb_bytes <= 4) {
+		unsigned int tmp = 0;
+
+		memcpy(&tmp, value, nb_bytes);
+		if (parse_check_and_store_uint(tmp, &match->value.raw,
+					       nb_bits, is_net_byte_order))
+			goto err_free;
+		if (mask) {
+			memcpy(&tmp, mask, nb_bytes);
+			if (parse_check_and_store_uint(tmp, &match->mask,
+						       nb_bits,
+						       is_net_byte_order))
+				goto err_free;
+		}
+	} else {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+		if (is_net_byte_order) {
+			memcpy(match->value.raw, value, nb_bytes);
+		} else {
+			for (i = 0; i < nb_bytes; i++) {
+				match->value.raw[i] =
+					*((uint8_t *)value + nb_bytes - 1 - i);
+				if (!mask)
+					continue;
+				match->mask[i] =
+					*((uint8_t *)mask + nb_bytes - 1 - i);
+			}
+		}
+#else
+		memcpy(match->value.raw, value, nb_bytes);
+		if (mask)
+			memcpy(match->mask, mask, nb_bytes);
+#endif
+	}
+
+	return match;
+
+err_free:
+	if (match_alloc)
+		free(match);
+	return NULL;
+}
+
+struct kefir_rule *
+kefir_rule_create(struct kefir_match **matches, unsigned int nb_matches,
+		  enum action_code action)
+{
+	struct kefir_rule *rule;
+	size_t i;
+
+	if (nb_matches > KEFIR_MAX_MATCH_PER_RULE) {
+		err_fail("too many match objects (got %d, max %d)", nb_matches,
+			 KEFIR_MAX_MATCH_PER_RULE);
+		return NULL;
+	}
+
+	if (action >= __KEFIR_MAX_ACTION_CODE) {
+		err_fail("unknown action code %d", action);
+		return NULL;
+	}
+
+	rule = calloc(1, sizeof(*rule));
+	if (!rule) {
+		err_fail("failed to allocate memory for rule");
+		return NULL;
+	}
+
+	rule->action = action;
+	for (i = 0; i < nb_matches; i++)
+		memcpy(&rule->matches[i], matches[i], sizeof(rule->matches[0]));
+
+	return rule;
+}
 
 /*
  * Filter management
@@ -75,7 +197,7 @@ static int clone_rule(void *rule_ptr, va_list ap)
 
 	memcpy(cpy_rule, ref_rule, sizeof(struct kefir_rule));
 
-	if (kefir_add_rule_to_filter(cpy_filter, cpy_rule, *index)) {
+	if (kefir_filter_add_rule(cpy_filter, cpy_rule, *index)) {
 		free(cpy_rule);
 		return -1;
 	}
@@ -114,34 +236,16 @@ size_t kefir_filter_size(const kefir_filter *filter)
 	return list_count(filter->rules);
 }
 
-/* Used in other files, but not UAPI */
-int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
-			     ssize_t index)
+static void reset_flags(struct kefir_rule *rule)
 {
-	struct list *rule_list;
-	ssize_t filter_len;
+	size_t i;
 
-	filter_len = kefir_filter_size(filter);
-	if (index < 0)
-		index = kefir_filter_size(filter) + 1 + index;
-	if (index < 0 || index > filter_len) {
-		err_fail("index out of bounds (list has %zd filter%s)",
-			 filter_len, filter_len > 1 ? "s" : "");
+	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
+	     rule->matches[i].match_type != KEFIR_MATCH_TYPE_UNSPEC; i++) {
+		struct kefir_match *match = &rule->matches[i];
+
+		memset(&match->flags, 0, sizeof(match->flags));
 	}
-
-	if (!rule) {
-		err_fail("rule object is NULL");
-		return -1;
-	}
-
-	rule_list = list_insert(filter->rules, rule, index);
-	if (!rule_list) {
-		err_fail("failed to insert rule into the list");
-		return -1;
-	}
-
-	filter->rules = rule_list;
-	return 0;
 }
 
 static void update_from_mask(struct kefir_rule *rule)
@@ -164,6 +268,38 @@ static void update_from_mask(struct kefir_rule *rule)
 	}
 }
 
+int kefir_filter_add_rule(kefir_filter *filter, struct kefir_rule *rule,
+			  ssize_t index)
+{
+	struct list *rule_list;
+	ssize_t filter_len;
+
+	filter_len = kefir_filter_size(filter);
+	if (index < 0)
+		index = kefir_filter_size(filter) + 1 + index;
+	if (index < 0 || index > filter_len) {
+		err_fail("index out of bounds (list has %zd filter%s)",
+			 filter_len, filter_len > 1 ? "s" : "");
+	}
+
+	if (!rule) {
+		err_fail("rule object is NULL");
+		return -1;
+	}
+
+	reset_flags(rule);
+	update_from_mask(rule);
+
+	rule_list = list_insert(filter->rules, rule, index);
+	if (!rule_list) {
+		err_fail("failed to insert rule into the list");
+		return -1;
+	}
+
+	filter->rules = rule_list;
+	return 0;
+}
+
 int kefir_rule_load(kefir_filter *filter, enum kefir_rule_type rule_type,
 		    const char **user_rule, size_t rule_size, ssize_t index)
 {
@@ -184,9 +320,7 @@ int kefir_rule_load(kefir_filter *filter, enum kefir_rule_type rule_type,
 	if (!rule)
 		return -1;
 
-	update_from_mask(rule);
-
-	return kefir_add_rule_to_filter(filter, rule, index);
+	return kefir_filter_add_rule(filter, rule, index);
 }
 
 int kefir_rule_load_l(kefir_filter *filter, enum kefir_rule_type rule_type,

@@ -15,21 +15,23 @@
 
 DEFINE_ERR_FUNCTIONS("parser")
 
-int parse_check_and_store_uint(unsigned int res, void *output,
-			       uint32_t nb_bits)
+int parse_check_and_store_uint(unsigned int val, void *output, uint32_t nb_bits,
+			       bool is_net_byte_order)
 {
-	if (res > (unsigned long)(2 << (nb_bits - 1)) - 1) {
-		err_fail("value %u is too big (expected lower than %u)", res,
+	unsigned int tmp = is_net_byte_order ? ntohl(val) : val;
+
+	if (tmp > (unsigned long)(2 << (nb_bits - 1)) - 1) {
+		err_fail("value %u is too big (expected lower than %u)", tmp,
 			 2 << (nb_bits - 1));
 		return -1;
 	}
 
 	if (nb_bits <= 8)
-		*(uint8_t *)output = res;
+		*(uint8_t *)output = val;
 	else if (nb_bits <= 16)
-		*(uint16_t *)output = htons(res);
+		*(uint16_t *)output = is_net_byte_order ? val : htons(val);
 	else
-		*(uint32_t *)output = htonl(res);
+		*(uint32_t *)output = is_net_byte_order ? val : htonl(val);
 	return 0;
 }
 
@@ -44,7 +46,7 @@ int parse_uint(const char *input, void *output, uint32_t nb_bits)
 		return -1;
 	}
 
-	return parse_check_and_store_uint(res, output, nb_bits);
+	return parse_check_and_store_uint(res, output, nb_bits, false);
 }
 
 static void bitmask_from_int(uint8_t mask, uint8_t *bitmask, size_t size)
@@ -72,7 +74,7 @@ int parse_uint_slash_mask(const char *input, void *output, uint32_t nb_bits,
 		return -1;
 	}
 
-	return parse_check_and_store_uint(res, output, nb_bits);
+	return parse_check_and_store_uint(res, output, nb_bits, false);
 }
 
 int parse_eth_addr(const char *input, struct ether_addr *output)

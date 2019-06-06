@@ -7,9 +7,6 @@
 #include <stdint.h>
 
 #include <linux/bpf.h>
-#include <netinet/ether.h>
-#include <netinet/ip.h>
-#include <netinet/ip6.h>
 
 #include "libkefir.h"
 #include "libkefir_error.h"
@@ -31,105 +28,7 @@
 #define __printf(a, b) __attribute__((format(printf, a, b)))
 #endif
 
-#define KEFIR_MAX_MATCH_PER_RULE	5
 #define KEFIR_CPROG_INIT_BUFLEN		8192
-
-enum comp_operator {
-	OPER_EQUAL,
-	OPER_LT,
-	OPER_LEQ,
-	OPER_GT,
-	OPER_GEQ,
-};
-
-enum action_code {
-	ACTION_CODE_DROP,
-	ACTION_CODE_PASS,
-};
-
-enum match_type {
-	KEFIR_MATCH_TYPE_UNSPEC = 0,
-
-	KEFIR_MATCH_TYPE_ETHER_SRC,
-	KEFIR_MATCH_TYPE_ETHER_DST,
-	KEFIR_MATCH_TYPE_ETHER_ANY,	/* Either source or destination */
-	KEFIR_MATCH_TYPE_ETHER_PROTO,
-
-	KEFIR_MATCH_TYPE_IP_4_SRC,
-	KEFIR_MATCH_TYPE_IP_4_DST,
-	KEFIR_MATCH_TYPE_IP_4_ANY,
-	KEFIR_MATCH_TYPE_IP_4_TOS,
-	KEFIR_MATCH_TYPE_IP_4_TTL,
-	KEFIR_MATCH_TYPE_IP_4_FLAGS,
-	KEFIR_MATCH_TYPE_IP_4_L4PROTO,
-	KEFIR_MATCH_TYPE_IP_4_L4DATA,
-	KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC,
-	KEFIR_MATCH_TYPE_IP_4_L4PORT_DST,
-	KEFIR_MATCH_TYPE_IP_4_L4PORT_ANY,
-	KEFIR_MATCH_TYPE_IP_4_SPI,
-	KEFIR_MATCH_TYPE_IP_4_TCP_FLAGS,
-
-	KEFIR_MATCH_TYPE_IP_6_SRC,
-	KEFIR_MATCH_TYPE_IP_6_DST,
-	KEFIR_MATCH_TYPE_IP_6_ANY,
-	KEFIR_MATCH_TYPE_IP_6_TOS,	/* Actually TCLASS, traffic class */
-	KEFIR_MATCH_TYPE_IP_6_TTL,
-	KEFIR_MATCH_TYPE_IP_6_FLAGS,
-	KEFIR_MATCH_TYPE_IP_6_L4PROTO,
-	KEFIR_MATCH_TYPE_IP_6_L4DATA,
-	KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC,
-	KEFIR_MATCH_TYPE_IP_6_L4PORT_DST,
-	KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY,
-	KEFIR_MATCH_TYPE_IP_6_SPI,
-	KEFIR_MATCH_TYPE_IP_6_TCP_FLAGS,
-
-	KEFIR_MATCH_TYPE_IP_ANY_SRC,
-	KEFIR_MATCH_TYPE_IP_ANY_DST,
-	KEFIR_MATCH_TYPE_IP_ANY_ANY,
-	KEFIR_MATCH_TYPE_IP_ANY_TOS,
-	KEFIR_MATCH_TYPE_IP_ANY_TTL,
-	KEFIR_MATCH_TYPE_IP_ANY_FLAGS,
-	KEFIR_MATCH_TYPE_IP_ANY_L4PROTO,
-	KEFIR_MATCH_TYPE_IP_ANY_L4DATA,
-	KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC,
-	KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST,
-	KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY,
-	KEFIR_MATCH_TYPE_IP_ANY_SPI,
-	KEFIR_MATCH_TYPE_IP_ANY_TCP_FLAGS,
-
-	KEFIR_MATCH_TYPE_VLAN_ID,
-	KEFIR_MATCH_TYPE_VLAN_PRIO,
-	KEFIR_MATCH_TYPE_VLAN_ETHERTYPE,
-
-	KEFIR_MATCH_TYPE_CVLAN_ID,
-	KEFIR_MATCH_TYPE_CVLAN_PRIO,
-	KEFIR_MATCH_TYPE_CVLAN_ETHERTYPE,
-
-	KEFIR_MATCH_TYPE_MPLS_LABEL,
-	KEFIR_MATCH_TYPE_MPLS_TC,
-	KEFIR_MATCH_TYPE_MPLS_BOS,
-	KEFIR_MATCH_TYPE_MPLS_TTL,
-
-	KEFIR_MATCH_TYPE_ICMP_TYPE,
-	KEFIR_MATCH_TYPE_ICMP_CODE,
-
-	KEFIR_MATCH_TYPE_ARP_TIP,
-	KEFIR_MATCH_TYPE_ARP_SIP,
-	KEFIR_MATCH_TYPE_ARP_OP,
-	KEFIR_MATCH_TYPE_ARP_THA,
-	KEFIR_MATCH_TYPE_ARP_SHA,
-
-	KEFIR_MATCH_TYPE_ENC_KEY_ID,
-	KEFIR_MATCH_TYPE_ENC_DST_ID,
-	KEFIR_MATCH_TYPE_ENC_SRC_ID,
-	KEFIR_MATCH_TYPE_ENC_DST_PORT,
-	KEFIR_MATCH_TYPE_ENC_TOS,
-	KEFIR_MATCH_TYPE_ENC_TTL,
-
-	KEFIR_MATCH_TYPE_GENEVE_OPTIONS,
-
-	__KEFIR_MAX_MATCH_TYPE
-};
 
 enum value_format {
 	KEFIR_VAL_FMT_BIT,	/* MPLS BoS */
@@ -203,39 +102,7 @@ static const enum value_format type_format[] = {
 	[KEFIR_MATCH_TYPE_VLAN_ETHERTYPE]	= KEFIR_VAL_FMT_UINT16,
 };
 
-union kefir_value {
-	struct ether_addr	eth;
-	struct in6_addr		ipv6;
-	struct in_addr		ipv4;
-	uint32_t		u32;
-	uint16_t		u16;
-	uint8_t			u8;
-	uint8_t			raw[sizeof(struct in6_addr)];
-};
-
 #define MATCH_FLAGS_USE_MASK	bit(0)
-
-/*
- * - A type for the match, indicating the semantics of the data to match
- *   (semantics needed for optimizations).
- * - An operator to indicate what type of comparison should be performed
- *   (equality, or other arithmetic or logic operator).
- * - A value to match.
- * - One mask to apply to the field.
- * - Option flags, indicating for example that masks are used for this match.
- */
-struct kefir_match {
-	enum match_type		match_type;
-	enum comp_operator	comp_operator;
-	union kefir_value	value;
-	uint8_t			mask[16];
-	uint64_t		flags;
-};
-
-struct kefir_rule {
-	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE];
-	enum action_code action;
-};
 
 struct kefir_filter {
 	struct list *rules;
@@ -275,12 +142,14 @@ struct kefir_cprog {
  * Shared functions
  */
 
-int kefir_add_rule_to_filter(kefir_filter *filter, struct kefir_rule *rule,
-			     ssize_t index);
-
 static inline size_t bytes_for_format(enum value_format format)
 {
 	return (format_size[format] + 7) / 8;
+}
+
+static inline size_t bits_for_type(enum match_type type)
+{
+	return format_size[type_format[type]];
 }
 
 #endif /* LIBKEFIR_INTERNALS_H */

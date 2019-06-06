@@ -4,20 +4,26 @@
 #ifndef LIBKEFIR_H
 #define LIBKEFIR_H
 
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 #include <bpf/libbpf.h>
+#include <net/ethernet.h>
+#include <netinet/in.h>
 
 #ifndef bit
 #define bit(n) (1 << (n))
 #endif
 
+#define KEFIR_MAX_MATCH_PER_RULE	5
+
 typedef struct kefir_filter kefir_filter;
 
 /*
  *
- * Filter management
+ * Rule crafting
  *
  */
 
@@ -29,9 +35,207 @@ enum kefir_rule_type {
 	RULE_TYPE_OVS_FLOW,
 };
 
+enum comp_operator {
+	OPER_EQUAL,
+	OPER_LT,
+	OPER_LEQ,
+	OPER_GT,
+	OPER_GEQ,
+	__KEFIR_MAX_OPER
+};
+
+enum action_code {
+	ACTION_CODE_DROP,
+	ACTION_CODE_PASS,
+	__KEFIR_MAX_ACTION_CODE
+};
+
+enum match_type {
+	KEFIR_MATCH_TYPE_UNSPEC = 0,
+
+	KEFIR_MATCH_TYPE_ETHER_SRC,
+	KEFIR_MATCH_TYPE_ETHER_DST,
+	KEFIR_MATCH_TYPE_ETHER_ANY,	/* Either source or destination */
+	KEFIR_MATCH_TYPE_ETHER_PROTO,
+
+	KEFIR_MATCH_TYPE_IP_4_SRC,
+	KEFIR_MATCH_TYPE_IP_4_DST,
+	KEFIR_MATCH_TYPE_IP_4_ANY,
+	KEFIR_MATCH_TYPE_IP_4_TOS,
+	KEFIR_MATCH_TYPE_IP_4_TTL,
+	KEFIR_MATCH_TYPE_IP_4_FLAGS,
+	KEFIR_MATCH_TYPE_IP_4_L4PROTO,
+	KEFIR_MATCH_TYPE_IP_4_L4DATA,
+	KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC,
+	KEFIR_MATCH_TYPE_IP_4_L4PORT_DST,
+	KEFIR_MATCH_TYPE_IP_4_L4PORT_ANY,
+	KEFIR_MATCH_TYPE_IP_4_SPI,
+	KEFIR_MATCH_TYPE_IP_4_TCP_FLAGS,
+
+	KEFIR_MATCH_TYPE_IP_6_SRC,
+	KEFIR_MATCH_TYPE_IP_6_DST,
+	KEFIR_MATCH_TYPE_IP_6_ANY,
+	KEFIR_MATCH_TYPE_IP_6_TOS,	/* Actually TCLASS, traffic class */
+	KEFIR_MATCH_TYPE_IP_6_TTL,
+	KEFIR_MATCH_TYPE_IP_6_FLAGS,
+	KEFIR_MATCH_TYPE_IP_6_L4PROTO,
+	KEFIR_MATCH_TYPE_IP_6_L4DATA,
+	KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC,
+	KEFIR_MATCH_TYPE_IP_6_L4PORT_DST,
+	KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY,
+	KEFIR_MATCH_TYPE_IP_6_SPI,
+	KEFIR_MATCH_TYPE_IP_6_TCP_FLAGS,
+
+	KEFIR_MATCH_TYPE_IP_ANY_SRC,
+	KEFIR_MATCH_TYPE_IP_ANY_DST,
+	KEFIR_MATCH_TYPE_IP_ANY_ANY,
+	KEFIR_MATCH_TYPE_IP_ANY_TOS,
+	KEFIR_MATCH_TYPE_IP_ANY_TTL,
+	KEFIR_MATCH_TYPE_IP_ANY_FLAGS,
+	KEFIR_MATCH_TYPE_IP_ANY_L4PROTO,
+	KEFIR_MATCH_TYPE_IP_ANY_L4DATA,
+	KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC,
+	KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST,
+	KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY,
+	KEFIR_MATCH_TYPE_IP_ANY_SPI,
+	KEFIR_MATCH_TYPE_IP_ANY_TCP_FLAGS,
+
+	KEFIR_MATCH_TYPE_VLAN_ID,
+	KEFIR_MATCH_TYPE_VLAN_PRIO,
+	KEFIR_MATCH_TYPE_VLAN_ETHERTYPE,
+
+	/* Below: not fully supported yet */
+
+	KEFIR_MATCH_TYPE_CVLAN_ID,
+	KEFIR_MATCH_TYPE_CVLAN_PRIO,
+	KEFIR_MATCH_TYPE_CVLAN_ETHERTYPE,
+
+	KEFIR_MATCH_TYPE_MPLS_LABEL,
+	KEFIR_MATCH_TYPE_MPLS_TC,
+	KEFIR_MATCH_TYPE_MPLS_BOS,
+	KEFIR_MATCH_TYPE_MPLS_TTL,
+
+	KEFIR_MATCH_TYPE_ICMP_TYPE,
+	KEFIR_MATCH_TYPE_ICMP_CODE,
+
+	KEFIR_MATCH_TYPE_ARP_TIP,
+	KEFIR_MATCH_TYPE_ARP_SIP,
+	KEFIR_MATCH_TYPE_ARP_OP,
+	KEFIR_MATCH_TYPE_ARP_THA,
+	KEFIR_MATCH_TYPE_ARP_SHA,
+
+	KEFIR_MATCH_TYPE_ENC_KEY_ID,
+	KEFIR_MATCH_TYPE_ENC_DST_ID,
+	KEFIR_MATCH_TYPE_ENC_SRC_ID,
+	KEFIR_MATCH_TYPE_ENC_DST_PORT,
+	KEFIR_MATCH_TYPE_ENC_TOS,
+	KEFIR_MATCH_TYPE_ENC_TTL,
+
+	KEFIR_MATCH_TYPE_GENEVE_OPTIONS,
+
+	__KEFIR_MAX_MATCH_TYPE
+};
+
+/*
+ * A value object, to be matched against data collected from one field of a
+ * packet.
+ */
+union kefir_value {
+	struct ether_addr	eth;
+	struct in6_addr		ipv6;
+	struct in_addr		ipv4;
+	uint32_t		u32;
+	uint16_t		u16;
+	uint8_t			u8;
+	uint8_t			raw[sizeof(struct in6_addr)];
+};
+
+/*
+ * - A type for the match, indicating the semantics of the data to match
+ *   (semantics needed for optimizations).
+ * - An operator to indicate what type of comparison should be performed
+ *   (equality, or other arithmetic or logic operator).
+ * - A value to match.
+ * - One mask to apply to the field.
+ * - Option flags, indicating for example that masks are used for this match.
+ */
+struct kefir_match {
+	enum match_type		match_type;
+	enum comp_operator	comp_operator;
+	union kefir_value	value;
+	uint8_t			mask[16];
+	uint64_t		flags;
+};
+
+/*
+ * A rule object, representing one rule that will be evaluated against packet
+ * data. If all patterns match, the action code will be returned from the BPF
+ * program.
+ */
+struct kefir_rule {
+	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE];
+	enum action_code action;
+};
+
+/**
+ * Get the number of bytes expected for a value for a match of the given type.
+ * @type match type which length is requested
+ * @return length (in bytes) of the value for the given type
+ */
+LIBKEFIR_API
+size_t kefir_bytes_for_type(enum match_type type);
+
+/**
+ * Fill and possibly create a match object.
+ * @match pointer to the match object to fill, if NULL the object will be
+ *        allocated by the function and should be later free()-d by the caller
+ * @type type for the match (indicating the header field with which the match
+ *       pattern should be compared)
+ * @oper comparison operator for the operation to do to check if a packet
+ *       matches a pattern
+ * @value pointer to the data to compare to the content of the packets, which
+ *        MUST be of the correct size of the match type in use (this can be a
+ *        pointer to a 2-byte long integer for matching on L4 ports, or to a
+ *        struct ether_addr for matching on MAC address, for example)
+ * @mask bitmask to apply to packet data before comparing it to the value
+ * @is_net_byte_order true if value and masks are already in network byte order
+ *                    (for example if MAC address was obtained with
+ *                    ether_aton()), false otherwise
+ * @return a pointer to the match object (to be free()-d by the caller if
+ *         allocated by the function) on success, NULL otherwise
+ */
+struct kefir_match *
+kefir_match_create(struct kefir_match *match,
+		   enum match_type type,
+		   enum comp_operator oper,
+		   const void *value,
+		   const uint8_t *mask,
+		   bool is_net_byte_order);
+
+/**
+ * Create and fill a rule object.
+ * @matches array of pointers to match objects to fill the rule with
+ * @nb_matches number of match objects in the array
+ * @action action code to return from the BPF program when a packet matches all
+ *         patterns for the rule
+ * @return a pointer to the rule object (to be free()-d by the caller) on
+ *         success, NULL otherwise
+ */
+struct kefir_rule *
+kefir_rule_create(struct kefir_match **matches,
+		  unsigned int nb_matches,
+		  enum action_code action);
+
+/*
+ *
+ * Filter management
+ *
+ */
+
 /**
  * Create and initialize a new filter object.
- * @return a pointer to the filter (or NULL and sets errno if an error occurred)
+ * @return a pointer to the filter object on success (to be free()-d by the
+ *         caller), NULL otherwise
  */
 kefir_filter *kefir_filter_init(void);
 
@@ -54,6 +258,16 @@ kefir_filter *kefir_filter_clone(const kefir_filter *filter);
  * @return the number of rules in that filter
  */
 size_t kefir_filter_size(const kefir_filter *filter);
+
+/**
+ * Add a rule to a filter.
+ * @filter: object to add the rule to
+ * @index: index of the rule in the list (overwrite if pre-existing)
+ * @return 0 on success, error code otherwise
+ */
+int kefir_filter_add_rule(kefir_filter *filter,
+			  struct kefir_rule *rule,
+			  ssize_t index);
 
 /**
  * Add a rule to a filter.
