@@ -12,6 +12,10 @@
 #include <net/ethernet.h>
 #include <netinet/in.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct bpf_object;
 
 #ifndef LIBKEFIR_API
@@ -610,5 +614,9 @@ const char *kefir_strerror(void);
  */
 LIBKEFIR_API
 void kefir_strerror_reset(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* LIBKEFIR_H */
