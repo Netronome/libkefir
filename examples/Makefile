@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright (c) 2019 Netronome Systems, Inc.
 
-EXAMPLES = simple_filter simple_filter_steps
+EXAMPLES = simple_filter simple_filter_steps tcflower2json json2c
 
 LIBKEFIR_DIR	= ..
 LIBKEFIR_OBJECT	= $(LIBKEFIR_DIR)/build/libkefir.a
@@ -47,6 +47,12 @@ simple_filter: simple_filter.o cl_options.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
 	$(CC) $(CFLAGS) -o $@ $^ -lelf
 
 simple_filter_steps: simple_filter_steps.o cl_options.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
+	$(CC) $(CFLAGS) -o $@ $^ -lelf
+
+tcflower2json: tcflower2json.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
+	$(CC) $(CFLAGS) -o $@ $^ -lelf
+
+json2c: json2c.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
 	$(CC) $(CFLAGS) -o $@ $^ -lelf
 
 ## Build with shared library (.so) instead of static one (.a)
