@@ -403,39 +403,64 @@ kefir_filter *json_restore_filter_from_file(const char *filename)
 {
 	kefir_filter *filter = NULL;
 	size_t nb_read, input_len;
+	FILE *input_file = NULL;
 	struct stat statbuf;
 	jsmntok_t *tokens;
-	off_t input_size;
-	FILE *input_file;
 	char *input_str;
 	jsmn_parser jp;
 	int nb_tokens;
 
-	input_file = fopen(filename, "r");
-	if (!input_file) {
-		err_fail("failed to open file %s: %s", filename,
-			 strerror(errno));
-		return NULL;
-	}
+	if (!strcmp(filename, "-")) {
+		size_t offset = 0, chunk_size = 2048, buf_size = chunk_size;
+		char *tmp;
 
-	if (stat(filename, &statbuf)) {
-		err_fail("failed to get size of file %s: %s", filename,
-			 strerror(errno));
-		goto close_file;
-	}
-	input_size = statbuf.st_size;
+		input_str = calloc(buf_size, sizeof(*input_str));
+		if (!input_str) {
+			err_fail("failed to allocate memory for input");
+			return NULL;
+		}
+		while (fgets(input_str + offset, chunk_size, stdin)) {
+			offset = strlen(input_str);
+			if (offset + chunk_size >= buf_size && !feof(stdin)) {
+				buf_size *= 2;
+				tmp = realloc(input_str, buf_size);
+				if (!tmp) {
+					err_fail("realloc failed");
+					free(input_str);
+					return NULL;
+				}
+				input_str = tmp;
+			}
+		}
+	} else {
+		off_t input_size;
 
-	input_str = calloc(input_size + 1, sizeof(*input_str));
-	if (!input_str) {
-		err_fail("failed to allocate memory for reading input file");
-		goto close_file;
-	}
+		input_file = fopen(filename, "r");
+		if (!input_file) {
+			err_fail("failed to open file %s: %s", filename,
+				 strerror(errno));
+			return NULL;
+		}
 
-	nb_read = fread(input_str, 1, input_size, input_file);
-	if (nb_read < (size_t)input_size) {
-		err_fail("failed to read file %s: %s", filename,
-			 strerror(ferror(input_file)));
-		goto free_input_str;
+		if (stat(filename, &statbuf)) {
+			err_fail("failed to get size of file %s: %s", filename,
+				 strerror(errno));
+			goto close_file;
+		}
+		input_size = statbuf.st_size;
+
+		input_str = calloc(input_size + 1, sizeof(*input_str));
+		if (!input_str) {
+			err_fail("failed to allocate memory for file input");
+			goto close_file;
+		}
+
+		nb_read = fread(input_str, 1, input_size, input_file);
+		if (nb_read < (size_t)input_size) {
+			err_fail("failed to read file %s: %s", filename,
+				 strerror(ferror(input_file)));
+			goto free_input_str;
+		}
 	}
 	input_len = strlen(input_str);
 
@@ -489,6 +514,7 @@ free_tokens:
 free_input_str:
 	free(input_str);
 close_file:
-	fclose(input_file);
+	if (input_file)
+		fclose(input_file);
 	return filter;
 }

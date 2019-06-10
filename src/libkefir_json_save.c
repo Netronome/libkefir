@@ -114,7 +114,10 @@ int json_save_filter_to_file(const kefir_filter *filter, const char *filename)
 	FILE *outfile;
 	int err = -1;
 
-	outfile = fopen(filename, "w");
+	if (!strcmp(filename, "-"))
+		outfile = stdout;
+	else
+		outfile = fopen(filename, "w");
 	if (!outfile) {
 		err_fail("failed to open file %s: %s", filename,
 			 strerror(errno));
@@ -148,6 +151,7 @@ int json_save_filter_to_file(const kefir_filter *filter, const char *filename)
 	err = 0;
 
 close_file:
-	fclose(outfile);
+	if (outfile != stdout)
+		fclose(outfile);
 	return err;
 }

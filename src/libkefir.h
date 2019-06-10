@@ -308,6 +308,8 @@ int kefir_rule_delete_by_id(kefir_filter *filter,
 			    ssize_t index);
 
 /** Dump all rules of a filter to the console.
+ * OUTPUT IS NOT STABLE, USE FOR DEBUG ONLY!
+ * (See also kefir_filter_save_to_file().)
  * @filter: object to dump
  */
 void kefir_filter_dump(const kefir_filter *filter);
@@ -322,7 +324,7 @@ void kefir_filter_dump(const kefir_filter *filter);
  * Save a filter to a file
  * @filter: filter to save
  * @filename: name of the file where to save the filter (it will be created
- *            if necessary, overwritten overwise)
+ *            if necessary, overwritten overwise), if "-" then write to stdout
  * @return 0 on success, error code otherwise
  */
 int kefir_filter_save_to_file(const kefir_filter *filter,
@@ -330,7 +332,8 @@ int kefir_filter_save_to_file(const kefir_filter *filter,
 
 /**
  * Load a filter from a backup
- * @filename: name of the file to load the filter from
+ * @filename: name of the file to load the filter from, if "-" then read from
+ *            stdin
  * @return a pointer to the filter object on success (to be free()-d by the
  *         caller), NULL otherwise
  */
