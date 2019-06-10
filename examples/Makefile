@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright (c) 2019 Netronome Systems, Inc.
 
-EXAMPLES = simple_filter_steps
+EXAMPLES = simple_filter simple_filter_steps
 
 LIBKEFIR_DIR	= ..
 LIBKEFIR_OBJECT	= $(LIBKEFIR_DIR)/build/libkefir.a
@@ -42,6 +42,9 @@ $(HDR_DIR)/kefir/libkefir.h:
 		$(MAKE) -C $(LIBKEFIR_DIR) install_headers
 
 $(addsuffix .o,$(EXAMPLES)): $(HDR_DIR)/kefir/libkefir.h
+
+simple_filter: simple_filter.o cl_options.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
+	$(CC) $(CFLAGS) -o $@ $^ -lelf
 
 simple_filter_steps: simple_filter_steps.o cl_options.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
 	$(CC) $(CFLAGS) -o $@ $^ -lelf
