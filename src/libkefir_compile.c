@@ -127,24 +127,24 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 	if (pid < 0) {
 		err_fail("failed to fork for running clang: %s",
 			 strerror(errno));
-		return -1;
+		goto err_free_filenames;
 	}
 	if (pid == 0) {
 		if (execl(clang, clang, "-O2", "-g", "-emit-llvm", "-o", llfile,
 			  "-c", c_file, (char *)NULL)) {
 			err_fail("failed to exec clang: %s", strerror(errno));
-			goto err_free_filenames;
+			exit(-1);
 		}
 	}
 
 	if (wait(&wstatus) < 0) {
 		err_fail("cannot wait for clang, wait() syscall failed: %s",
 			 strerror(errno));
-		return -1;
+		goto err_free_filenames;
 	}
 	if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus)) {
 		err_fail("call to clang failed");
-		return -1;
+		goto err_free_filenames;
 	}
 
 	pid = fork();
@@ -157,18 +157,18 @@ int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
 			  "-filetype=obj", "-o", objfile, llfile,
 			  (char *)NULL)) {
 			err_fail("failed to exec llc: %s", strerror(errno));
-			goto err_free_filenames;
+			exit(-1);
 		}
 	}
 
 	if (wait(&wstatus) < 0) {
 		err_fail("cannot wait for llc, wait() syscall failed: %s",
 			 strerror(errno));
-		return -1;
+		goto err_free_filenames;
 	}
 	if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus)) {
 		err_fail("call to llc failed");
-		return -1;
+		goto err_free_filenames;
 	}
 
 	if (!opt_ll_file)
