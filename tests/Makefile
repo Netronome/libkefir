@@ -15,9 +15,6 @@ OBJECTS := $(patsubst %.c,%.o,$(OBJECTS))
 CFLAGS ?= -g -Wall -Wextra -Wpedantic
 CFLAGS += -I$(HDR_DIR)
 
-LLVM_VERSION ?= -8
-CFLAGS += -D LLVM_VERSION='"$(LLVM_VERSION)"'
-
 default: tester
 
 $(HDR_DIR)/kefir/libkefir.h:

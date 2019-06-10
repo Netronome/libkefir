@@ -15,9 +15,8 @@
 #include <bpf/bpf.h>
 #include <kefir/libkefir.h>
 
+#include "cl_options.h"
 #include "tester.h"
-
-#define KEEP_FILES true
 
 #define BUF_LEN 128
 
@@ -29,6 +28,32 @@ struct kefir_test_stats {
 	unsigned int skipped;
 	unsigned int insns;
 };
+
+static int usage(const char *bin_name, int ret)
+{
+	fprintf(stderr,
+		"Usage: %s [OPTIONS]\n"
+		"\n"
+		"       OPTIONS:\n"
+		"\n"
+		"       -h, --help                      Display this help\n"
+		"       -i, --ifname       <ifname>     Interface to attach test programs to\n"
+		"       -o, --hw_offload                Attempt hardware offload\n"
+		"       -k, --keep_files                Keep produced test files\n"
+		"\n"
+		"       -c, --llvm_version <version>    LLVM version suffix (e.g. '-8')\n"
+		"                                       to append to clang/llc binary names\n"
+		"       --clang-bin        <path>       clang binary to use (overrides -l)\n"
+		"       --llc-bin          <path>       llc binary to use (overrides -l)\n"
+		"\n"
+		"       --inline_fn                     inline BPF functions (no BPF-to-BPF)\n"
+		"       --no_vlan                       do not generate VLAN parsing in BPF\n"
+		"       --clone_filter                  clone filters before attaching to cprog\n"
+		"       --use_prink                     use bpf_trace_printk() for debug in BPF\n"
+		"", bin_name);
+
+	return ret;
+}
 
 static struct kefir_filter *fetch_filter(const struct kefir_test *test)
 {
@@ -65,10 +90,9 @@ destroy_filter:
 }
 
 static struct bpf_object *
-inject_filter(struct kefir_filter *filter, const char *name)
+inject_filter(struct kefir_filter *filter, const char *name,
+	      struct cl_options *opts)
 {
-	const char clang_binary[] = "/usr/bin/clang" LLVM_VERSION;
-	const char llc_binary[] = "/usr/bin/llc" LLVM_VERSION;
 	char cprog_file[sizeof(tempdir) + MAX_NAME_LEN + 2];
 	char obj_file[sizeof(tempdir) + MAX_NAME_LEN + 2];
 	char ll_file[sizeof(tempdir) + MAX_NAME_LEN + 3];
@@ -83,6 +107,12 @@ inject_filter(struct kefir_filter *filter, const char *name)
 	sprintf(ll_file, "%s/%s.ll", tempdir, name);
 
 	cprog_attr.target = KEFIR_CPROG_TARGET_XDP;
+
+	cprog_attr.flags |= opts->inline_fn ? KEFIR_CPROG_FLAG_INLINE_FUNC : 0;
+	cprog_attr.flags |= opts->no_vlan ? KEFIR_CPROG_FLAG_NO_VLAN : 0;
+	cprog_attr.flags |= opts->clone ? KEFIR_CPROG_FLAG_CLONE_FILTER : 0;
+	cprog_attr.flags |= opts->use_printk ? KEFIR_CPROG_FLAG_USE_PRINTK : 0;
+
 	cprog = kefir_filter_convert_to_cprog(filter, &cprog_attr);
 	if (!cprog)
 		goto rm_cfile;
@@ -90,13 +120,12 @@ inject_filter(struct kefir_filter *filter, const char *name)
 	if (kefir_cprog_to_file(cprog, cprog_file))
 		goto destroy_cprog;
 
-	compil_attr.clang_bin = clang_binary;
-	compil_attr.llc_bin = llc_binary;
+	select_llvm_binaries(&compil_attr, opts);
 	if (kefir_cfile_compile_to_bpf(cprog_file, &compil_attr))
 		goto destroy_cprog;
 
-	//load_attr.ifindex = 7;
-	//load_attr.flags |= XDP_FLAGS_HW_MODE;
+	load_attr.ifindex = opts->ifindex;
+	load_attr.flags |= opts->hw_offload ? XDP_FLAGS_HW_MODE : 0;
 
 	obj = kefir_cprog_load_to_kernel(cprog, obj_file, &load_attr);
 	if (!obj)
@@ -108,7 +137,7 @@ inject_filter(struct kefir_filter *filter, const char *name)
 	}
 
 rm_objfile:
-	if (!KEEP_FILES) {
+	if (!opts->keep_files) {
 		if (unlink(obj_file))
 			printf("Warning: failed to remove file %s: %s\n",
 			       obj_file, strerror(errno));
@@ -121,7 +150,7 @@ destroy_cprog:
 	kefir_cprog_destroy(cprog);
 
 rm_cfile:
-	if (!KEEP_FILES)
+	if (!opts->keep_files)
 		if (unlink(cprog_file))
 			printf("Warning: failed to remove file %s: %s\n",
 			       cprog_file, strerror(errno));
@@ -129,23 +158,9 @@ rm_cfile:
 	return obj;
 }
 
-/*
-static void print_buf(uint8_t *buf, uint32_t size)
-{
-	size_t i;
-
-	for (i = 0; i < size; i++) {
-		if (i > 0 && i % 16 == 0)
-			printf("\n");
-		else if (i > 0 && i % 8 == 0)
-			printf(" ");
-		printf("%02hhx ", buf[i]);
-	}
-	printf("\n");
-}
-*/
-
-static int run_test(struct kefir_test *test, unsigned int *insn_count)
+static int
+run_test(struct kefir_test *test, struct cl_options *opts,
+	 unsigned int *insn_count)
 {
 	struct bpf_prog_test_run_attr test_attr = {0};
 	struct bpf_prog_info info = {0};
@@ -160,9 +175,15 @@ static int run_test(struct kefir_test *test, unsigned int *insn_count)
 	if (!filter)
 		goto print_res;
 
-	obj = inject_filter(filter, test->name);
+	obj = inject_filter(filter, test->name, opts);
 	if (!obj)
 		goto destroy_filter;
+
+	if (opts->hw_offload) {
+		/* Test runs not supported on HW, succeed if load worked */
+		success = true;
+		goto destroy_object;
+	}
 
 	fd = kefir_bpfobj_get_prog_fd(obj);
 	info_len = sizeof(info);
@@ -191,11 +212,16 @@ destroy_filter:
 
 print_res:
 	info.xlated_prog_len /= 8;
-	printf("%-64s\t%5u\t", test->name, info.xlated_prog_len);
+	printf("%-64s\t", test->name);
+	if (!opts->hw_offload)
+		printf("%5u\t", info.xlated_prog_len);
 	*insn_count += info.xlated_prog_len;
 
 	if (success) {
-		printf("PASS (%dns)\n", test_attr.duration);
+		if (opts->hw_offload)
+			printf("PASS\n");
+		else
+			printf("PASS (%dns)\n", test_attr.duration);
 		return 0;
 	}
 
@@ -208,21 +234,29 @@ print_res:
 }
 
 static void
-run_test_array(struct kefir_test *tests_array, struct kefir_test_stats *stats)
+run_test_array(struct kefir_test *tests_array, struct cl_options *opts,
+	       struct kefir_test_stats *stats)
 {
 	size_t i;
 
 	for (i = 0; strcmp(tests_array[i].name, ""); i++)
-		if (run_test(&tests_array[i], &stats->insns))
+		if (run_test(&tests_array[i], opts, &stats->insns))
 			stats->failed++;
 		else
 			stats->passed++;
 }
 
-int main(__attribute__((unused))int argc, __attribute__((unused))char **argv)
+int main(int argc, char **argv)
 {
 	struct kefir_test_stats stats = {0};
 	time_t cur_time = time(NULL);
+	struct cl_options opts = {0};
+
+	if (get_options(argc, argv, &opts))
+		return usage(argv[0], -1);
+
+	if (opts.help_req)
+		return usage(argv[0], 0);
 
 	if (cur_time == (time_t)-1) {
 		printf("Error: failed to get time: %s\n", strerror(errno));
@@ -234,19 +268,25 @@ int main(__attribute__((unused))int argc, __attribute__((unused))char **argv)
 		       strerror(errno));
 	}
 
-	printf("%-64s\t%s\t%s\n\n", "NAME", "INSNS", "RESULT");
+	printf("%-64s\t", "NAME");
+	if (!opts.hw_offload)
+		printf("INSNS\t");
+	printf("RESULT\n\n");
 
-	run_test_array(ethtool_basic_tests, &stats);
-	run_test_array(ethtool_basic_tests_masks, &stats);
-	run_test_array(tcflower_basic_tests, &stats);
-	run_test_array(tcflower_basic_tests_masks, &stats);
-	run_test_array(json_tests, &stats);
-	run_test_array(advanced_tests, &stats);
+	run_test_array(ethtool_basic_tests, &opts, &stats);
+	run_test_array(ethtool_basic_tests_masks, &opts, &stats);
+	run_test_array(tcflower_basic_tests, &opts, &stats);
+	run_test_array(tcflower_basic_tests_masks, &opts, &stats);
+	run_test_array(json_tests, &opts, &stats);
+	run_test_array(advanced_tests, &opts, &stats);
 
-	printf("\nTOTAL: %d passed, %d failed, %d skipped (total insns: %d)\n",
-	       stats.passed, stats.failed, stats.skipped, stats.insns);
+	printf("\nTOTAL: %d passed, %d failed, %d skipped",
+	       stats.passed, stats.failed, stats.skipped);
+	if (!opts.hw_offload)
+		printf(" (total insns: %d)", stats.insns);
+	printf("\n");
 
-	if (KEEP_FILES)
+	if (opts.keep_files)
 		printf("Produced files were kept under %s\n", tempdir);
 	else if (rmdir(tempdir))
 		printf("Error: failed to remove temp dir: %s\n",
