@@ -28,21 +28,11 @@ struct bpf_object;
 
 #define KEFIR_MAX_MATCH_PER_RULE	5
 
-typedef struct kefir_filter kefir_filter;
-
 /*
  *
  * Rule crafting
  *
  */
-
-enum kefir_rule_type {
-	RULE_TYPE_ETHTOOL_NTUPLE,
-	RULE_TYPE_LIBPCAP_EXPR,
-	RULE_TYPE_TC_FLOWER,
-	RULE_TYPE_IPTABLES,
-	RULE_TYPE_OVS_FLOW,
-};
 
 enum comp_operator {
 	OPER_EQUAL,
@@ -242,6 +232,16 @@ kefir_rule_create(struct kefir_match **matches,
  * Filter management
  *
  */
+
+typedef struct kefir_filter kefir_filter;
+
+enum kefir_rule_type {
+	RULE_TYPE_ETHTOOL_NTUPLE,
+	RULE_TYPE_LIBPCAP_EXPR,
+	RULE_TYPE_TC_FLOWER,
+	RULE_TYPE_IPTABLES,
+	RULE_TYPE_OVS_FLOW,
+};
 
 /**
  * Create and initialize a new filter object.
