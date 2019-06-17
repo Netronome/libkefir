@@ -528,6 +528,24 @@ int kefir_cprog_fill_map(const kefir_cprog *cprog,
 			 struct bpf_object *bpf_obj);
 
 /**
+ * Dump the commands (bpftool format) that can be used to fill the rules
+ * associated with a cprog object (loaded or not).
+ * @cprog: cprog used to generate the BPF program
+ * @bpf_obj: optional BPF object resulting from program load, used if not NULL
+ *           for retrieving map id
+ * @buf pointer to a buffer where to store the commands, if NULL the object
+ *      will be allocated by the function and should be later free()-d by the
+ *      caller
+ * @buflen pointer to buffer size, will be updated if buffer is reallocated
+ * @return 0 on success, error code otherwise
+ */
+LIBKEFIR_API
+int kefir_cprog_map_update_cmd(const kefir_cprog *cprog,
+			       struct bpf_object *bpf_obj,
+			       char **buf,
+			       size_t *buf_len);
+
+/**
  * All-in-one shortcut function to turn a filter into a cprog object, convert
  * it into a BPF program, load it, and attach it to an interface.
  * @filter: filter to use

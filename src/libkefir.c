@@ -550,6 +550,13 @@ int kefir_cprog_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
 	return compile_fill_map(cprog, bpf_obj);
 }
 
+int kefir_cprog_map_update_cmd(const kefir_cprog *cprog,
+			       struct bpf_object *bpf_obj, char **buf,
+			       size_t *buf_len)
+{
+	return dump_fillmap_cmd(cprog, bpf_obj, buf, buf_len);
+}
+
 struct bpf_object *kefir_filter_attach(const kefir_filter *filter, int ifindex)
 {
 	struct kefir_compil_attr compil_attr = {0};

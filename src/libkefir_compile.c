@@ -19,6 +19,7 @@
 
 #include "list.h"
 #include "libkefir.h"
+#include "libkefir_buffer.h"
 #include "libkefir_compile.h"
 #include "libkefir_error.h"
 #include "libkefir_internals.h"
@@ -315,7 +316,6 @@ int compile_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
 	int rule_map_fd;
 	int index = 0;
 
-	/* Fill map */
 	rule_map = bpf_object__find_map_by_name(bpf_obj, "rules");
 	if (!rule_map) {
 		err_fail("failed to retrieve map handler for loading rules");
@@ -332,6 +332,124 @@ int compile_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
 		return -1;
 
 	return 0;
+}
+
+/*
+ * Variadic list should contain:
+ *     char **buf
+ *     size_t *buf_len
+ *     int *index
+ *     unsigned int nb_matches
+ *     uint64_t flags
+ *     uint32_t map_id
+ */
+static int dump_rule_command(void *rule_ptr, va_list ap)
+{
+	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
+	unsigned int nb_matches, map_id;
+	size_t i, *buf_len;
+	uint64_t flags;
+	bool use_masks;
+	int *index;
+	char **buf;
+
+	buf = va_arg(ap, char **);
+	buf_len = va_arg(ap, size_t *);
+	index = va_arg(ap, int *);
+	nb_matches = va_arg(ap, unsigned int);
+	flags = va_arg(ap, uint64_t);
+	map_id = va_arg(ap, uint32_t);
+	use_masks = flags & OPT_FLAGS_USE_MASKS;
+
+	if (buf_append(buf, buf_len, "bpftool map update id "))
+		return -1;
+	if (map_id) {
+		if (buf_append(buf, buf_len, "%d", map_id))
+			return -1;
+	} else {
+		if (buf_append(buf, buf_len, "<map_id>"))
+			return -1;
+	}
+
+	if (buf_append(buf, buf_len, " key"))
+		return -1;
+	for (i = 0; i < sizeof(uint32_t); i++)
+		if (buf_append(buf, buf_len, " %#hhx",
+			       (((uint8_t *)index)[i] >> i) & 0xff))
+			return -1;
+
+	if (buf_append(buf, buf_len, " value"))
+		return -1;
+	for (i = 0; i < sizeof(enum kefir_action_code); i++)
+		if (buf_append(buf, buf_len, " %#hhx",
+			       rule->action >> i & 0xff))
+			return -1;
+
+	for (i = 0; i < nb_matches; i++) {
+		void *match = &rule->matches[i];
+		size_t len, j;
+
+		if (use_masks)
+			len = sizeof(struct bpf_map_match_with_masks);
+		else
+			len = sizeof(struct bpf_map_match);
+
+		for (j = 0; j < len; j++)
+			if (buf_append(buf, buf_len, " %#hhx",
+				       *((uint8_t *)match + j)))
+				return -1;
+	}
+	if (buf_append(buf, buf_len, ("\n")))
+		return -1;
+
+	*index += 1;
+
+	return 0;
+}
+
+int dump_fillmap_cmd(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
+		     char **buf, size_t *buf_len)
+{
+	struct bpf_map_info info = {0};
+	uint32_t len = sizeof(info);
+	struct bpf_map *rule_map;
+	int rule_map_fd;
+	int index = 0;
+
+	if (!buf) {
+		err_fail("buffer pointer is null");
+		return -1;
+	}
+	if (!*buf) {
+		*buf = calloc(2048, sizeof(char));
+		if (!*buf) {
+			err_fail("failed to allocate memory for buffer");
+			return -1;
+		}
+		*buf_len = 2048;
+	}
+
+	if (bpf_obj) {
+		rule_map = bpf_object__find_map_by_name(bpf_obj, "rules");
+		if (!rule_map) {
+			err_fail("failed to retrieve map handler for map id");
+			return -1;
+		}
+		rule_map_fd = bpf_map__fd(rule_map);
+		if (rule_map_fd < 0) {
+			err_fail("failed to retrieve file descriptor map");
+			return -1;
+		}
+		if (bpf_obj_get_info_by_fd(rule_map_fd, &info, &len)) {
+			err_fail("failed to retrieve map id from fd");
+			return -1;
+		}
+	}
+
+	return list_for_each((struct list *)cprog->filter->rules,
+			     dump_rule_command, buf, buf_len, &index,
+			     cprog->options.nb_matches, cprog->options.flags,
+			     info.id);
 }
 
 int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
