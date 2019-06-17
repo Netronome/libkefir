@@ -27,8 +27,8 @@ DEFINE_ERR_FUNCTIONS("compilation")
 
 /* As used in the BPF program, see libkefir_proggen.c */
 struct bpf_map_match {
-	enum match_type		match_type;
-	enum comp_operator	comp_operator;
+	enum kefir_match_type		match_type;
+	enum kefir_comp_operator	comp_operator;
 	union {
 		uint8_t		u8[16];
 		uint64_t	u64[2];
@@ -37,8 +37,8 @@ struct bpf_map_match {
 
 /* Must be identical to struct bpf_map_match, with additional flags and masks */
 struct bpf_map_match_with_masks {
-	enum match_type		match_type;
-	enum comp_operator	comp_operator;
+	enum kefir_match_type		match_type;
+	enum kefir_comp_operator	comp_operator;
 	union {
 		uint8_t		u8[16];
 		uint64_t	u64[2];
@@ -54,12 +54,12 @@ struct bpf_map_match_with_masks {
  * at the END of the current struct.
  */
 struct bpf_map_filter_rule {
-	enum action_code	action_code;
+	enum kefir_action_code	action_code;
 	struct bpf_map_match	matches[KEFIR_MAX_MATCH_PER_RULE];
 };
 
 struct bpf_map_filter_rule_with_masks {
-	enum action_code		action_code;
+	enum kefir_action_code		action_code;
 	struct bpf_map_match_with_masks	matches[KEFIR_MAX_MATCH_PER_RULE];
 };
 

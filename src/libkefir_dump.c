@@ -20,18 +20,18 @@
 
 DEFINE_ERR_FUNCTIONS("dump")
 
-static const char *comp_operator_str(enum comp_operator op)
+static const char *comp_operator_str(enum kefir_comp_operator op)
 {
 	switch (op) {
-	case OPER_EQUAL:
+	case KEFIR_OPER_EQUAL:
 		return "==";
-	case OPER_LT:
+	case KEFIR_OPER_LT:
 		return "<";
-	case OPER_LEQ:
+	case KEFIR_OPER_LEQ:
 		return "<=";
-	case OPER_GT:
+	case KEFIR_OPER_GT:
 		return ">";
-	case OPER_GEQ:
+	case KEFIR_OPER_GEQ:
 		return ">=";
 	default:
 		return "";
@@ -84,19 +84,19 @@ static void mask_str(uint8_t *mask, size_t mask_len, char *buf, size_t buf_len)
 	buf[i + 1] = '\0';
 }
 
-static const char *action_str(enum action_code ac)
+static const char *action_str(enum kefir_action_code ac)
 {
 	switch (ac) {
-	case ACTION_CODE_DROP:
+	case KEFIR_ACTION_CODE_DROP:
 		return "drop";
-	case ACTION_CODE_PASS:
+	case KEFIR_ACTION_CODE_PASS:
 		return "pass";
 	default:
 		return "";
 	}
 }
 
-static const char *match_type_str(enum match_type match_type)
+static const char *match_type_str(enum kefir_match_type match_type)
 {
 	switch (match_type) {
 	case KEFIR_MATCH_TYPE_ETHER_SRC:

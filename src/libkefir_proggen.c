@@ -173,16 +173,16 @@ make_retval_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 /*
  * Variadic list should contain:
- *     enum match_type type
+ *     enum kefir_match_type type
  */
 static int rule_has_matchtype(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
-	enum match_type type;
+	enum kefir_match_type type;
 	bool found = false;
 	size_t i;
 
-	type = va_arg(ap, enum match_type);
+	type = va_arg(ap, enum kefir_match_type);
 	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
 	     rule->matches[i].match_type != KEFIR_MATCH_TYPE_UNSPEC; i++) {
 		found = type == rule->matches[i].match_type;
@@ -194,7 +194,7 @@ static int rule_has_matchtype(void *rule_ptr, va_list ap)
 }
 
 static bool
-filter_has_matchtype(const kefir_filter *filter, enum match_type type)
+filter_has_matchtype(const kefir_filter *filter, enum kefir_match_type type)
 {
 	return !!list_for_each((struct list *)filter->rules, rule_has_matchtype,
 			       type);
@@ -208,12 +208,12 @@ filter_has_matchtype(const kefir_filter *filter, enum match_type type)
 static int rule_has_comp_operator(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
-	enum comp_operator op;
+	enum kefir_comp_operator op;
 	bool found = false;
 	int expect_op; /* bool, but va_arg promotes bools to ints */
 	size_t i;
 
-	op = va_arg(ap, enum comp_operator);
+	op = va_arg(ap, enum kefir_comp_operator);
 	expect_op = va_arg(ap, int);
 
 	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
@@ -227,7 +227,7 @@ static int rule_has_comp_operator(void *rule_ptr, va_list ap)
 }
 
 static int
-filter_has_comp_oper(const kefir_filter *filter, enum comp_operator op)
+filter_has_comp_oper(const kefir_filter *filter, enum kefir_comp_operator op)
 {
 	return list_for_each((struct list *)filter->rules,
 			     rule_has_comp_operator, op, 1);
@@ -237,13 +237,13 @@ static bool
 filter_all_comp_equal(const kefir_filter *filter)
 {
 	return !list_for_each((struct list *)filter->rules,
-			      rule_has_comp_operator, OPER_EQUAL, 0);
+			      rule_has_comp_operator, KEFIR_OPER_EQUAL, 0);
 }
 
 static unsigned int filter_diff_matchtypes(const kefir_filter *filter)
 {
+	enum kefir_match_type i;
 	unsigned int res = 0;
-	enum match_type i;
 
 	for (i = KEFIR_MATCH_TYPE_UNSPEC + 1; i < __KEFIR_MAX_MATCH_TYPE; i++)
 		if (filter_has_matchtype(filter, i))
@@ -475,16 +475,16 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "\n"
 	    "enum comp_operator {\n"
 	    "	OPER_EQUAL	= %d,\n"
-	    "", OPER_EQUAL);
+	    "", KEFIR_OPER_EQUAL);
 
-	if (filter_has_comp_oper(filter, OPER_LT))
-		GEN("	OPER_LT		= %d,\n", OPER_LT);
-	if (filter_has_comp_oper(filter, OPER_LEQ))
-		GEN("	OPER_LEQ	= %d,\n", OPER_LEQ);
-	if (filter_has_comp_oper(filter, OPER_GT))
-		GEN("	OPER_GT		= %d,\n", OPER_GT);
-	if (filter_has_comp_oper(filter, OPER_GEQ))
-		GEN("	OPER_GEQ	= %d,\n", OPER_GEQ);
+	if (filter_has_comp_oper(filter, KEFIR_OPER_LT))
+		GEN("	OPER_LT		= %d,\n", KEFIR_OPER_LT);
+	if (filter_has_comp_oper(filter, KEFIR_OPER_LEQ))
+		GEN("	OPER_LEQ	= %d,\n", KEFIR_OPER_LEQ);
+	if (filter_has_comp_oper(filter, KEFIR_OPER_GT))
+		GEN("	OPER_GT		= %d,\n", KEFIR_OPER_GT);
+	if (filter_has_comp_oper(filter, KEFIR_OPER_GEQ))
+		GEN("	OPER_GEQ	= %d,\n", KEFIR_OPER_GEQ);
 
 	GEN(""
 	    "};\n"
@@ -494,7 +494,7 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	ACTION_CODE_PASS	= %d,\n"
 	    "};\n"
 	    "\n"
-	    "", ACTION_CODE_DROP, ACTION_CODE_PASS);
+	    "", KEFIR_ACTION_CODE_DROP, KEFIR_ACTION_CODE_PASS);
 
 	if (prog->options.flags & OPT_FLAGS_USE_MASKS)
 		GEN(""
@@ -925,28 +925,28 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "");
 	if (!only_equal) {
 		GEN("	switch (match->comp_operator) {\n");
-		if (filter_has_comp_oper(prog->filter, OPER_LT))
+		if (filter_has_comp_oper(prog->filter, KEFIR_OPER_LT))
 			GEN(""
 			    "	case OPER_LT:\n"
 			    "		return copy[0] < match->value[0] ||\n"
 			    "			(copy[0] == match->value[0] &&\n"
 			    "			 copy[1] < copy[1]);\n"
 			    "");
-		if (filter_has_comp_oper(prog->filter, OPER_LEQ))
+		if (filter_has_comp_oper(prog->filter, KEFIR_OPER_LEQ))
 			GEN(""
 			    "	case OPER_LEQ:\n"
 			    "		return copy[0] < match->value[0] ||\n"
 			    "			(copy[0] == match->value[0] &&\n"
 			    "			 copy[1] <= copy[1]);\n"
 			    "");
-		if (filter_has_comp_oper(prog->filter, OPER_GT))
+		if (filter_has_comp_oper(prog->filter, KEFIR_OPER_GT))
 			GEN(""
 			    "	case OPER_GT:\n"
 			    "		return copy[0] > match->value[0] ||\n"
 			    "			(copy[0] == match->value[0] &&\n"
 			    "			 copy[1] > copy[1]);\n"
 			    "");
-		if (filter_has_comp_oper(prog->filter, OPER_GEQ))
+		if (filter_has_comp_oper(prog->filter, KEFIR_OPER_GEQ))
 			GEN(""
 			    "	case OPER_GEQ:\n"
 			    "		return copy[0] > match->value[0] ||\n"
@@ -1501,7 +1501,7 @@ make_cprog_main(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static void
-update_options_from_matchtype(enum match_type match_type,
+update_options_from_matchtype(enum kefir_match_type match_type,
 			      struct kefir_cprog_options *options)
 {
 	switch (match_type) {

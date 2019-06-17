@@ -86,7 +86,7 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		return -1;
 	}
 
-	match->comp_operator = OPER_EQUAL;
+	match->comp_operator = KEFIR_OPER_EQUAL;
 
 	if (!strcmp(**argv, "dst_mac")) {
 		NEXT_ARG();
@@ -304,7 +304,7 @@ out:
 
 static int
 tcflower_parse_action(const char ***argv, unsigned int *argc,
-		      enum action_code *action_code)
+		      enum kefir_action_code *action_code)
 {
 	if (*argc != 2) {
 		err_fail("bad number of arguments for parsing action");
@@ -318,9 +318,9 @@ tcflower_parse_action(const char ***argv, unsigned int *argc,
 	NEXT_ARG();
 
 	if (!strcmp(**argv, "pass")) {
-		*action_code = ACTION_CODE_PASS;
+		*action_code = KEFIR_ACTION_CODE_PASS;
 	} else if (!strcmp(**argv, "drop")) {
-		*action_code = ACTION_CODE_DROP;
+		*action_code = KEFIR_ACTION_CODE_DROP;
 	} else {
 		err_fail("unsupported action code %d", *action_code);
 		return -1;
@@ -330,7 +330,8 @@ tcflower_parse_action(const char ***argv, unsigned int *argc,
 }
 
 static struct kefir_rule *
-tcflower_compose_rule(struct kefir_match *matches, enum action_code action_code)
+tcflower_compose_rule(struct kefir_match *matches,
+		      enum kefir_action_code action_code)
 {
 	struct kefir_rule *rule;
 
@@ -350,7 +351,7 @@ struct kefir_rule *tcflower_parse_rule(const char **user_rule, size_t rule_size)
 {
 	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE] = { {0} };
 	enum ether_proto_type ethtype = TCFLOWER_ETH_PROTO_UNSPEC;
-	enum action_code action_code;
+	enum kefir_action_code action_code;
 	struct kefir_rule *rule;
 	size_t match_index = 0;
 	unsigned int argc;

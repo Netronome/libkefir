@@ -34,14 +34,14 @@ DEFINE_ERR_FUNCTIONS("core")
  * Rule crafting
  */
 
-size_t kefir_bytes_for_type(enum match_type type)
+size_t kefir_bytes_for_type(enum kefir_match_type type)
 {
 	return (format_size[type_format[type]] + 7) / 8;
 }
 
 struct kefir_match *
-kefir_match_create(struct kefir_match *match, enum match_type type,
-		   enum comp_operator oper, const void *value,
+kefir_match_create(struct kefir_match *match, enum kefir_match_type type,
+		   enum kefir_comp_operator oper, const void *value,
 		   const uint8_t *mask, bool is_net_byte_order)
 {
 	size_t nb_bytes = kefir_bytes_for_type(type);
@@ -119,7 +119,7 @@ err_free:
 
 struct kefir_rule *
 kefir_rule_create(struct kefir_match **matches, unsigned int nb_matches,
-		  enum action_code action)
+		  enum kefir_action_code action)
 {
 	struct kefir_rule *rule;
 	size_t i;
@@ -306,10 +306,10 @@ int kefir_rule_load(kefir_filter *filter, enum kefir_rule_type rule_type,
 	struct kefir_rule *rule;
 
 	switch (rule_type) {
-	case RULE_TYPE_ETHTOOL_NTUPLE:
+	case KEFIR_RULE_TYPE_ETHTOOL_NTUPLE:
 		rule = ethtool_parse_rule(user_rule, rule_size);
 		break;
-	case RULE_TYPE_TC_FLOWER:
+	case KEFIR_RULE_TYPE_TC_FLOWER:
 		rule = tcflower_parse_rule(user_rule, rule_size);
 		break;
 	default:

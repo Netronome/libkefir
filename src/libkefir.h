@@ -34,22 +34,22 @@ struct bpf_object;
  *
  */
 
-enum comp_operator {
-	OPER_EQUAL,
-	OPER_LT,
-	OPER_LEQ,
-	OPER_GT,
-	OPER_GEQ,
+enum kefir_comp_operator {
+	KEFIR_OPER_EQUAL,
+	KEFIR_OPER_LT,
+	KEFIR_OPER_LEQ,
+	KEFIR_OPER_GT,
+	KEFIR_OPER_GEQ,
 	__KEFIR_MAX_OPER
 };
 
-enum action_code {
-	ACTION_CODE_DROP,
-	ACTION_CODE_PASS,
+enum kefir_action_code {
+	KEFIR_ACTION_CODE_DROP,
+	KEFIR_ACTION_CODE_PASS,
 	__KEFIR_MAX_ACTION_CODE
 };
 
-enum match_type {
+enum kefir_match_type {
 	KEFIR_MATCH_TYPE_UNSPEC = 0,
 
 	KEFIR_MATCH_TYPE_ETHER_SRC,
@@ -159,11 +159,11 @@ union kefir_value {
  * - Option flags, indicating for example that masks are used for this match.
  */
 struct kefir_match {
-	enum match_type		match_type;
-	enum comp_operator	comp_operator;
-	union kefir_value	value;
-	uint8_t			mask[16];
-	uint64_t		flags;
+	enum kefir_match_type		match_type;
+	enum kefir_comp_operator	comp_operator;
+	union kefir_value		value;
+	uint8_t				mask[16];
+	uint64_t			flags;
 };
 
 /*
@@ -173,7 +173,7 @@ struct kefir_match {
  */
 struct kefir_rule {
 	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE];
-	enum action_code action;
+	enum kefir_action_code action;
 };
 
 /**
@@ -182,7 +182,7 @@ struct kefir_rule {
  * @return length (in bytes) of the value for the given type
  */
 LIBKEFIR_API
-size_t kefir_bytes_for_type(enum match_type type);
+size_t kefir_bytes_for_type(enum kefir_match_type type);
 
 /**
  * Fill and possibly create a match object.
@@ -206,8 +206,8 @@ size_t kefir_bytes_for_type(enum match_type type);
 LIBKEFIR_API
 struct kefir_match *
 kefir_match_create(struct kefir_match *match,
-		   enum match_type type,
-		   enum comp_operator oper,
+		   enum kefir_match_type type,
+		   enum kefir_comp_operator oper,
 		   const void *value,
 		   const uint8_t *mask,
 		   bool is_net_byte_order);
@@ -225,7 +225,7 @@ LIBKEFIR_API
 struct kefir_rule *
 kefir_rule_create(struct kefir_match **matches,
 		  unsigned int nb_matches,
-		  enum action_code action);
+		  enum kefir_action_code action);
 
 /*
  *
@@ -236,11 +236,11 @@ kefir_rule_create(struct kefir_match **matches,
 typedef struct kefir_filter kefir_filter;
 
 enum kefir_rule_type {
-	RULE_TYPE_ETHTOOL_NTUPLE,
-	RULE_TYPE_LIBPCAP_EXPR,
-	RULE_TYPE_TC_FLOWER,
-	RULE_TYPE_IPTABLES,
-	RULE_TYPE_OVS_FLOW,
+	KEFIR_RULE_TYPE_ETHTOOL_NTUPLE,
+	KEFIR_RULE_TYPE_LIBPCAP_EXPR,
+	KEFIR_RULE_TYPE_TC_FLOWER,
+	KEFIR_RULE_TYPE_IPTABLES,
+	KEFIR_RULE_TYPE_OVS_FLOW,
 };
 
 /**

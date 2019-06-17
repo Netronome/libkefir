@@ -318,7 +318,7 @@ create_match_l4proto(struct kefir_match *match, bool ipv6_flow, uint8_t value)
 		match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PROTO;
 	else
 		match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PROTO;
-	match->comp_operator = OPER_EQUAL;
+	match->comp_operator = KEFIR_OPER_EQUAL;
 	match->value.u8 = value;
 }
 
@@ -490,7 +490,7 @@ parse_value(const char *input, enum value_format format,
 	return 0;
 }
 
-static int get_action_code(const char *input, enum action_code *action)
+static int get_action_code(const char *input, enum kefir_action_code *action)
 {
 	char *endptr;
 	long code;
@@ -504,10 +504,10 @@ static int get_action_code(const char *input, enum action_code *action)
 
 	switch (code) {
 	case -1:
-		*action = ACTION_CODE_DROP;
+		*action = KEFIR_ACTION_CODE_DROP;
 		break;
 	case 0:
-		*action = ACTION_CODE_PASS;
+		*action = KEFIR_ACTION_CODE_PASS;
 		break;
 	default:
 		err_fail("unsupported action code %s", input);
@@ -521,8 +521,8 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 {
 	struct ethtool_option current_opt = { .name = "" };
 	size_t flow_opts_len, i, match_index = 0;
+	enum kefir_action_code action_code;
 	enum ethtool_flow_type flow_type;
-	enum action_code action_code;
 	ethtool_opts_t *flow_opts;
 	struct kefir_match *match;
 	struct kefir_rule *rule;
@@ -592,7 +592,7 @@ struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
 	 * regular fields. Extensions include vlan, vlan-etype and dst-mac.
 	 */
 
-	rule->matches[match_index].comp_operator = OPER_EQUAL;
+	rule->matches[match_index].comp_operator = KEFIR_OPER_EQUAL;
 	match_index++;
 
 	if (strcmp(*user_rule, "action")) {

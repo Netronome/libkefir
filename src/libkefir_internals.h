@@ -148,7 +148,7 @@ static inline size_t bytes_for_format(enum value_format format)
 	return (format_size[format] + 7) / 8;
 }
 
-static inline size_t bits_for_type(enum match_type type)
+static inline size_t bits_for_type(enum kefir_match_type type)
 {
 	return format_size[type_format[type]];
 }
