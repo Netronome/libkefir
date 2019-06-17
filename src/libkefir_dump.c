@@ -192,11 +192,17 @@ static const char *match_type_str(enum kefir_match_type match_type)
 	case KEFIR_MATCH_TYPE_VLAN_ETHERTYPE:
 		return "VLAN ethertype";
 	case KEFIR_MATCH_TYPE_CVLAN_ID:
-		return "CVLAN ID";
+		return "cVLAN ID";
 	case KEFIR_MATCH_TYPE_CVLAN_PRIO:
-		return "CVLAN priority";
+		return "cVLAN priority";
 	case KEFIR_MATCH_TYPE_CVLAN_ETHERTYPE:
-		return "CVLAN ethertype";
+		return "cVLAN ethertype";
+	case KEFIR_MATCH_TYPE_SVLAN_ID:
+		return "sVLAN ID";
+	case KEFIR_MATCH_TYPE_SVLAN_PRIO:
+		return "sVLAN priority";
+	case KEFIR_MATCH_TYPE_SVLAN_ETHERTYPE:
+		return "sVLAN ethertype";
 	case KEFIR_MATCH_TYPE_MPLS_LABEL:
 		return "MPLS label";
 	case KEFIR_MATCH_TYPE_MPLS_TC:

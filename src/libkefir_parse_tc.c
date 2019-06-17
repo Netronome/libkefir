@@ -104,17 +104,17 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		NEXT_ARG();
 		if (parse_uint(**argv, &match->value.u16, 12))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_VLAN_ID;
+		match->match_type = KEFIR_MATCH_TYPE_SVLAN_ID;
 	} else if (!strcmp(**argv, "vlan_prio")) {
 		NEXT_ARG();
 		if (parse_uint(**argv, &match->value.u8, 3))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_VLAN_PRIO;
+		match->match_type = KEFIR_MATCH_TYPE_SVLAN_PRIO;
 	} else if (!strcmp(**argv, "vlan_ethtype")) {
 		NEXT_ARG();
 		if (parse_uint(**argv, &match->value.u16, 16))
 			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_VLAN_ETHERTYPE;
+		match->match_type = KEFIR_MATCH_TYPE_SVLAN_ETHERTYPE;
 	} else if (!strcmp(**argv, "cvlan_id")) {
 		NEXT_ARG();
 		if (parse_uint(**argv, &match->value.u16, 12))
