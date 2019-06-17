@@ -40,6 +40,7 @@ static int usage(const char *bin_name, int ret)
 		"       -i, --ifname       <ifname>     Interface to attach test programs to\n"
 		"       -o, --hw_offload                Attempt hardware offload\n"
 		"       -k, --keep_files                Keep produced test files\n"
+		"       -t          <list of tests>     Run only given tests\n"
 		"\n"
 		"       -c, --llvm_version <version>    LLVM version suffix (e.g. '-8')\n"
 		"                                       to append to clang/llc binary names\n"
@@ -53,6 +54,24 @@ static int usage(const char *bin_name, int ret)
 		"", bin_name);
 
 	return ret;
+}
+
+static bool
+should_run_test(const char *name, const struct cl_options *opts)
+{
+	char *substr, sep;
+
+	if (!opts->test_list)
+		return true;
+
+	substr = strstr(opts->test_list, name);
+	if (!substr)
+		return false;
+	sep = *(substr + strlen(name));
+	if (sep != ',' && sep != '\0')
+		return false;
+
+	return true;
 }
 
 static struct kefir_filter *fetch_filter(const struct kefir_test *test)
@@ -239,11 +258,16 @@ run_test_array(struct kefir_test *tests_array, struct cl_options *opts,
 {
 	size_t i;
 
-	for (i = 0; strcmp(tests_array[i].name, ""); i++)
+	for (i = 0; strcmp(tests_array[i].name, ""); i++) {
+		if (!should_run_test(tests_array[i].name, opts)) {
+			stats->skipped++;
+			continue;
+		}
 		if (run_test(&tests_array[i], opts, &stats->insns))
 			stats->failed++;
 		else
 			stats->passed++;
+	}
 }
 
 int main(int argc, char **argv)
