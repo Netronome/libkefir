@@ -273,14 +273,10 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	/* IPv4 */
 
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_SRC) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_SRC) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY))
 		GEN("	uint32_t	ipv4_src;\n");
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_DST) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_DST) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY))
 		GEN("	uint32_t	ipv4_dst;\n");
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TOS) ||
 	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
@@ -292,9 +288,7 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	/* IPv6 */
 
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_SRC) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_SRC) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
 		GEN(""
 		    "	union {\n"
 		    "		uint8_t		u8[16];\n"
@@ -303,9 +297,7 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		    "	} ipv6_src;\n"
 		    "");
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_DST) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_DST) ||
-	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+	    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
 		GEN(""
 		    "	union {\n"
 		    "		uint8_t		u8[16];\n"
@@ -440,15 +432,6 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		GEN("	MATCH_IPV6_L4PORT_ANY	= %d,\n",
 		    KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY);
 
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_SRC))
-		GEN("	MATCH_IP_ANY_SRC	= %d,\n",
-		    KEFIR_MATCH_TYPE_IP_ANY_SRC);
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_DST))
-		GEN("	MATCH_IP_ANY_DST	= %d,\n",
-		    KEFIR_MATCH_TYPE_IP_ANY_DST);
-	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
-		GEN("	MATCH_IP_ANY_ANY	= %d,\n",
-		    KEFIR_MATCH_TYPE_IP_ANY_ANY);
 	if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
 		GEN("	MATCH_IP_ANY_TOS	= %d,\n",
 		    KEFIR_MATCH_TYPE_IP_ANY_TOS);
@@ -671,14 +654,10 @@ cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    trace_printk(prog->options.flags, "process IPv4 header\n"));
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_SRC) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_ANY) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_SRC) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_ANY))
 		GEN("	key->ipv4_src = iph->saddr;\n");
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_DST) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_ANY) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_DST) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_ANY))
 		GEN("	key->ipv4_dst = iph->daddr;\n");
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_4_L4PROTO) ||
 	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_L4PROTO))
@@ -727,9 +706,7 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    trace_printk(prog->options.flags, "process IPv6 header\n"));
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_SRC) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_ANY) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_SRC) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_ANY))
 		GEN(""
 		    "	key->ipv6_src.u32[0] = ip6h->saddr.in6_u.u6_addr32[0];\n"
 		    "	key->ipv6_src.u32[1] = ip6h->saddr.in6_u.u6_addr32[1];\n"
@@ -737,9 +714,7 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		    "	key->ipv6_src.u32[3] = ip6h->saddr.in6_u.u6_addr32[3];\n"
 		    "");
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_DST) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_ANY) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_DST) ||
-	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
+	    filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_IP_6_ANY))
 		GEN(""
 		    "	key->ipv6_dst.u32[0] = ip6h->daddr.in6_u.u6_addr32[0];\n"
 		    "	key->ipv6_dst.u32[1] = ip6h->daddr.in6_u.u6_addr32[1];\n"
@@ -1302,43 +1277,6 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 
 		/* IPv4 or IPv6 */
 
-		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_SRC))
-			GEN(""
-			    "%s	case MATCH_IP_ANY_SRC:\n"
-			    "%s		does_match = does_match &&\n"
-			    "%s			(check_match(&key->ipv4_src,\n"
-			    "%s				    sizeof(key->ipv4_src), match) ||\n"
-			    "%s			 check_match(&key->ipv6_src,\n"
-			    "%s				    sizeof(key->ipv6_src), match));\n"
-			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
-		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_DST))
-			GEN(""
-			    "%s	case MATCH_IP_ANY_DST:\n"
-			    "%s		does_match = does_match &&\n"
-			    "%s			(check_match(&key->ipv4_dst,\n"
-			    "%s				    sizeof(key->ipv4_dst), match) ||\n"
-			    "%s			 check_match(&key->ipv6_dst,\n"
-			    "%s				    sizeof(key->ipv6_dst), match));\n"
-			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
-		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_ANY))
-			GEN(""
-			    "%s	case MATCH_IP_ANY_ANY:\n"
-			    "%s		does_match = does_match &&\n"
-			    "%s			(check_match(&key->ipv4_src,\n"
-			    "%s				    sizeof(key->ipv4_src), match) ||\n"
-			    "%s			 check_match(&key->ipv4_dst,\n"
-			    "%s				    sizeof(key->ipv4_dst), match) ||\n"
-			    "%s			 check_match(&key->ipv6_src,\n"
-			    "%s				    sizeof(key->ipv6_src), match) ||\n"
-			    "%s			 check_match(&key->ipv6_dst,\n"
-			    "%s				    sizeof(key->ipv6_dst), match));\n"
-			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent, indent,
-			    indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TOS))
 			GEN(""
 			    "%s	case MATCH_IP_ANY_TOS:\n"
@@ -1623,8 +1561,6 @@ update_options_from_matchtype(enum kefir_match_type match_type,
 	case KEFIR_MATCH_TYPE_IP_4_ANY:
 	case KEFIR_MATCH_TYPE_IP_4_TOS:
 	case KEFIR_MATCH_TYPE_IP_4_TTL:
-	case KEFIR_MATCH_TYPE_IP_4_FLAGS:
-	case KEFIR_MATCH_TYPE_IP_4_SPI:
 	case KEFIR_MATCH_TYPE_IP_4_L4PROTO:
 		options->flags |= OPT_FLAGS_NEED_IPV4;
 		break;
@@ -1640,8 +1576,6 @@ update_options_from_matchtype(enum kefir_match_type match_type,
 	case KEFIR_MATCH_TYPE_IP_6_ANY:
 	case KEFIR_MATCH_TYPE_IP_6_TOS:
 	case KEFIR_MATCH_TYPE_IP_6_TTL:
-	case KEFIR_MATCH_TYPE_IP_6_FLAGS:
-	case KEFIR_MATCH_TYPE_IP_6_SPI:
 	case KEFIR_MATCH_TYPE_IP_6_L4PROTO:
 		options->flags |= OPT_FLAGS_NEED_IPV6;
 		break;
@@ -1652,13 +1586,8 @@ update_options_from_matchtype(enum kefir_match_type match_type,
 	case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY:
 		options->flags |= OPT_FLAGS_NEED_L4;
 		/* fall through */
-	case KEFIR_MATCH_TYPE_IP_ANY_SRC:
-	case KEFIR_MATCH_TYPE_IP_ANY_DST:
-	case KEFIR_MATCH_TYPE_IP_ANY_ANY:
 	case KEFIR_MATCH_TYPE_IP_ANY_TOS:
 	case KEFIR_MATCH_TYPE_IP_ANY_TTL:
-	case KEFIR_MATCH_TYPE_IP_ANY_FLAGS:
-	case KEFIR_MATCH_TYPE_IP_ANY_SPI:
 	case KEFIR_MATCH_TYPE_IP_ANY_L4PROTO:
 		options->flags |= OPT_FLAGS_NEED_IPV4;
 		options->flags |= OPT_FLAGS_NEED_IPV6;

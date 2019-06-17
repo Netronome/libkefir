@@ -130,26 +130,6 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 		if (parse_uint(**argv, &match->value.u16, 16))
 			return -1;
 		match->match_type = KEFIR_MATCH_TYPE_CVLAN_ETHERTYPE;
-	} else if (!strcmp(**argv, "mpls_label")) {
-		NEXT_ARG();
-		if (parse_uint(**argv, &match->value.u32, 20))
-			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_MPLS_LABEL;
-	} else if (!strcmp(**argv, "mpls_tc")) {
-		NEXT_ARG();
-		if (parse_uint(**argv, &match->value.u8, 3))
-			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_MPLS_TC;
-	} else if (!strcmp(**argv, "mpls_bos")) {
-		NEXT_ARG();
-		if (parse_uint(**argv, &match->value.u8, 1))
-			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_MPLS_BOS;
-	} else if (!strcmp(**argv, "mpls_ttl")) {
-		NEXT_ARG();
-		if (parse_uint(**argv, &match->value.u8, 8))
-			return -1;
-		match->match_type = KEFIR_MATCH_TYPE_MPLS_TTL;
 	} else if (!strcmp(**argv, "ip_proto")) {
 		/*
 		 * Can be "tcp", "udp", "sctp", "icmp", "icmpv6", or an
@@ -223,19 +203,15 @@ tcflower_parse_match(const char ***argv, unsigned int *argc,
 			match->match_type = KEFIR_MATCH_TYPE_IP_6_L4PORT_SRC;
 		else
 			match->match_type = KEFIR_MATCH_TYPE_IP_4_L4PORT_SRC;
-	} else if (!strcmp(**argv, "tcp_flags")) {
-		NEXT_ARG();
-		if (parse_uint_slash_mask(**argv, &match->value.u16, 12,
-					  match->mask))
-			return -1;
-		if (ipv6_flow)
-			match->match_type = KEFIR_MATCH_TYPE_IP_6_TCP_FLAGS;
-		else
-			match->match_type = KEFIR_MATCH_TYPE_IP_4_TCP_FLAGS;
 	/*
 	 * TODO: Add support for the following:
 	} else if (!strcmp(**argv, "type")) {
 	} else if (!strcmp(**argv, "code")) {
+	} else if (!strcmp(**argv, "tcp_flags")) {
+	} else if (!strcmp(**argv, "mpls_label")) {
+	} else if (!strcmp(**argv, "mpls_tc")) {
+	} else if (!strcmp(**argv, "mpls_bos")) {
+	} else if (!strcmp(**argv, "mpls_ttl")) {
 	} else if (!strcmp(**argv, "arp_tip")) {
 	} else if (!strcmp(**argv, "arp_sip")) {
 	} else if (!strcmp(**argv, "arp_op")) {

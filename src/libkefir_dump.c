@@ -117,8 +117,6 @@ static const char *match_type_str(enum kefir_match_type match_type)
 		return "IPv4 ToS";
 	case KEFIR_MATCH_TYPE_IP_4_TTL:
 		return "IPv4 TTL";
-	case KEFIR_MATCH_TYPE_IP_4_FLAGS:
-		return "IPv4 flags";
 	case KEFIR_MATCH_TYPE_IP_4_L4PROTO:
 		return "IPv4, L4 protocol";
 	case KEFIR_MATCH_TYPE_IP_4_L4DATA:
@@ -129,10 +127,6 @@ static const char *match_type_str(enum kefir_match_type match_type)
 		return "IPv4, L4 destination port";
 	case KEFIR_MATCH_TYPE_IP_4_L4PORT_ANY:
 		return "IPv4, L4 any port";
-	case KEFIR_MATCH_TYPE_IP_4_SPI:
-		return "IPv4, SPI";
-	case KEFIR_MATCH_TYPE_IP_4_TCP_FLAGS:
-		return "IPv4, TCP flags";
 	case KEFIR_MATCH_TYPE_IP_6_SRC:
 		return "IPv6 source address";
 	case KEFIR_MATCH_TYPE_IP_6_DST:
@@ -143,8 +137,6 @@ static const char *match_type_str(enum kefir_match_type match_type)
 		return "IPv6 traffic class";
 	case KEFIR_MATCH_TYPE_IP_6_TTL:
 		return "IPv6 TTL";
-	case KEFIR_MATCH_TYPE_IP_6_FLAGS:
-		return "IPv6 flags";
 	case KEFIR_MATCH_TYPE_IP_6_L4PROTO:
 		return "IPv6, L4 protocol";
 	case KEFIR_MATCH_TYPE_IP_6_L4DATA:
@@ -155,36 +147,20 @@ static const char *match_type_str(enum kefir_match_type match_type)
 		return "IPv6, L4 destination port";
 	case KEFIR_MATCH_TYPE_IP_6_L4PORT_ANY:
 		return "IPv6, L4 any port";
-	case KEFIR_MATCH_TYPE_IP_6_SPI:
-		return "IPv6, SPI";
-	case KEFIR_MATCH_TYPE_IP_6_TCP_FLAGS:
-		return "IPv6, TCP flags";
-	case KEFIR_MATCH_TYPE_IP_ANY_SRC:
-		return "IP source address";
-	case KEFIR_MATCH_TYPE_IP_ANY_DST:
-		return "IP destination address";
-	case KEFIR_MATCH_TYPE_IP_ANY_ANY:
-		return "any IP address";
 	case KEFIR_MATCH_TYPE_IP_ANY_TOS:
 		return "IP ToS (IPv4) or traffic class (IPv6)";
 	case KEFIR_MATCH_TYPE_IP_ANY_TTL:
 		return "IP TTL";
-	case KEFIR_MATCH_TYPE_IP_ANY_FLAGS:
-		return "IP flags";
 	case KEFIR_MATCH_TYPE_IP_ANY_L4PROTO:
 		return "IP, L4 protocol";
 	case KEFIR_MATCH_TYPE_IP_ANY_L4DATA:
 		return "IP, L4 first 4 bytes of data";
-	case KEFIR_MATCH_TYPE_IP_ANY_SPI:
-		return "IP, SPI";
 	case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC:
 		return "IP, L4 source port";
 	case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST:
 		return "IP, L4 destination port";
 	case KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY:
 		return "IP, L4 any port";
-	case KEFIR_MATCH_TYPE_IP_ANY_TCP_FLAGS:
-		return "IP, TCP flags";
 	case KEFIR_MATCH_TYPE_VLAN_ID:
 		return "VLAN ID";
 	case KEFIR_MATCH_TYPE_VLAN_PRIO:
@@ -203,6 +179,26 @@ static const char *match_type_str(enum kefir_match_type match_type)
 		return "sVLAN priority";
 	case KEFIR_MATCH_TYPE_SVLAN_ETHERTYPE:
 		return "sVLAN ethertype";
+	/*
+	 * TODO: Add support for the following:
+	case KEFIR_MATCH_TYPE_IP_4_FLAGS:
+		return "IPv4 flags";
+	case KEFIR_MATCH_TYPE_IP_4_SPI:
+		return "IPv4, SPI";
+	case KEFIR_MATCH_TYPE_IP_4_TCP_FLAGS:
+		return "IPv4, TCP flags";
+	case KEFIR_MATCH_TYPE_IP_6_FLAGS:
+		return "IPv6 flags";
+	case KEFIR_MATCH_TYPE_IP_6_SPI:
+		return "IPv6, SPI";
+	case KEFIR_MATCH_TYPE_IP_6_TCP_FLAGS:
+		return "IPv6, TCP flags";
+	case KEFIR_MATCH_TYPE_IP_ANY_FLAGS:
+		return "IP flags";
+	case KEFIR_MATCH_TYPE_IP_ANY_SPI:
+		return "IP, SPI";
+	case KEFIR_MATCH_TYPE_IP_ANY_TCP_FLAGS:
+		return "IP, TCP flags";
 	case KEFIR_MATCH_TYPE_MPLS_LABEL:
 		return "MPLS label";
 	case KEFIR_MATCH_TYPE_MPLS_TC:
@@ -239,8 +235,9 @@ static const char *match_type_str(enum kefir_match_type match_type)
 		return "Encryption TTL";
 	case KEFIR_MATCH_TYPE_GENEVE_OPTIONS:
 		return "GENEVE options";
+	*/
 	default:
-		return "";
+		return "[???]";
 	}
 }
 
