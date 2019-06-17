@@ -29,11 +29,12 @@ int get_options(int argc, char **argv, struct cl_options *opts_ret)
 		{ "no_vlan",		no_argument,		NULL,	'V' },
 		{ "clone_filter",	no_argument,		NULL,	'C' },
 		{ "use_printk",		no_argument,		NULL,	'P' },
+		{ "test_list",		required_argument,	NULL,	't' },
 		{ 0 }
 	};
 	int opt, ret = 0;
 
-	while ((opt = getopt_long(argc, argv, "c:hi:kl:o",
+	while ((opt = getopt_long(argc, argv, "c:hi:kl:ot:",
 				  options, NULL)) >= 0) {
 		switch (opt) {
 		case 'h':
@@ -79,6 +80,9 @@ int get_options(int argc, char **argv, struct cl_options *opts_ret)
 			break;
 		case 'P':
 			opts_ret->use_printk = 1;
+			break;
+		case 't':
+			opts_ret->test_list = optarg;
 			break;
 		default:
 			ret = -1;

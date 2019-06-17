@@ -18,6 +18,7 @@ struct cl_options {
 	char llc_bin[64];
 	unsigned int ifindex;
 	unsigned int log_level;
+	char *test_list;
 };
 
 int get_options(int argc, char **argv, struct cl_options *opts_ret);
