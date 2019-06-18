@@ -114,6 +114,15 @@ int json_save_filter_to_file(const kefir_filter *filter, const char *filename)
 	FILE *outfile;
 	int err = -1;
 
+	if (!filename) {
+		err_fail("file name is NULL, cannot save filter");
+		return -1;
+	}
+	if (!filter) {
+		err_fail("filter object is NULL, cannot save it");
+		return -1;
+	}
+
 	if (!strcmp(filename, "-"))
 		outfile = stdout;
 	else

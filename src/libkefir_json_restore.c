@@ -410,6 +410,11 @@ kefir_filter *json_restore_filter_from_file(const char *filename)
 	jsmn_parser jp;
 	int nb_tokens;
 
+	if (!filename) {
+		err_fail("file name is NULL, cannot load filter");
+		return NULL;
+	}
+
 	if (!strcmp(filename, "-")) {
 		size_t offset = 0, chunk_size = 2048, buf_size = chunk_size;
 		char *tmp;

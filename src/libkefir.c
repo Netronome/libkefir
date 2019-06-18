@@ -142,8 +142,11 @@ kefir_rule_create(struct kefir_match **matches, unsigned int nb_matches,
 	}
 
 	rule->action = action;
-	for (i = 0; i < nb_matches; i++)
+	for (i = 0; i < nb_matches; i++) {
+		if (!matches || !matches[i])
+			err_fail("null pointer to match object");
 		memcpy(&rule->matches[i], matches[i], sizeof(rule->matches[0]));
+	}
 
 	return rule;
 }
@@ -233,6 +236,9 @@ kefir_filter *kefir_filter_clone(const kefir_filter *filter)
 
 size_t kefir_filter_size(const kefir_filter *filter)
 {
+	if (!filter)
+		return 0;
+
 	return list_count(filter->rules);
 }
 
@@ -274,17 +280,21 @@ int kefir_filter_add_rule(kefir_filter *filter, struct kefir_rule *rule,
 	struct list *rule_list;
 	ssize_t filter_len;
 
+	if (!filter) {
+		err_fail("filter object is NULL, cannot add rule");
+		return -1;
+	}
+	if (!rule) {
+		err_fail("rule object is NULL, cannot add to filter");
+		return -1;
+	}
+
 	filter_len = kefir_filter_size(filter);
 	if (index < 0)
 		index = kefir_filter_size(filter) + 1 + index;
 	if (index < 0 || index > filter_len) {
 		err_fail("index out of bounds (list has %zd filter%s)",
 			 filter_len, filter_len > 1 ? "s" : "");
-	}
-
-	if (!rule) {
-		err_fail("rule object is NULL");
-		return -1;
 	}
 
 	reset_flags(rule);
@@ -304,6 +314,11 @@ int kefir_rule_load(kefir_filter *filter, enum kefir_rule_type rule_type,
 		    const char **user_rule, size_t rule_size, ssize_t index)
 {
 	struct kefir_rule *rule;
+
+	if (!user_rule) {
+		err_fail("input string array for rule is NULL");
+		return -1;
+	}
 
 	switch (rule_type) {
 	case KEFIR_RULE_TYPE_ETHTOOL_NTUPLE:
@@ -330,6 +345,11 @@ int kefir_rule_load_l(kefir_filter *filter, enum kefir_rule_type rule_type,
 	const char **rule_words;
 	char *rule_cpy, *word;
 	int res = -1;
+
+	if (!user_rule) {
+		err_fail("input string for rule is NULL");
+		return -1;
+	}
 
 	/* Count words */
 	rule_cpy = strdup(user_rule);
@@ -391,6 +411,10 @@ free_rule_cpy:
  */
 int kefir_rule_delete_by_id(kefir_filter *filter, ssize_t index)
 {
+	if (!filter) {
+		err_fail("filter object is NULL, cannot delete rule");
+		return -1;
+	}
 	return list_delete(filter->rules, index, destroy_rule);
 }
 
@@ -461,7 +485,7 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 	char *buf;
 
 	if (!filename) {
-		err_fail("file name is NULL");
+		err_fail("file name is NULL, cannot dump C prog object");
 		return -1;
 	}
 
@@ -470,7 +494,8 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 
 	file = fopen(filename, "w");
 	if (!file) {
-		err_fail("fail to open file %s: %s", filename, strerror(errno));
+		err_fail("failed to open file %s: %s", filename,
+			 strerror(errno));
 		goto free_buf;
 	}
 
@@ -478,7 +503,7 @@ int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 	res = fwrite(buf, 1, len, file);
 	fclose(file);
 	if (res != len) {
-		err_fail("failed to write cprog to file %s", filename);
+		err_fail("failed to write C prog object to file %s", filename);
 		goto free_buf;
 	}
 
@@ -505,12 +530,18 @@ int kefir_cfile_compile_to_bpf(const char *c_file,
 
 void kefir_bpfobj_destroy(struct bpf_object *obj)
 {
+	if (!obj)
+		return;
+
 	bpf_object__close(obj);
 }
 
 int kefir_bpfobj_get_prog_fd(struct bpf_object *obj)
 {
 	struct bpf_program *prog;
+
+	if (!obj)
+		return -1;
 
 	prog = bpf_program__next(NULL, obj);
 	return bpf_program__fd(prog);

@@ -305,6 +305,19 @@ int dump_filter_to_buf(const kefir_filter *filter, char **buf, size_t *buf_len,
 {
 	unsigned int count = 0;
 
+	if (!filter) {
+		err_fail("filter object is NULL, cannot dump it");
+		return -1;
+	}
+	if (!buf_len) {
+		err_fail("buffer length pointer is NULL, cannot dump filter");
+		return -1;
+	}
+	if (!buf) {
+		err_fail("buffer pointer is NULL, cannot dump filter");
+		return -1;
+	}
+
 	*buf_len = KEFIR_CPROG_INIT_BUFLEN;
 	*buf = calloc(*buf_len, sizeof(*buf));
 	if (!*buf) {

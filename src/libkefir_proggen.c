@@ -125,6 +125,9 @@ static kefir_cprog *cprog_create(void)
 
 void proggen_cprog_destroy(kefir_cprog *cprog)
 {
+	if (!cprog)
+		return;
+
 	if (cprog->options.flags & OPT_FLAGS_CLONE_FILTER)
 		kefir_filter_destroy((kefir_filter *)cprog->filter);
 
@@ -1665,6 +1668,10 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 		err_fail("cannot convert NULL or empty filter");
 		return NULL;
 	}
+	if (!attr) {
+		err_fail("cprog_attr object is NULL");
+		return NULL;
+	}
 
 	prog = cprog_create();
 	if (!prog) {
@@ -1717,6 +1724,14 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	if (!prog) {
 		err_fail("cannot dump NULL C prog object");
+		return -1;
+	}
+	if (!buf) {
+		err_fail("NULL pointer to buffer, cannot dump C prog object");
+		return -1;
+	}
+	if (!buf_len) {
+		err_fail("NULL pointer to buffer length, cannot dump C prog");
 		return -1;
 	}
 

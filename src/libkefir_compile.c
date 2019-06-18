@@ -282,12 +282,28 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 	struct bpf_prog_load_attr load_attr = {0};
 	int prog_fd;
 
+	if (!cprog) {
+		err_fail("C prog object is NULL, cannot load BPF program");
+		return -1;
+	}
+	if (!objfile) {
+		err_fail("object file name is NULL, cannot load BPF program");
+		return -1;
+	}
+	if (!bpf_obj) {
+		err_fail("BPF object pointer is NULL, cannot load BPF program");
+		return -1;
+	}
+
 	libbpf_set_print(libbpf_output_to_buf);
 
 	load_attr.file = objfile;
 	/* Ifindex must be 0 for loading if no hardware offload is required */
-	load_attr.ifindex = attr->flags & XDP_FLAGS_HW_MODE ? attr->ifindex : 0;
-	load_attr.log_level = attr->log_level;
+	if (attr) {
+		load_attr.ifindex = attr->flags & XDP_FLAGS_HW_MODE ?
+			attr->ifindex : 0;
+		load_attr.log_level = attr->log_level;
+	}
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:
 		load_attr.prog_type = BPF_PROG_TYPE_XDP;
@@ -315,6 +331,14 @@ int compile_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
 	struct bpf_map *rule_map;
 	int rule_map_fd;
 	int index = 0;
+
+	if (!cprog) {
+		err_fail("C prog object is NULL, cannot fill BPF map");
+		return -1;
+	}
+	if (!bpf_obj) {
+		err_fail("BPF object is NULL, cannot fill BPF map");
+	}
 
 	rule_map = bpf_object__find_map_by_name(bpf_obj, "rules");
 	if (!rule_map) {
@@ -416,8 +440,16 @@ int dump_fillmap_cmd(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 	struct bpf_map *rule_map;
 	bool allocated = false;
 
+	if (!cprog) {
+		err_fail("C prog object is NULL, cannot dump map update cmds");
+		return -1;
+	}
 	if (!buf) {
-		err_fail("buffer pointer is null");
+		err_fail("buffer pointer is NULL, cannot dump map udpate cmds");
+		return -1;
+	}
+	if (!buf_len) {
+		err_fail("pointer to buffer length is NULL, cannot dump map update cmds");
 		return -1;
 	}
 	if (!*buf) {
@@ -468,6 +500,19 @@ free_allocated:
 int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 			   int prog_fd, const struct kefir_load_attr *attr)
 {
+	if (!cprog) {
+		err_fail("C prog object is NULL, cannot attach program");
+		return -1;
+	}
+	if (!bpf_obj) {
+		err_fail("BPF object is NULL, cannot attach program");
+		return -1;
+	}
+	if (!attr) {
+		err_fail("load_attr is NULL, cannot attach program");
+		return -1;
+	}
+
 	switch (cprog->options.target) {
 	case KEFIR_CPROG_TARGET_XDP:
 		if (bpf_set_link_xdp_fd(attr->ifindex, prog_fd, attr->flags))
