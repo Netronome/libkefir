@@ -114,14 +114,18 @@ union kefir_value {
 	uint8_t			raw[sizeof(struct in6_addr)];
 };
 
-/*
- * - A type for the match, indicating the semantics of the data to match
- *   (semantics needed for optimizations).
- * - An operator to indicate what type of comparison should be performed
- *   (equality, or other arithmetic or logic operator).
- * - A value to match.
- * - One mask to apply to the field.
- * - Option flags, indicating for example that masks are used for this match.
+/**
+ * A match object, representing a pattern to match against values collected
+ * from header fields of a network patcket.
+ * @match_type: a type for the match, indicating the size and semantics of the
+ *              data to match
+ * @comp_operator: comparison operator to indicate what type of comparison
+ *                 should be performed (equality, or other arithmetic operator)
+ * @value: a value to match
+ * @mask: a mask to apply to packet data before trying to match it against the
+ *        value
+ * @flags: for internal use only, will be overwritten when adding parent rule
+ *         to filter
  */
 struct kefir_match {
 	enum kefir_match_type		match_type;
@@ -131,10 +135,12 @@ struct kefir_match {
 	uint64_t			flags;
 };
 
-/*
+/**
  * A rule object, representing one rule that will be evaluated against packet
  * data. If all patterns match, the action code will be returned from the BPF
  * program.
+ * @matches: array of match objects to try against packet data
+ * @action: action code to return from BPF program if packet matches with rule
  */
 struct kefir_rule {
 	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE];
@@ -143,7 +149,7 @@ struct kefir_rule {
 
 /**
  * Get the number of bytes expected for a value for a match of the given type.
- * @type match type which length is requested
+ * @type: match type which length is requested
  * @return length (in bytes) of the value for the given type
  */
 LIBKEFIR_API
@@ -151,20 +157,20 @@ size_t kefir_bytes_for_type(enum kefir_match_type type);
 
 /**
  * Fill and possibly create a match object.
- * @match pointer to the match object to fill, if NULL the object will be
- *        allocated by the function and should be later free()-d by the caller
- * @type type for the match (indicating the header field with which the match
- *       pattern should be compared)
- * @oper comparison operator for the operation to do to check if a packet
- *       matches a pattern
- * @value pointer to the data to compare to the content of the packets, which
- *        MUST be of the correct size of the match type in use (this can be a
- *        pointer to a 2-byte long integer for matching on L4 ports, or to a
- *        struct ether_addr for matching on MAC address, for example)
- * @mask bitmask to apply to packet data before comparing it to the value
- * @is_net_byte_order true if value and masks are already in network byte order
- *                    (for example if MAC address was obtained with
- *                    ether_aton()), false otherwise
+ * @match: pointer to the match object to fill, if NULL the object will be
+ *         allocated by the function and should be later free()-d by the caller
+ * @type: type for the match (indicating the header field with which the match
+ *        pattern should be compared)
+ * @oper: comparison operator for the operation to do to check if a packet
+ *        matches a pattern
+ * @value: pointer to the data to compare to the content of the packets, which
+ *         MUST be of the correct size of the match type in use (this can be a
+ *         pointer to a 2-byte long integer for matching on L4 ports, or to a
+ *         struct ether_addr for matching on MAC address, for example)
+ * @mask: bitmask to apply to packet data before comparing it to the value
+ * @is_net_byte_order: true if value and masks are already in network byte
+ *                     order (for example if MAC address was obtained with
+ *                     ether_aton()), false otherwise
  * @return a pointer to the match object (to be free()-d by the caller if
  *         allocated by the function) on success, NULL otherwise
  */
@@ -179,10 +185,10 @@ kefir_match_create(struct kefir_match *match,
 
 /**
  * Create and fill a rule object.
- * @matches array of pointers to match objects to fill the rule with
- * @nb_matches number of match objects in the array
- * @action action code to return from the BPF program when a packet matches all
- *         patterns for the rule
+ * @matches: array of pointers to match objects to fill the rule with
+ * @nb_matches: number of match objects in the array
+ * @action: action code to return from the BPF program when a packet matches all
+ *          patterns for the rule
  * @return a pointer to the rule object (to be free()-d by the caller) on
  *         success, NULL otherwise
  */
@@ -366,10 +372,10 @@ void kefir_cprog_destroy(kefir_cprog *cprog);
 #define KEFIR_CPROG_FLAG_NO_VLAN	bit(2)
 #define KEFIR_CPROG_FLAG_USE_PRINTK	bit(3)
 
-/*
+/**
  * Struct containing attributes used when converting a filter into a C program.
- * @target target for conversion (TC/XDP)
- * @flags option flags for conversion
+ * @target: target for conversion (TC/XDP)
+ * @flags: option flags for conversion
  */
 struct kefir_cprog_attr {
 	enum kefir_cprog_target target;
@@ -424,7 +430,7 @@ int kefir_cprog_to_file(const kefir_cprog *cprog,
  *
  */
 
-/*
+/**
  * Struct containing attributes used when compiling a C program into BPF code.
  * @object_file: optional name for the output file, if NULL will be derived
  *               from c_file if possible (".c" extension will be replaced by
@@ -444,7 +450,7 @@ struct kefir_compil_attr {
 
 /**
  * Compile a C file into BPF bytecode as an ELF object file.
- * @c_file input C source code file
+ * @c_file: input C source code file
  * @attr: object containing optional attributes to use when compiling the
  *        program
  * @return 0 on success, error code otherwise
@@ -535,10 +541,10 @@ int kefir_cprog_fill_map(const kefir_cprog *cprog,
  * @cprog: cprog used to generate the BPF program
  * @bpf_obj: optional BPF object resulting from program load, used if not NULL
  *           for retrieving map id
- * @buf pointer to a buffer where to store the commands, if NULL the object
- *      will be allocated by the function and should be later free()-d by the
- *      caller
- * @buflen pointer to buffer size, will be updated if buffer is reallocated
+ * @buf: pointer to a buffer where to store the commands, if NULL the object
+ *       will be allocated by the function and should be later free()-d by the
+ *       caller
+ * @buf_len: pointer to buffer size, will be updated if buffer is reallocated
  * @return 0 on success, error code otherwise
  */
 LIBKEFIR_API
