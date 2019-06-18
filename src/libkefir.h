@@ -397,9 +397,11 @@ void kefir_cprog_to_stdout(const kefir_cprog *cprog);
 /**
  * Write a generated C program into a buffer.
  * @cprog: C program to write
- * @buf: will be set to a pointer to an allocated buffer containing the program,
- *       must be freed afterwards by the caller
- * @buf_len pointed value will be set to the length of the buffer
+ * @buf: pointer to a buffer to write the C program into, if NULL the object
+ *      will be allocated by the function and should be later free()-d by the
+ *      caller
+ * @buf_len: pointer to buffer size, will be updated if buffer is reallocated
+ * @return 0 on success, error code otherwise
  */
 LIBKEFIR_API
 int kefir_cprog_to_buf(const kefir_cprog *cprog,

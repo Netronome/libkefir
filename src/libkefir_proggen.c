@@ -1722,6 +1722,8 @@ static int cprog_comment(const kefir_cprog *prog, char **buf, size_t *buf_len)
 /* On success, caller is responsible for freeing buffer */
 int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
+	bool allocated = false;
+
 	if (!prog) {
 		err_fail("cannot dump NULL C prog object");
 		return -1;
@@ -1735,12 +1737,15 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		return -1;
 	}
 
-	*buf_len = KEFIR_CPROG_INIT_BUFLEN;
-	*buf = calloc(*buf_len, sizeof(*buf));
 	if (!*buf) {
-		err_fail("failed to allocate memory for C prog buffer");
-		*buf_len = 0;
-		return -1;
+		*buf_len = KEFIR_CPROG_INIT_BUFLEN;
+		*buf = calloc(*buf_len, sizeof(*buf));
+		if (!*buf) {
+			err_fail("failed to allocate memory for C prog buffer");
+			*buf_len = 0;
+			return -1;
+		}
+		allocated = true;
 	}
 
 	if (buf_append(buf, buf_len, "%s", cprog_header))
@@ -1788,8 +1793,10 @@ int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	return 0;
 
 err_free_buf:
-	free(*buf);
-	*buf = NULL;
-	*buf_len = 0;
+	if (allocated) {
+		free(*buf);
+		*buf = NULL;
+		*buf_len = 0;
+	}
 	return -1;
 }

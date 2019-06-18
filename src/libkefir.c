@@ -464,8 +464,8 @@ kefir_filter_convert_to_cprog(const kefir_filter *filter,
 
 void kefir_cprog_to_stdout(const kefir_cprog *cprog)
 {
+	char *buf = NULL;
 	size_t buf_len;
-	char *buf;
 
 	if (proggen_cprog_to_buf(cprog, &buf, &buf_len))
 		return;
@@ -481,10 +481,10 @@ int kefir_cprog_to_buf(const kefir_cprog *cprog, char **buf, size_t *buf_len)
 
 int kefir_cprog_to_file(const kefir_cprog *cprog, const char *filename)
 {
+	char *buf = NULL;
 	size_t len, res;
 	int ret = -1;
 	FILE *file;
-	char *buf;
 
 	if (!filename) {
 		err_fail("file name is NULL, cannot dump C prog object");

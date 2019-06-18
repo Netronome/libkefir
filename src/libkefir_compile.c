@@ -453,12 +453,13 @@ int dump_fillmap_cmd(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 		return -1;
 	}
 	if (!*buf) {
-		*buf = calloc(2048, sizeof(char));
+		*buf_len = 2048;
+		*buf = calloc(*buf_len, sizeof(char));
 		if (!*buf) {
 			err_fail("failed to allocate memory for buffer");
+			*buf_len = 0;
 			return -1;
 		}
-		*buf_len = 2048;
 		allocated = true;
 	}
 
