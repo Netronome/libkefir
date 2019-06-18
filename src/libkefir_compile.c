@@ -412,9 +412,9 @@ int dump_fillmap_cmd(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 {
 	struct bpf_map_info info = {0};
 	uint32_t len = sizeof(info);
+	int rule_map_fd, index = 0;
 	struct bpf_map *rule_map;
-	int rule_map_fd;
-	int index = 0;
+	bool allocated = false;
 
 	if (!buf) {
 		err_fail("buffer pointer is null");
@@ -427,29 +427,42 @@ int dump_fillmap_cmd(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
 			return -1;
 		}
 		*buf_len = 2048;
+		allocated = true;
 	}
 
 	if (bpf_obj) {
 		rule_map = bpf_object__find_map_by_name(bpf_obj, "rules");
 		if (!rule_map) {
 			err_fail("failed to retrieve map handler for map id");
-			return -1;
+			goto free_allocated;
 		}
 		rule_map_fd = bpf_map__fd(rule_map);
 		if (rule_map_fd < 0) {
 			err_fail("failed to retrieve file descriptor map");
-			return -1;
+			goto free_allocated;
 		}
 		if (bpf_obj_get_info_by_fd(rule_map_fd, &info, &len)) {
 			err_fail("failed to retrieve map id from fd");
-			return -1;
+			goto free_allocated;
 		}
 	}
 
-	return list_for_each((struct list *)cprog->filter->rules,
-			     dump_rule_command, buf, buf_len, &index,
-			     cprog->options.nb_matches, cprog->options.flags,
-			     info.id);
+	if (list_for_each((struct list *)cprog->filter->rules,
+			  dump_rule_command, buf, buf_len, &index,
+			  cprog->options.nb_matches, cprog->options.flags,
+			  info.id))
+		goto free_allocated;
+
+	return 0;
+
+free_allocated:
+	if (allocated) {
+		free(*buf);
+		*buf = NULL;
+		*buf_len = 0;
+	}
+
+	return -1;
 }
 
 int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
