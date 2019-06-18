@@ -110,6 +110,11 @@ iwyu: iwyu-dep kefir-clean all
 
 .PHONY: iwyu-dep iwyu
 
+azan: CC = $(CLANG) -fsanitize=address -fno-omit-frame-pointer
+azan: kefir-clean all
+
+.PHONY: azan
+
 # Package config file
 
 $(PC_FILE):
