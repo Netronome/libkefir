@@ -118,7 +118,8 @@ err_free:
 }
 
 struct kefir_rule *
-kefir_rule_create(struct kefir_match **matches, unsigned int nb_matches,
+kefir_rule_create(struct kefir_match * const *matches,
+		  unsigned int nb_matches,
 		  enum kefir_action_code action)
 {
 	struct kefir_rule *rule;
@@ -311,7 +312,8 @@ int kefir_filter_add_rule(kefir_filter *filter, struct kefir_rule *rule,
 }
 
 int kefir_rule_load(kefir_filter *filter, enum kefir_rule_type rule_type,
-		    const char **user_rule, size_t rule_size, ssize_t index)
+		    const char * const *user_rule, size_t rule_size,
+		    ssize_t index)
 {
 	struct kefir_rule *rule;
 

@@ -517,7 +517,8 @@ static int get_action_code(const char *input, enum kefir_action_code *action)
 	return 0;
 }
 
-struct kefir_rule *ethtool_parse_rule(const char **user_rule, size_t rule_size)
+struct kefir_rule *
+ethtool_parse_rule(const char * const *user_rule, size_t rule_size)
 {
 	struct ethtool_option current_opt = { .name = "" };
 	size_t flow_opts_len, i, match_index = 0;

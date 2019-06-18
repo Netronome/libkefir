@@ -188,7 +188,7 @@ kefir_match_create(struct kefir_match *match,
  */
 LIBKEFIR_API
 struct kefir_rule *
-kefir_rule_create(struct kefir_match **matches,
+kefir_rule_create(struct kefir_match * const *matches,
 		  unsigned int nb_matches,
 		  enum kefir_action_code action);
 
@@ -262,7 +262,7 @@ int kefir_filter_add_rule(kefir_filter *filter,
 LIBKEFIR_API
 int kefir_rule_load(kefir_filter *filter,
 		    enum kefir_rule_type rule_type,
-		    const char **user_rule,
+		    const char * const *user_rule,
 		    size_t rule_size,
 		    ssize_t index);
 

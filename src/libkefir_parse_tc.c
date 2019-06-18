@@ -29,7 +29,7 @@ enum ether_proto_type {
 };
 
 static int
-tcflower_parse_ethproto(const char ***argv, unsigned int *argc,
+tcflower_parse_ethproto(const char * const **argv, unsigned int *argc,
 			enum ether_proto_type *ethtype)
 {
 	if (!strcmp(**argv, "ip") || !strcmp(**argv, "ipv4")) {
@@ -74,7 +74,7 @@ static int tcflower_parse_ipproto(const char *input, void *output)
 }
 
 static int
-tcflower_parse_match(const char ***argv, unsigned int *argc,
+tcflower_parse_match(const char * const **argv, unsigned int *argc,
 		     enum ether_proto_type ethtype, struct kefir_match *match)
 {
 	uint32_t *data_ipv6_ptr = match->value.ipv6.__in6_u.__u6_addr32;
@@ -279,7 +279,7 @@ out:
 }
 
 static int
-tcflower_parse_action(const char ***argv, unsigned int *argc,
+tcflower_parse_action(const char * const **argv, unsigned int *argc,
 		      enum kefir_action_code *action_code)
 {
 	if (*argc != 2) {
@@ -323,7 +323,8 @@ tcflower_compose_rule(struct kefir_match *matches,
 	return rule;
 }
 
-struct kefir_rule *tcflower_parse_rule(const char **user_rule, size_t rule_size)
+struct kefir_rule *
+tcflower_parse_rule(const char * const *user_rule, size_t rule_size)
 {
 	struct kefir_match matches[KEFIR_MAX_MATCH_PER_RULE] = { {0} };
 	enum ether_proto_type ethtype = TCFLOWER_ETH_PROTO_UNSPEC;
@@ -331,7 +332,7 @@ struct kefir_rule *tcflower_parse_rule(const char **user_rule, size_t rule_size)
 	struct kefir_rule *rule;
 	size_t match_index = 0;
 	unsigned int argc;
-	const char **argv;
+	const char * const *argv;
 
 	if (rule_size < 6) {
 		err_fail("bad number of arguments");
