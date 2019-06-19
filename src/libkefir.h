@@ -40,6 +40,7 @@ enum kefir_comp_operator {
 	KEFIR_OPER_LEQ,
 	KEFIR_OPER_GT,
 	KEFIR_OPER_GEQ,
+	KEFIR_OPER_DIFF,
 	__KEFIR_MAX_OPER
 };
 

@@ -33,6 +33,8 @@ static const char *comp_operator_str(enum kefir_comp_operator op)
 		return ">";
 	case KEFIR_OPER_GEQ:
 		return ">=";
+	case KEFIR_OPER_DIFF:
+		return "!=";
 	default:
 		return "";
 	}

@@ -500,6 +500,8 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 		GEN("	OPER_GT		= %d,\n", KEFIR_OPER_GT);
 	if (filter_has_comp_oper(filter, KEFIR_OPER_GEQ))
 		GEN("	OPER_GEQ	= %d,\n", KEFIR_OPER_GEQ);
+	if (filter_has_comp_oper(filter, KEFIR_OPER_DIFF))
+		GEN("	OPER_DIFF	= %d,\n", KEFIR_OPER_DIFF);
 
 	GEN(""
 	    "};\n"
@@ -970,6 +972,12 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			    "		return copy[0] > match->value[0] ||\n"
 			    "			(copy[0] == match->value[0] &&\n"
 			    "			 copy[1] >= match->value[1]);\n"
+			    "");
+		if (filter_has_comp_oper(prog->filter, KEFIR_OPER_DIFF))
+			GEN(""
+			    "	case OPER_GEQ:\n"
+			    "		return copy[0] != match->value[0] ||\n"
+			    "			copy[1] != match->value[1]);\n"
 			    "");
 		GEN(""
 		    "	default:\n"
