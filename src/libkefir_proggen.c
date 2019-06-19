@@ -948,28 +948,28 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			    "	case OPER_LT:\n"
 			    "		return copy[0] < match->value[0] ||\n"
 			    "			(copy[0] == match->value[0] &&\n"
-			    "			 copy[1] < copy[1]);\n"
+			    "			 copy[1] < match->value[1]);\n"
 			    "");
 		if (filter_has_comp_oper(prog->filter, KEFIR_OPER_LEQ))
 			GEN(""
 			    "	case OPER_LEQ:\n"
 			    "		return copy[0] < match->value[0] ||\n"
 			    "			(copy[0] == match->value[0] &&\n"
-			    "			 copy[1] <= copy[1]);\n"
+			    "			 copy[1] <= match->value[1]);\n"
 			    "");
 		if (filter_has_comp_oper(prog->filter, KEFIR_OPER_GT))
 			GEN(""
 			    "	case OPER_GT:\n"
 			    "		return copy[0] > match->value[0] ||\n"
 			    "			(copy[0] == match->value[0] &&\n"
-			    "			 copy[1] > copy[1]);\n"
+			    "			 copy[1] > match->value[1]);\n"
 			    "");
 		if (filter_has_comp_oper(prog->filter, KEFIR_OPER_GEQ))
 			GEN(""
 			    "	case OPER_GEQ:\n"
 			    "		return copy[0] > match->value[0] ||\n"
 			    "			(copy[0] == match->value[0] &&\n"
-			    "			 copy[1] >= copy[1]);\n"
+			    "			 copy[1] >= match->value[1]);\n"
 			    "");
 		GEN(""
 		    "	default:\n"
