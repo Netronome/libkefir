@@ -208,10 +208,7 @@ typedef struct kefir_filter kefir_filter;
 
 enum kefir_rule_type {
 	KEFIR_RULE_TYPE_ETHTOOL_NTUPLE,
-	KEFIR_RULE_TYPE_LIBPCAP_EXPR,
 	KEFIR_RULE_TYPE_TC_FLOWER,
-	KEFIR_RULE_TYPE_IPTABLES,
-	KEFIR_RULE_TYPE_OVS_FLOW,
 };
 
 /**
