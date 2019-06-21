@@ -30,6 +30,7 @@ static int usage(const char *bin_name, int ret)
 		"                                       to append to clang/llc binary names\n"
 		"       --clang-bin        <path>       clang binary to use (overrides -l)\n"
 		"       --llc-bin          <path>       llc binary to use (overrides -l)\n"
+		"       --no_loops                      do not use BPF bounded loops, unroll\n"
 		"", bin_name);
 
 	return ret;
@@ -123,6 +124,7 @@ int main(int argc, char **argv)
 	/* Convert to a C program */
 
 	cprog_attr.target = KEFIR_CPROG_TARGET_XDP;
+	cprog_attr.flags |= opts.no_loops ? KEFIR_CPROG_FLAG_NO_LOOPS : 0;
 	cprog = kefir_filter_convert_to_cprog(filter, &cprog_attr);
 	if (!cprog)
 		goto destroy_filter;

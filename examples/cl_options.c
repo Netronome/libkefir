@@ -26,6 +26,7 @@ int get_options(int argc, char **argv, struct cl_options *opts_ret)
 		{ "log_level",		required_argument,	NULL,	'l' },
 		{ "keep_files",		no_argument,		NULL,	'k' },
 		{ "inline_fn",		no_argument,		NULL,	'I' },
+		{ "no_loops",		no_argument,		NULL,	'L' },
 		{ "no_vlan",		no_argument,		NULL,	'V' },
 		{ "clone_filter",	no_argument,		NULL,	'C' },
 		{ "use_printk",		no_argument,		NULL,	'P' },
@@ -71,6 +72,9 @@ int get_options(int argc, char **argv, struct cl_options *opts_ret)
 			break;
 		case 'I':
 			opts_ret->inline_fn = 1;
+			break;
+		case 'L':
+			opts_ret->no_loops = 1;
 			break;
 		case 'V':
 			opts_ret->no_vlan = 1;

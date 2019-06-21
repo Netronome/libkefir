@@ -10,6 +10,7 @@ struct cl_options {
 	unsigned int hw_offload : 1;
 	unsigned int keep_files : 1;
 	unsigned int inline_fn : 1;
+	unsigned int no_loops : 1;
 	unsigned int no_vlan : 1;
 	unsigned int clone : 1;
 	unsigned int use_printk : 1;

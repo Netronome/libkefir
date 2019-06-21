@@ -48,6 +48,7 @@ static int usage(const char *bin_name, int ret)
 		"       --llc-bin          <path>       llc binary to use (overrides -l)\n"
 		"\n"
 		"       --inline_fn                     inline BPF functions (no BPF-to-BPF)\n"
+		"       --no_loops                      do not use BPF bounded loops, unroll\n"
 		"       --no_vlan                       do not generate VLAN parsing in BPF\n"
 		"       --clone_filter                  clone filters before attaching to cprog\n"
 		"       --use_prink                     use bpf_trace_printk() for debug in BPF\n"
@@ -128,6 +129,7 @@ inject_filter(struct kefir_filter *filter, const char *name,
 	cprog_attr.target = KEFIR_CPROG_TARGET_XDP;
 
 	cprog_attr.flags |= opts->inline_fn ? KEFIR_CPROG_FLAG_INLINE_FUNC : 0;
+	cprog_attr.flags |= opts->no_loops ? KEFIR_CPROG_FLAG_NO_LOOPS : 0;
 	cprog_attr.flags |= opts->no_vlan ? KEFIR_CPROG_FLAG_NO_VLAN : 0;
 	cprog_attr.flags |= opts->clone ? KEFIR_CPROG_FLAG_CLONE_FILTER : 0;
 	cprog_attr.flags |= opts->use_printk ? KEFIR_CPROG_FLAG_USE_PRINTK : 0;
