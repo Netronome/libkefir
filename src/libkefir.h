@@ -354,6 +354,8 @@ void kefir_cprog_destroy(kefir_cprog *cprog);
  *
  * KEFIR_CPROG_FLAG_INLINE_FUNC
  *     Force inlining of functions (no BPF-to-BPF calls).
+ * KEFIR_CPROG_FLAG_NO_LOOPS
+ *     Ask clang to unroll loops, do not rely on BPF bounded loops support.
  * KEFIR_CPROG_FLAG_CLONE_FILTER
  *     The filter object is normally attached to the cprog object created. Use
  *     this flag to create and attach a clone instead. Use if you intend to
@@ -366,9 +368,10 @@ void kefir_cprog_destroy(kefir_cprog *cprog);
  *     Generate some calls to bpf_trace_printk() to help with debug.
  */
 #define KEFIR_CPROG_FLAG_INLINE_FUNC	bit(0)
-#define KEFIR_CPROG_FLAG_CLONE_FILTER	bit(1)
-#define KEFIR_CPROG_FLAG_NO_VLAN	bit(2)
-#define KEFIR_CPROG_FLAG_USE_PRINTK	bit(3)
+#define KEFIR_CPROG_FLAG_NO_LOOPS	bit(1)
+#define KEFIR_CPROG_FLAG_CLONE_FILTER	bit(2)
+#define KEFIR_CPROG_FLAG_NO_VLAN	bit(3)
+#define KEFIR_CPROG_FLAG_USE_PRINTK	bit(4)
 
 /**
  * Struct containing attributes used when converting a filter into a C program.

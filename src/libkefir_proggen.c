@@ -811,8 +811,9 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "", static_inline_attr(prog->options.flags));
 
 	if (!(prog->options.flags & OPT_FLAGS_NO_VLAN)) {
+		if (!(prog->options.flags & OPT_FLAGS_NO_LOOPS))
+			GEN("#pragma clang loop unroll(full)\n");
 		GEN(""
-		    "#pragma clang loop unroll(full)\n"
 		    "	for (i = 0; i < 2; i++) {\n"
 		    "		if (*eth_proto == ETH_P_8021Q || *eth_proto == ETH_P_8021AD) {\n"
 		    "			void *vlan_hdr;\n"
@@ -901,9 +902,9 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	bool use_masks = prog->options.flags & OPT_FLAGS_USE_MASKS;
 	bool only_equal = filter_all_comp_equal(prog->filter);
+	bool bounded_loops = true, manual_unroll = false;
 	const kefir_filter *filter = prog->filter;
 	size_t loop_cnt, loop_max = 1;
-	bool manual_unroll = false;
 	char indent[] = "\t";
 
 	GEN(""
@@ -922,14 +923,19 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	    trace_printk(prog->options.flags, "compared with:   %x %x\n",
 			 match->value[0], match->value[1]));
 
-	if (use_masks)
+	if (prog->options.flags & OPT_FLAGS_NO_LOOPS)
+		bounded_loops = false;
+
+	if (use_masks) {
+		if (!bounded_loops)
+			GEN("#pragma clang loop unroll(full)\n");
 		GEN(""
-		    "#pragma clang loop unroll(full)\n"
 		    "	for (i = 0; i < 2; i++)\n"
 		    "		copy[i] &= (match->flags * MATCH_FLAGS_USE_MASK) ?\n"
 		    "			match->mask[i] : 0xffffffffffffffff;\n"
 		    "\n"
 		    "");
+	}
 
 	GEN(""
 	    "\n"
@@ -1022,8 +1028,9 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 	 * more. In such case, we must manually unroll the loop when generating
 	 * the program. Ugh.
 	 */
-	if (filter_diff_matchtypes(prog->filter) >= MAX_LABELS_FOR_UNROLL ||
-	    prog->options.flags & OPT_FLAGS_USE_PRINTK) {
+	if (!bounded_loops &&
+	    (filter_diff_matchtypes(prog->filter) >= MAX_LABELS_FOR_UNROLL ||
+	    prog->options.flags & OPT_FLAGS_USE_PRINTK)) {
 		manual_unroll = true;
 		loop_max = prog->options.nb_matches;
 		indent[0] = '\0';
@@ -1037,12 +1044,14 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 			    "\n"
 			    "", loop_cnt);
 		} else {
-			/*
-			 * Ask clang to unroll the loop for us. Same result,
-			 * but C code is much more readable.
-			 */
+			if (!bounded_loops)
+				/*
+				 * Ask clang to unroll the loop for us. Same
+				 * result as manual unroll, but C code is much
+				 * more readable.
+				 */
+				GEN("#pragma clang loop unroll(full)\n");
 			GEN(""
-			    "#pragma clang loop unroll(full)\n"
 			    "	for (i = 0; i < %d; i++) {\n"
 			    "		match = &rule->matches[i];\n"
 			    "\n"
@@ -1637,6 +1646,9 @@ static int update_cprog_options(void *rule_ptr, va_list ap)
 
 	if (attr->flags & KEFIR_CPROG_FLAG_INLINE_FUNC)
 		prog->options.flags |= OPT_FLAGS_INLINE_FUNC;
+
+	if (attr->flags & KEFIR_CPROG_FLAG_NO_LOOPS)
+		prog->options.flags |= OPT_FLAGS_NO_LOOPS;
 
 	if (attr->flags & KEFIR_CPROG_FLAG_CLONE_FILTER)
 		prog->options.flags |= OPT_FLAGS_CLONE_FILTER;
