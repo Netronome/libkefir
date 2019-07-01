@@ -8,6 +8,7 @@
 #include <sys/types.h>
 
 #include <linux/bpf.h>
+#include <linux/const.h>
 
 #include "libkefir.h"
 #include "libkefir_error.h"
@@ -106,7 +107,7 @@ static const enum value_format type_format[] = {
 	[KEFIR_MATCH_TYPE_SVLAN_ETHERTYPE]	= KEFIR_VAL_FMT_UINT16,
 };
 
-#define MATCH_FLAGS_USE_MASK	bit(0)
+#define MATCH_FLAGS_USE_MASK	_BITUL(0)
 
 struct kefir_filter {
 	struct list *rules;
@@ -116,20 +117,20 @@ struct kefir_filter {
  * kefir_cprog
  */
 
-#define OPT_FLAGS_NEED_ETHER	bit(0)
-#define OPT_FLAGS_NEED_IPV4	bit(1)
-#define OPT_FLAGS_NEED_IPV6	bit(2)
-#define OPT_FLAGS_NEED_UDP	bit(3)
-#define OPT_FLAGS_NEED_TCP	bit(4)
-#define OPT_FLAGS_NEED_SCTP	bit(5)
+#define OPT_FLAGS_NEED_ETHER	_BITUL(0)
+#define OPT_FLAGS_NEED_IPV4	_BITUL(1)
+#define OPT_FLAGS_NEED_IPV6	_BITUL(2)
+#define OPT_FLAGS_NEED_UDP	_BITUL(3)
+#define OPT_FLAGS_NEED_TCP	_BITUL(4)
+#define OPT_FLAGS_NEED_SCTP	_BITUL(5)
 #define OPT_FLAGS_NEED_L4	\
 	(OPT_FLAGS_NEED_UDP + OPT_FLAGS_NEED_TCP + OPT_FLAGS_NEED_SCTP)
-#define OPT_FLAGS_USE_MASKS	bit(6)
-#define OPT_FLAGS_INLINE_FUNC	bit(7)
-#define OPT_FLAGS_NO_LOOPS	bit(8)
-#define OPT_FLAGS_CLONE_FILTER	bit(9)
-#define OPT_FLAGS_NO_VLAN	bit(10)
-#define OPT_FLAGS_USE_PRINTK	bit(11)
+#define OPT_FLAGS_USE_MASKS	_BITUL(6)
+#define OPT_FLAGS_INLINE_FUNC	_BITUL(7)
+#define OPT_FLAGS_NO_LOOPS	_BITUL(8)
+#define OPT_FLAGS_CLONE_FILTER	_BITUL(9)
+#define OPT_FLAGS_NO_VLAN	_BITUL(10)
+#define OPT_FLAGS_USE_PRINTK	_BITUL(11)
 
 struct kefir_cprog_options {
 	uint64_t		flags;

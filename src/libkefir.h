@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#include <linux/const.h>
 #include <net/ethernet.h>
 #include <netinet/in.h>
 
@@ -20,10 +21,6 @@ struct bpf_object;
 
 #ifndef LIBKEFIR_API
 #define LIBKEFIR_API __attribute__((visibility("default")))
-#endif
-
-#ifndef bit
-#define bit(n) (1 << (n))
 #endif
 
 #define KEFIR_MAX_MATCH_PER_RULE	5
@@ -375,11 +372,11 @@ void kefir_cprog_destroy(kefir_cprog *cprog);
  * KEFIR_CPROG_FLAG_USE_PRINTK
  *     Generate some calls to bpf_trace_printk() to help with debug.
  */
-#define KEFIR_CPROG_FLAG_INLINE_FUNC	bit(0)
-#define KEFIR_CPROG_FLAG_NO_LOOPS	bit(1)
-#define KEFIR_CPROG_FLAG_CLONE_FILTER	bit(2)
-#define KEFIR_CPROG_FLAG_NO_VLAN	bit(3)
-#define KEFIR_CPROG_FLAG_USE_PRINTK	bit(4)
+#define KEFIR_CPROG_FLAG_INLINE_FUNC	_BITUL(0)
+#define KEFIR_CPROG_FLAG_NO_LOOPS	_BITUL(1)
+#define KEFIR_CPROG_FLAG_CLONE_FILTER	_BITUL(2)
+#define KEFIR_CPROG_FLAG_NO_VLAN	_BITUL(3)
+#define KEFIR_CPROG_FLAG_USE_PRINTK	_BITUL(4)
 
 /**
  * Struct containing attributes used when converting a filter into a C program.
