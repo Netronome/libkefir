@@ -381,10 +381,12 @@ void kefir_cprog_destroy(struct kefir_cprog *cprog);
 /**
  * Struct containing attributes used when converting a filter into a C program.
  * @target: target for conversion (TC/XDP)
+ * @license: license string to use for program, defaults to "Dual BSD/GPL"
  * @flags: option flags for conversion
  */
 struct kefir_cprog_attr {
 	enum kefir_cprog_target target;
+	const char *license;
 	unsigned int flags;
 };
 

@@ -136,6 +136,7 @@ struct kefir_cprog_options {
 	uint64_t		flags;
 	unsigned int		nb_matches;
 	enum kefir_cprog_target	target;
+	const char *		license;
 	uint8_t	req_helpers[__BPF_FUNC_MAX_ID / 8 + 1];
 };
 

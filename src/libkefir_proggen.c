@@ -69,10 +69,6 @@ static const char *cprog_header = ""
 	"\n"
 	"";
 
-static const char *cprog_license = ""
-	"char _license[] __attribute__((section(\"license\"), used)) = \"Dual BSD/GPL\";\n"
-	"";
-
 static const char * const cprog_return_values[] = {
 	[KEFIR_CPROG_TARGET_XDP] = ""
 		"#define RET_PASS XDP_PASS\n"
@@ -1722,11 +1718,20 @@ proggen_make_cprog_from_filter(const struct kefir_filter *filter,
 	}
 
 	prog->options.target = attr->target;
+	prog->options.license = attr->license;
 
 	list_for_each((struct list *)prog->filter->rules, update_cprog_options,
 		      prog, attr);
 
 	return prog;
+}
+
+static int
+make_license(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
+{
+	GEN("char _license[] __attribute__((section(\"license\"), used)) = \"%s\";\n",
+	    prog->options.license ? prog->options.license : "Dual BSD/GPL");
+	return 0;
 }
 
 static int
@@ -1815,7 +1820,7 @@ int proggen_cprog_to_buf(const struct kefir_cprog *prog, char **buf,
 	if (make_cprog_main(prog, buf, buf_len))
 		goto err_free_buf;
 
-	if (buf_append(buf, buf_len, "%s", cprog_license))
+	if (make_license(prog, buf, buf_len))
 		goto err_free_buf;
 
 	if (cprog_comment(prog, buf, buf_len))
