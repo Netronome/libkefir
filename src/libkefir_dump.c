@@ -302,8 +302,8 @@ static int dump_rule(void *rule_ptr, va_list ap)
 	return 0;
 }
 
-int dump_filter_to_buf(const kefir_filter *filter, char **buf, size_t *buf_len,
-		       const char *prefix)
+int dump_filter_to_buf(const struct kefir_filter *filter, char **buf,
+		       size_t *buf_len, const char *prefix)
 {
 	unsigned int count = 0;
 

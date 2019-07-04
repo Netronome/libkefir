@@ -6,6 +6,6 @@
 
 #include "libkefir.h"
 
-kefir_filter *json_restore_filter_from_file(const char *filename);
+struct kefir_filter *json_restore_filter_from_file(const char *filename);
 
 #endif /* LIBKEFIR_JSON_RESTORE_H */

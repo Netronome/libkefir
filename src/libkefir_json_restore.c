@@ -236,7 +236,7 @@ parse_match(struct kefir_match *match, const char *str, const jsmntok_t *tokens)
 }
 
 static int
-parse_rule(kefir_filter *filter, int index, const char *str,
+parse_rule(struct kefir_filter *filter, int index, const char *str,
 	   const jsmntok_t *tokens)
 {
 	int off_next, off_match, off_matches_array = -1, off_action = -1;
@@ -314,8 +314,8 @@ err_free_rule:
 }
 
 static int
-parse_filter(kefir_filter *filter, const char *str, const jsmntok_t *tokens,
-	     int nb_tokens)
+parse_filter(struct kefir_filter *filter, const char *str,
+	     const jsmntok_t *tokens, int nb_tokens)
 {
 	int i, rule_nb, off_rule, off_filter = -1, off_rules_array = -1;
 
@@ -377,8 +377,8 @@ parse_filter(kefir_filter *filter, const char *str, const jsmntok_t *tokens,
 }
 
 static int
-parse_json_as_filter(kefir_filter *filter, const char *str, jsmntok_t *tokens,
-		     int nb_tokens)
+parse_json_as_filter(struct kefir_filter *filter,
+		     const char *str, jsmntok_t *tokens, int nb_tokens)
 {
 	if (nb_tokens < 5) {
 		err_fail("too few JSON tokens to represent a filter object");
@@ -399,9 +399,9 @@ parse_json_as_filter(kefir_filter *filter, const char *str, jsmntok_t *tokens,
 	return 0;
 }
 
-kefir_filter *json_restore_filter_from_file(const char *filename)
+struct kefir_filter *json_restore_filter_from_file(const char *filename)
 {
-	kefir_filter *filter = NULL;
+	struct kefir_filter *filter = NULL;
 	size_t nb_read, input_len;
 	FILE *input_file = NULL;
 	struct stat statbuf;

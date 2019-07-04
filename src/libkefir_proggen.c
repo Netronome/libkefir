@@ -115,26 +115,26 @@ static const char * const cprog_helpers[] = {
 		"})\n",
 };
 
-static kefir_cprog *cprog_create(void)
+static struct kefir_cprog *cprog_create(void)
 {
-	kefir_cprog *prog;
+	struct kefir_cprog *prog;
 
 	prog = calloc(1, sizeof(*prog));
 	return prog;
 }
 
-void proggen_cprog_destroy(kefir_cprog *cprog)
+void proggen_cprog_destroy(struct kefir_cprog *cprog)
 {
 	if (!cprog)
 		return;
 
 	if (cprog->options.flags & OPT_FLAGS_CLONE_FILTER)
-		kefir_filter_destroy((kefir_filter *)cprog->filter);
+		kefir_filter_destroy((struct kefir_filter *)cprog->filter);
 
 	free(cprog);
 }
 
-static void add_req_helper(kefir_cprog *prog, size_t helper_id)
+static void add_req_helper(struct kefir_cprog *prog, size_t helper_id)
 {
 	uint8_t flag;
 	size_t cell;
@@ -144,7 +144,7 @@ static void add_req_helper(kefir_cprog *prog, size_t helper_id)
 	prog->options.req_helpers[cell] |= flag;
 }
 
-static bool need_helper(const kefir_cprog *prog, size_t helper_id)
+static bool need_helper(const struct kefir_cprog *prog, size_t helper_id)
 {
 	uint8_t flag;
 	size_t cell;
@@ -155,7 +155,7 @@ static bool need_helper(const kefir_cprog *prog, size_t helper_id)
 }
 
 static int
-make_helpers_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
+make_helpers_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	size_t i;
 
@@ -168,7 +168,7 @@ make_helpers_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-make_retval_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
+make_retval_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	GEN("%s", cprog_return_values[prog->options.target]);
 	return 0;
@@ -197,7 +197,8 @@ static int rule_has_matchtype(void *rule_ptr, va_list ap)
 }
 
 static bool
-filter_has_matchtype(const kefir_filter *filter, enum kefir_match_type type)
+filter_has_matchtype(const struct kefir_filter *filter,
+		     enum kefir_match_type type)
 {
 	return !!list_for_each((struct list *)filter->rules, rule_has_matchtype,
 			       type);
@@ -230,20 +231,21 @@ static int rule_has_comp_operator(void *rule_ptr, va_list ap)
 }
 
 static int
-filter_has_comp_oper(const kefir_filter *filter, enum kefir_comp_operator op)
+filter_has_comp_oper(const struct kefir_filter *filter,
+		     enum kefir_comp_operator op)
 {
 	return list_for_each((struct list *)filter->rules,
 			     rule_has_comp_operator, op, 1);
 }
 
 static bool
-filter_all_comp_equal(const kefir_filter *filter)
+filter_all_comp_equal(const struct kefir_filter *filter)
 {
 	return !list_for_each((struct list *)filter->rules,
 			      rule_has_comp_operator, KEFIR_OPER_EQUAL, 0);
 }
 
-static unsigned int filter_diff_matchtypes(const kefir_filter *filter)
+static unsigned int filter_diff_matchtypes(const struct kefir_filter *filter)
 {
 	enum kefir_match_type i;
 	unsigned int res = 0;
@@ -256,9 +258,9 @@ static unsigned int filter_diff_matchtypes(const kefir_filter *filter)
 }
 
 static int
-make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
+make_key_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 {
-	const kefir_filter *filter = prog->filter;
+	const struct kefir_filter *filter = prog->filter;
 
 	GEN("struct filter_key {\n");
 
@@ -354,9 +356,10 @@ make_key_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
+make_rule_table_decl(const struct kefir_cprog *prog, char **buf,
+		     size_t *buf_len)
 {
-	const kefir_filter *filter = prog->filter;
+	const struct kefir_filter *filter = prog->filter;
 
 	GEN("enum match_type {\n");
 
@@ -570,9 +573,10 @@ make_rule_table_decl(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-cprog_func_process_l4(const kefir_cprog *prog, char **buf, size_t *buf_len)
+cprog_func_process_l4(const struct kefir_cprog *prog, char **buf,
+		      size_t *buf_len)
 {
-	const kefir_filter *filter = prog->filter;
+	const struct kefir_filter *filter = prog->filter;
 
 	if (!(prog->options.flags & OPT_FLAGS_NEED_L4))
 		return 0;
@@ -638,7 +642,8 @@ cprog_func_process_l4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
+cprog_func_process_ipv4(const struct kefir_cprog *prog, char **buf,
+			size_t *buf_len)
 {
 	if (!(prog->options.flags & OPT_FLAGS_NEED_IPV4))
 		return 0;
@@ -692,7 +697,8 @@ cprog_func_process_ipv4(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
+cprog_func_process_ipv6(const struct kefir_cprog *prog, char **buf,
+			size_t *buf_len)
 {
 	if (!(prog->options.flags & OPT_FLAGS_NEED_IPV6))
 		return 0;
@@ -757,7 +763,8 @@ cprog_func_process_ipv6(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-cprog_func_process_ether(const kefir_cprog *prog, char **buf, size_t *buf_len)
+cprog_func_process_ether(const struct kefir_cprog *prog, char **buf,
+			 size_t *buf_len)
 {
 	if (!(prog->options.flags & OPT_FLAGS_NEED_ETHER))
 		return 0;
@@ -789,7 +796,8 @@ cprog_func_process_ether(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
+cprog_func_extract_key(const struct kefir_cprog *prog, char **buf,
+		       size_t *buf_len)
 {
 	bool need_ether = prog->options.flags & OPT_FLAGS_NEED_ETHER;
 	bool need_ipv4 = prog->options.flags & OPT_FLAGS_NEED_IPV4;
@@ -898,12 +906,13 @@ cprog_func_extract_key(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
+cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
+		       size_t *buf_len)
 {
 	bool use_masks = prog->options.flags & OPT_FLAGS_USE_MASKS;
 	bool only_equal = filter_all_comp_equal(prog->filter);
 	bool bounded_loops = true, manual_unroll = false;
-	const kefir_filter *filter = prog->filter;
+	const struct kefir_filter *filter = prog->filter;
 	size_t loop_cnt, loop_max = 1;
 	char indent[] = "\t";
 
@@ -1493,7 +1502,7 @@ cprog_func_check_rules(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-make_cprog_main(const kefir_cprog *prog, char **buf, size_t *buf_len)
+make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	bool use_printk = prog->options.flags & OPT_FLAGS_USE_PRINTK;
 	size_t i, nb_rules;
@@ -1620,17 +1629,17 @@ update_options_from_matchtype(enum kefir_match_type match_type,
 
 /*
  * Variadic list should contain:
- *     kefir_cprog *prog
+ *     struct kefir_cprog *prog
  *     struct kefir_cprog_attr *attr
  */
 static int update_cprog_options(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
 	struct kefir_cprog_attr *attr;
-	kefir_cprog *prog;
+	struct kefir_cprog *prog;
 	size_t i;
 
-	prog = va_arg(ap, kefir_cprog *);
+	prog = va_arg(ap, struct kefir_cprog *);
 	attr = va_arg(ap, struct kefir_cprog_attr *);
 
 	for (i = 0; i < KEFIR_MAX_MATCH_PER_RULE &&
@@ -1678,11 +1687,11 @@ static int update_cprog_options(void *rule_ptr, va_list ap)
 	return 0;
 }
 
-kefir_cprog *
-proggen_make_cprog_from_filter(const kefir_filter *filter,
+struct kefir_cprog *
+proggen_make_cprog_from_filter(const struct kefir_filter *filter,
 			       const struct kefir_cprog_attr *attr)
 {
-	kefir_cprog *prog;
+	struct kefir_cprog *prog;
 
 	if (!filter || !kefir_filter_size(filter)) {
 		err_fail("cannot convert NULL or empty filter");
@@ -1700,7 +1709,7 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 	}
 
 	if (attr->flags & KEFIR_CPROG_FLAG_CLONE_FILTER) {
-		kefir_filter *clone;
+		struct kefir_filter *clone;
 
 		clone = kefir_filter_clone(filter);
 		if (!clone) {
@@ -1720,7 +1729,8 @@ proggen_make_cprog_from_filter(const kefir_filter *filter,
 	return prog;
 }
 
-static int cprog_comment(const kefir_cprog *prog, char **buf, size_t *buf_len)
+static int
+cprog_comment(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	size_t rules_buf_len;
 	char *rules_buf;
@@ -1740,7 +1750,8 @@ static int cprog_comment(const kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 /* On success, caller is responsible for freeing buffer */
-int proggen_cprog_to_buf(const kefir_cprog *prog, char **buf, size_t *buf_len)
+int proggen_cprog_to_buf(const struct kefir_cprog *prog, char **buf,
+			 size_t *buf_len)
 {
 	bool allocated = false;
 

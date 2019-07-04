@@ -6,6 +6,7 @@
 
 #include "libkefir.h"
 
-int json_save_filter_to_file(const kefir_filter *filter, const char *filename);
+int json_save_filter_to_file(const struct kefir_filter *filter,
+			     const char *filename);
 
 #endif /* LIBKEFIR_JSON_SAVE_H */

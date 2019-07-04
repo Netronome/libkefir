@@ -92,7 +92,8 @@ static int save_rule(void *rule_ptr, va_list ap)
 	return 0;
 }
 
-static int save_filter_object(const kefir_filter *filter, json_writer_t *jw)
+static int
+save_filter_object(const struct kefir_filter *filter, json_writer_t *jw)
 {
 	int res;
 
@@ -108,7 +109,8 @@ static int save_filter_object(const kefir_filter *filter, json_writer_t *jw)
 	return res;
 }
 
-int json_save_filter_to_file(const kefir_filter *filter, const char *filename)
+int json_save_filter_to_file(const struct kefir_filter *filter,
+			     const char *filename)
 {
 	json_writer_t *jw;
 	FILE *outfile;

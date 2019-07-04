@@ -275,8 +275,8 @@ static int fill_one_rule(void *rule_ptr, va_list ap)
 	return 0;
 }
 
-int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
-			      struct bpf_object **bpf_obj,
+int compile_load_from_objfile(const struct kefir_cprog *cprog,
+			      const char *objfile, struct bpf_object **bpf_obj,
 			      const struct kefir_load_attr *attr)
 {
 	struct bpf_prog_load_attr load_attr = {0};
@@ -326,7 +326,8 @@ int compile_load_from_objfile(const kefir_cprog *cprog, const char *objfile,
 	return prog_fd;
 }
 
-int compile_fill_map(const kefir_cprog *cprog, struct bpf_object *bpf_obj)
+int compile_fill_map(const struct kefir_cprog *cprog,
+		     struct bpf_object *bpf_obj)
 {
 	struct bpf_map *rule_map;
 	int rule_map_fd;
@@ -431,8 +432,8 @@ static int dump_rule_command(void *rule_ptr, va_list ap)
 	return 0;
 }
 
-int dump_fillmap_cmd(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
-		     char **buf, size_t *buf_len)
+int dump_fillmap_cmd(const struct kefir_cprog *cprog,
+		     struct bpf_object *bpf_obj, char **buf, size_t *buf_len)
 {
 	struct bpf_map_info info = {0};
 	uint32_t len = sizeof(info);
@@ -498,8 +499,9 @@ free_allocated:
 	return -1;
 }
 
-int compile_attach_program(const kefir_cprog *cprog, struct bpf_object *bpf_obj,
-			   int prog_fd, const struct kefir_load_attr *attr)
+int compile_attach_program(const struct kefir_cprog *cprog,
+			   struct bpf_object *bpf_obj, int prog_fd,
+			   const struct kefir_load_attr *attr)
 {
 	if (!cprog) {
 		err_fail("C prog object is NULL, cannot attach program");
