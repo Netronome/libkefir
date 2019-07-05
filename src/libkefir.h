@@ -257,7 +257,7 @@ int kefir_filter_add_rule(kefir_filter *filter,
 			  ssize_t index);
 
 /**
- * Add a rule to a filter.
+ * Create a rule from an expression and add it to a filter.
  * @filter: object to add the rule to
  * @rule_type: type of the rule to add
  * @user_rule: array of words defining the rule in the format for rule_type
@@ -273,7 +273,7 @@ int kefir_rule_load(kefir_filter *filter,
 		    ssize_t index);
 
 /**
- * Add a rule to a filter.
+ * Create a rule from an expression and add it to a filter.
  * @filter: object to add the rule to
  * @rule_type: type of the rule to add
  * @user_rule: single string defining the rule in the format for rule_type
