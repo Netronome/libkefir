@@ -1501,6 +1501,7 @@ static int
 make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	bool use_printk = prog->options.flags & OPT_FLAGS_USE_PRINTK;
+	bool use_loops = !(prog->options.flags & OPT_FLAGS_NO_LOOPS);
 	size_t i, nb_rules;
 
 	GEN("%s", cprog_prog_starts[prog->options.target]);
@@ -1517,9 +1518,11 @@ make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 
 	if (use_printk) {
 		GEN(""
-		    "	int res = 0;\n"
 		    "	int tmp, i = 0;\n"
+		    "	int res = 0;\n"
 		    "");
+	} else if (use_loops) {
+		GEN("	int res, i = 0;\n");
 	} else {
 		GEN("	int res;\n");
 	}
@@ -1535,24 +1538,48 @@ make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 	nb_rules = list_count(prog->filter->rules);
 
 	if (use_printk) {
-		for (i = 0; i < nb_rules; i++)
+		if (use_loops) {
 			GEN(""
-			    "	trace_printk(\"check rule %%d\\n\", i++);\n"
-			    "	tmp = check_nth_rule(&key, %zd, &eth_proto, &res);\n"
-			    "	trace_printk(\"> match?: %%d\\n\", tmp);\n"
-			    "	if (tmp) {\n"
-			    "		trace_printk(\"> action: %%d\\n\", res);\n"
-			    "		return res;\n"
+			    "	for (i = 0; i < %zd; i++) {\n"
+			    "		trace_printk(\"check rule %%d\\n\", i++);\n"
+			    "		tmp = check_nth_rule(&key, i, &eth_proto, &res);\n"
+			    "		trace_printk(\"> match?: %%d\\n\", tmp);\n"
+			    "		if (tmp) {\n"
+			    "			trace_printk(\"> action: %%d\\n\", res);\n"
+			    "			return res;\n"
+			    "		}\n"
 			    "	}\n"
 			    "\n"
-			    "", i);
+			    "", nb_rules);
+		} else {
+			for (i = 0; i < nb_rules; i++)
+				GEN(""
+				    "	trace_printk(\"check rule %%d\\n\", i++);\n"
+				    "	tmp = check_nth_rule(&key, %zd, &eth_proto, &res);\n"
+				    "	trace_printk(\"> match?: %%d\\n\", tmp);\n"
+				    "	if (tmp) {\n"
+				    "		trace_printk(\"> action: %%d\\n\", res);\n"
+				    "		return res;\n"
+				    "	}\n"
+				    "\n"
+				    "", i);
+		}
 	} else {
-		for (i = 0; i < nb_rules; i++)
+		if (use_loops) {
 			GEN(""
-			    "	if (check_nth_rule(&key, %zd, &eth_proto, &res))\n"
-			    "		return res;\n"
+			    "	for (i = 0; i < %zd; i++)\n"
+			    "		if (check_nth_rule(&key, i, &eth_proto, &res))\n"
+			    "			return res;\n"
 			    "\n"
-			    "", i);
+			    "", nb_rules);
+		} else {
+			for (i = 0; i < nb_rules; i++)
+				GEN(""
+				    "	if (check_nth_rule(&key, %zd, &eth_proto, &res))\n"
+				    "		return res;\n"
+				    "\n"
+				    "", i);
+		}
 	}
 
 	GEN(""
