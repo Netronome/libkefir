@@ -246,6 +246,8 @@ size_t kefir_filter_size(const kefir_filter *filter);
 /**
  * Add a rule to a filter.
  * @filter: object to add the rule to
+ * @rule: rule to add the the filter (filter links to the rule, does not clone
+ *        it)
  * @index: index of the rule in the list (overwrite if pre-existing)
  * @return 0 on success, error code otherwise
  */
