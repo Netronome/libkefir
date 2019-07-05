@@ -463,6 +463,22 @@ int kefir_cfile_compile_to_bpf(const char *c_file,
 			       const struct kefir_compil_attr *attr);
 
 /**
+ * Unload and destroy a BPF object and free all associated memory.
+ * @obj: pointer to the BPF object to destroy
+ */
+LIBKEFIR_API
+void kefir_bpfobj_destroy(struct bpf_object *obj);
+
+/**
+ * Retrieve the file descriptor of the filter program associated with a BPF
+ * object.
+ * @obj: the BPF object resulting from a program load or attachment
+ * @return a file descriptor related to that program
+ */
+LIBKEFIR_API
+int kefir_bpfobj_get_prog_fd(struct bpf_object *obj);
+
+/**
  * Struct containing attributes used when loading a BPF program from an object
  * file.
  * @ifindex: interface index, for indicating where the filter should be
@@ -478,22 +494,6 @@ struct kefir_load_attr {
 	int log_level;
 	unsigned int flags;
 };
-
-/**
- * Unload and destroy a BPF object and free all associated memory.
- * @obj: pointer to the BPF object to destroy
- */
-LIBKEFIR_API
-void kefir_bpfobj_destroy(struct bpf_object *obj);
-
-/**
- * Retrieve the file descriptor of the filter program associated with a BPF
- * object.
- * @obj: the BPF object resulting from a program load or attachment
- * @return a file descriptor related to that program
- */
-LIBKEFIR_API
-int kefir_bpfobj_get_prog_fd(struct bpf_object *obj);
 
 /**
  * Load the BPF program associated to a C program object into the kernel.
