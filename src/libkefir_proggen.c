@@ -936,7 +936,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN("#pragma clang loop unroll(full)\n");
 		GEN(""
 		    "	for (i = 0; i < 2; i++)\n"
-		    "		copy[i] &= (match->flags * MATCH_FLAGS_USE_MASK) ?\n"
+		    "		copy[i] &= (match->flags & MATCH_FLAGS_USE_MASK) ?\n"
 		    "			match->mask[i] : 0xffffffffffffffff;\n"
 		    "\n"
 		    "");
