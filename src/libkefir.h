@@ -248,7 +248,9 @@ size_t kefir_filter_size(const kefir_filter *filter);
  * @filter: object to add the rule to
  * @rule: rule to add the the filter (filter links to the rule, does not clone
  *        it)
- * @index: index of the rule in the list (overwrite if pre-existing)
+ * @index: index of the rule in the list (if filter already has a rule at this
+ *         index, insert before and shift rules with a greater or equal index),
+ *         if negative then start from the end of the list
  * @return 0 on success, error code otherwise
  */
 LIBKEFIR_API
@@ -262,7 +264,9 @@ int kefir_filter_add_rule(kefir_filter *filter,
  * @rule_type: type of the rule to add
  * @user_rule: array of words defining the rule in the format for rule_type
  * @rule_size: number of words in user_rule
- * @index: index of the rule in the list (overwrite if pre-existing)
+ * @index: index of the rule in the list (if filter already has a rule at this
+ *         index, insert before and shift rules with a greater or equal index),
+ *         if negative then start from the end of the list
  * @return 0 on success, error code otherwise
  */
 LIBKEFIR_API
@@ -277,7 +281,9 @@ int kefir_rule_load(kefir_filter *filter,
  * @filter: object to add the rule to
  * @rule_type: type of the rule to add
  * @user_rule: single string defining the rule in the format for rule_type
- * @index: index of the rule in the list (overwrite if pre-existing)
+ * @index: index of the rule in the list (if filter already has a rule at this
+ *         index, insert before and shift rules with a greater or equal index),
+ *         if negative then start from the end of the list
  * @return 0 on success, error code otherwise
  */
 LIBKEFIR_API
