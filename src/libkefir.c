@@ -541,7 +541,7 @@ void kefir_bpfobj_destroy(struct bpf_object *obj)
 	bpf_object__close(obj);
 }
 
-int kefir_bpfobj_get_prog_fd(struct bpf_object *obj)
+int kefir_bpfobj_get_prog_fd(const struct bpf_object *obj)
 {
 	struct bpf_program *prog;
 
@@ -583,13 +583,13 @@ kefir_cprog_load_attach_to_kernel(const struct kefir_cprog *cprog,
 }
 
 int kefir_cprog_fill_map(const struct kefir_cprog *cprog,
-			 struct bpf_object *bpf_obj)
+			 const struct bpf_object *bpf_obj)
 {
 	return compile_fill_map(cprog, bpf_obj);
 }
 
 int kefir_cprog_map_update_cmd(const struct kefir_cprog *cprog,
-			       struct bpf_object *bpf_obj, char **buf,
+			       const struct bpf_object *bpf_obj, char **buf,
 			       size_t *buf_len)
 {
 	return dump_fillmap_cmd(cprog, bpf_obj, buf, buf_len);

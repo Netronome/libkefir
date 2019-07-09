@@ -482,7 +482,7 @@ void kefir_bpfobj_destroy(struct bpf_object *obj);
  * @return a file descriptor related to that program
  */
 LIBKEFIR_API
-int kefir_bpfobj_get_prog_fd(struct bpf_object *obj);
+int kefir_bpfobj_get_prog_fd(const struct bpf_object *obj);
 
 /**
  * Struct containing attributes used when loading a BPF program from an object
@@ -542,7 +542,7 @@ kefir_cprog_load_attach_to_kernel(const struct kefir_cprog *cprog,
  */
 LIBKEFIR_API
 int kefir_cprog_fill_map(const struct kefir_cprog *cprog,
-			 struct bpf_object *bpf_obj);
+			 const struct bpf_object *bpf_obj);
 
 /**
  * Dump the commands (bpftool format) that can be used to fill the rules
@@ -558,7 +558,7 @@ int kefir_cprog_fill_map(const struct kefir_cprog *cprog,
  */
 LIBKEFIR_API
 int kefir_cprog_map_update_cmd(const struct kefir_cprog *cprog,
-			       struct bpf_object *bpf_obj,
+			       const struct bpf_object *bpf_obj,
 			       char **buf,
 			       size_t *buf_len);
 

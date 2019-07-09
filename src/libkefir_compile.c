@@ -327,7 +327,7 @@ int compile_load_from_objfile(const struct kefir_cprog *cprog,
 }
 
 int compile_fill_map(const struct kefir_cprog *cprog,
-		     struct bpf_object *bpf_obj)
+		     const struct bpf_object *bpf_obj)
 {
 	struct bpf_map *rule_map;
 	int rule_map_fd;
@@ -433,7 +433,8 @@ static int dump_rule_command(void *rule_ptr, va_list ap)
 }
 
 int dump_fillmap_cmd(const struct kefir_cprog *cprog,
-		     struct bpf_object *bpf_obj, char **buf, size_t *buf_len)
+		     const struct bpf_object *bpf_obj, char **buf,
+		     size_t *buf_len)
 {
 	struct bpf_map_info info = {0};
 	uint32_t len = sizeof(info);
@@ -500,7 +501,7 @@ free_allocated:
 }
 
 int compile_attach_program(const struct kefir_cprog *cprog,
-			   struct bpf_object *bpf_obj, int prog_fd,
+			   const struct bpf_object *bpf_obj, int prog_fd,
 			   const struct kefir_load_attr *attr)
 {
 	if (!cprog) {
