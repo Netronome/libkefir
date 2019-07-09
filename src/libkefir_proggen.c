@@ -266,6 +266,8 @@ make_key_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 		GEN("	uint8_t		processed_l4;\n");
 	if (prog->options.flags & OPT_FLAGS_NEED_L4_4B)
 		GEN("	uint8_t		processed_l4_4b;\n");
+	if (prog->options.flags & OPT_FLAGS_NEED_VLAN)
+		GEN("	uint8_t		processed_vlan;\n");
 
 	/* Ether */
 
@@ -827,6 +829,8 @@ cprog_func_extract_key(const struct kefir_cprog *prog, char **buf,
 		    "			key->ethertype = *(uint16_t *)(data + nh_off - 2);\n"
 		    "			key->ethertype = bpf_ntohs(key->ethertype);\n"
 		    "");
+		if (prog->options.flags & OPT_FLAGS_NEED_VLAN)
+			GEN("			key->processed_vlan++;\n");
 	}
 
 	if (filter_has_matchtype(prog->filter, KEFIR_MATCH_TYPE_VLAN_ID) ||
@@ -1408,86 +1412,95 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_VLAN_ID:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			key->processed_vlan &&\n"
 			    "%s			(check_match(&key->vlan_id[0],\n"
 			    "%s				     sizeof(key->vlan_id[0]), match) ||\n"
 			    "%s			 check_match(&key->vlan_id[1],\n"
 			    "%s				     sizeof(key->vlan_id[1]), match));\n"
 			    "%s		break;\n"
 			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
+			    indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_VLAN_PRIO))
 			GEN(""
 			    "%s	case MATCH_VLAN_PRIO:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			key->processed_vlan &&\n"
 			    "%s			(check_match(&key->vlan_prio[0],\n"
 			    "%s				     sizeof(key->vlan_prio[0]), match) ||\n"
 			    "%s			 check_match(&key->vlan_prio[1],\n"
 			    "%s				     sizeof(key->vlan_prio[1]), match));\n"
 			    "%s		break;\n"
 			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
+			    indent, indent);
 		if (filter_has_matchtype(filter,
 					 KEFIR_MATCH_TYPE_VLAN_ETHERTYPE))
 			GEN(""
 			    "%s	case MATCH_VLAN_ETHERTYPE:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			key->processed_vlan &&\n"
 			    "%s			(check_match(&key->vlan_etype[0],\n"
 			    "%s				     sizeof(key->vlan_etype[0]), match) ||\n"
 			    "%s			 check_match(&key->vlan_etype[1],\n"
 			    "%s				     sizeof(key->vlan_etype[1]), match));\n"
 			    "%s		break;\n"
 			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
+			    indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_CVLAN_ID))
 			GEN(""
 			    "%s	case MATCH_CVLAN_ID:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->processed_vlan >= 2) &&\n"
 			    "%s			check_match(&key->vlan_id[1],\n"
 			    "%s				    sizeof(key->vlan_id[1]), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_CVLAN_PRIO))
 			GEN(""
 			    "%s	case MATCH_CVLAN_PRIO:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->processed_vlan >= 2) &&\n"
 			    "%s			check_match(&key->vlan_prio[1],\n"
 			    "%s				    sizeof(key->vlan_prio[1]), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter,
 					 KEFIR_MATCH_TYPE_CVLAN_ETHERTYPE))
 			GEN(""
 			    "%s	case MATCH_CVLAN_ETHERTYPE:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->processed_vlan >= 2) &&\n"
 			    "%s			check_match(&key->vlan_etype[1],\n"
 			    "%s				     sizeof(key->vlan_etype[1]), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_SVLAN_ID))
 			GEN(""
 			    "%s	case MATCH_SVLAN_ID:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			key->processed_vlan &&\n"
 			    "%s			check_match(&key->vlan_id[0],\n"
 			    "%s				    sizeof(key->vlan_id[0]), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_SVLAN_PRIO))
 			GEN(""
 			    "%s	case MATCH_SVLAN_PRIO:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			key->processed_vlan &&\n"
 			    "%s			check_match(&key->vlan_prio[0],\n"
 			    "%s				    sizeof(key->vlan_prio[0]), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter,
 					 KEFIR_MATCH_TYPE_SVLAN_ETHERTYPE))
 			GEN(""
 			    "%s	case MATCH_SVLAN_ETHERTYPE:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			key->processed_vlan &&\n"
 			    "%s			check_match(&key->vlan_etype[0],\n"
 			    "%s				    sizeof(key->vlan_etype[0]), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 
 		GEN(""
 		    "%s	default:\n"
@@ -1682,6 +1695,22 @@ update_options_from_matchtype(enum kefir_match_type match_type,
 		options->flags |= OPT_FLAGS_NEED_L4_4B;
 		options->flags |= OPT_FLAGS_NEED_IPV4;
 		options->flags |= OPT_FLAGS_NEED_IPV6;
+		break;
+
+	case KEFIR_MATCH_TYPE_CVLAN_ID:
+	case KEFIR_MATCH_TYPE_CVLAN_PRIO:
+	case KEFIR_MATCH_TYPE_CVLAN_ETHERTYPE:
+		options->flags |= OPT_FLAGS_NEED_CVLAN;
+		break;
+	case KEFIR_MATCH_TYPE_SVLAN_ID:
+	case KEFIR_MATCH_TYPE_SVLAN_PRIO:
+	case KEFIR_MATCH_TYPE_SVLAN_ETHERTYPE:
+		options->flags |= OPT_FLAGS_NEED_SVLAN;
+		break;
+	case KEFIR_MATCH_TYPE_VLAN_ID:
+	case KEFIR_MATCH_TYPE_VLAN_PRIO:
+	case KEFIR_MATCH_TYPE_VLAN_ETHERTYPE:
+		options->flags |= OPT_FLAGS_NEED_VLAN;
 		break;
 
 	default:
