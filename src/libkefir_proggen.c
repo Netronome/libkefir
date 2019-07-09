@@ -258,7 +258,10 @@ make_key_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 {
 	const struct kefir_filter *filter = prog->filter;
 
-	GEN("struct filter_key {\n");
+	GEN(""
+	    "struct filter_key {\n"
+	    "	uint16_t		ethertype;\n"	/* host byte order */
+	    "");
 
 	/* Ether */
 
@@ -800,8 +803,7 @@ cprog_func_extract_key(const struct kefir_cprog *prog, char **buf,
 	bool need_ipv6 = prog->options.flags & OPT_FLAGS_NEED_IPV6;
 
 	GEN(""
-	    "%sint extract_key(void *data, void *data_end, struct filter_key *key,\n"
-	    "		__u16 *eth_proto)\n"
+	    "%sint extract_key(void *data, void *data_end, struct filter_key *key)\n"
 	    "{\n"
 	    "	struct ethhdr *eth = data;\n"
 	    "	unsigned int i;\n"
@@ -810,7 +812,7 @@ cprog_func_extract_key(const struct kefir_cprog *prog, char **buf,
 	    "	nh_off = sizeof(struct ethhdr);\n"
 	    "	if (data + nh_off > data_end)\n"
 	    "		return -1;\n"
-	    "	*eth_proto = bpf_ntohs(eth->h_proto);\n"
+	    "	key->ethertype = bpf_ntohs(eth->h_proto);\n"
 	    "\n"
 	    "", static_inline_attr(prog->options.flags));
 
@@ -819,15 +821,15 @@ cprog_func_extract_key(const struct kefir_cprog *prog, char **buf,
 			GEN("#pragma clang loop unroll(full)\n");
 		GEN(""
 		    "	for (i = 0; i < 2; i++) {\n"
-		    "		if (*eth_proto == ETH_P_8021Q || *eth_proto == ETH_P_8021AD) {\n"
+		    "		if (key->ethertype == ETH_P_8021Q || key->ethertype == ETH_P_8021AD) {\n"
 		    "			void *vlan_hdr;\n"
 		    "\n"
 		    "			vlan_hdr = data + nh_off;\n"
 		    "			nh_off += 4;\n"
 		    "			if (data + nh_off > data_end)\n"
 		    "				return -1;\n"
-		    "			*eth_proto = *(uint16_t *)(data + nh_off - 2);\n"
-		    "			*eth_proto = bpf_ntohs(*eth_proto);\n"
+		    "			key->ethertype = *(uint16_t *)(data + nh_off - 2);\n"
+		    "			key->ethertype = bpf_ntohs(key->ethertype);\n"
 		    "");
 	}
 
@@ -866,7 +868,7 @@ cprog_func_extract_key(const struct kefir_cprog *prog, char **buf,
 		    "");
 
 	if (need_ipv4 || need_ipv6) {
-		GEN("	switch (*eth_proto) {\n");
+		GEN("	switch (key->ethertype) {\n");
 
 		if (need_ipv4)
 			GEN(""
@@ -1014,7 +1016,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 	    "	}\n"
 	    "}\n"
 	    "\n"
-	    "%sint check_nth_rule(struct filter_key *key, int n, __u16 *eth_proto, int *res)\n"
+	    "%sint check_nth_rule(struct filter_key *key, int n, int *res)\n"
 	    "{\n"
 	    "	struct filter_rule *rule;\n"
 	    "	struct rule_match *match;\n"
@@ -1110,50 +1112,55 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV4_SRC:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			check_match(&key->ipv4_src,\n"
 			    "%s				    sizeof(key->ipv4_src), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_DST))
 			GEN(""
 			    "%s	case MATCH_IPV4_DST:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			check_match(&key->ipv4_dst,\n"
 			    "%s				    sizeof(key->ipv4_dst), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_ANY))
 			GEN(""
 			    "%s	case MATCH_IPV4_ANY:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			(check_match(&key->ipv4_src,\n"
 			    "%s				    sizeof(key->ipv4_src), match) ||\n"
 			    "%s			 check_match(&key->ipv4_dst,\n"
 			    "%s				    sizeof(key->ipv4_dst), match));\n"
 			    "%s		break;\n"
 			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
+			    indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TOS))
 			GEN(""
 			    "%s	case MATCH_IPV4_TOS:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			check_match(&key->ipv4_tos,\n"
 			    "%s				    sizeof(key->ipv4_tos), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_TTL))
 			GEN(""
 			    "%s	case MATCH_IPV4_TTL:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			check_match(&key->ipv4_ttl,\n"
 			    "%s				    sizeof(key->ipv4_ttl), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_4_L4PROTO))
 			GEN(""
 			    "%s	case MATCH_IPV4_L4PROTO:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			check_match(&key->l4proto,\n"
 			    "%s				    sizeof(key->l4proto), match);\n"
 			    "%s		break;\n"
@@ -1162,7 +1169,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV4_L4DATA:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			check_match(&key->l4data,\n"
 			    "%s				    sizeof(key->l4data), match);\n"
 			    "%s		break;\n"
@@ -1172,7 +1179,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV4_L4PORT_SRC:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			check_match(&key->l4port_src,\n"
 			    "%s				    sizeof(key->l4port_src), match);\n"
 			    "%s		break;\n"
@@ -1182,7 +1189,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV4_L4PORT_DST:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			check_match(&key->l4port_dst,\n"
 			    "%s				    sizeof(key->l4port_dst), match);\n"
 			    "%s		break;\n"
@@ -1192,7 +1199,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV4_L4PORT_ANY:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IP) &&\n"
+			    "%s			(key->ethertype == ETH_P_IP) &&\n"
 			    "%s			(check_match(&key->l4port_src,\n"
 			    "%s				    sizeof(key->l4port_src), match) ||\n"
 			    "%s			 check_match(&key->l4port_dst,\n"
@@ -1208,51 +1215,56 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV6_SRC:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			check_match(&key->ipv6_src,\n"
 			    "%s				    sizeof(key->ipv6_src), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_DST) ||
 		    filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
 			GEN(""
 			    "%s	case MATCH_IPV6_DST:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			check_match(&key->ipv6_dst,\n"
 			    "%s				    sizeof(key->ipv6_dst), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_ANY))
 			GEN(""
 			    "%s	case MATCH_IPV6_ANY:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->ipv6_src,\n"
 			    "%s				    sizeof(key->ipv6_src), match) ||\n"
 			    "%s			 check_match(&key->ipv6_dst,\n"
 			    "%s				    sizeof(key->ipv6_dst), match));\n"
 			    "%s		break;\n"
 			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
+			    indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TOS))
 			GEN(""
 			    "%s	case MATCH_IPV6_TCLASS:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			check_match(&key->ipv6_tclass,\n"
 			    "%s				    sizeof(key->ipv6_tclass), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_TTL))
 			GEN(""
 			    "%s	case MATCH_IPV6_TTL:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			check_match(&key->ipv6_ttl,\n"
 			    "%s				    sizeof(key->ipv6_ttl), match);\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_6_L4PROTO))
 			GEN(""
 			    "%s	case MATCH_IPV6_L4PROTO:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			check_match(&key->l4proto,\n"
 			    "%s				    sizeof(key->l4proto), match);\n"
 			    "%s		break;\n"
@@ -1261,7 +1273,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV6_L4DATA:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			check_match(&key->l4data,\n"
 			    "%s				    sizeof(key->l4data), match);\n"
 			    "%s		break;\n"
@@ -1271,7 +1283,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV6_L4PORT_SRC:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			check_match(&key->l4port_src,\n"
 			    "%s				    sizeof(key->l4port_src), match);\n"
 			    "%s		break;\n"
@@ -1281,7 +1293,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV6_L4PORT_DST:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			check_match(&key->l4port_dst,\n"
 			    "%s				    sizeof(key->l4port_dst), match);\n"
 			    "%s		break;\n"
@@ -1291,7 +1303,7 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IPV6_L4PORT_ANY:\n"
 			    "%s		does_match = does_match &&\n"
-			    "%s			(*eth_proto == ETH_P_IPV6) &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->l4port_src,\n"
 			    "%s				    sizeof(key->l4port_src), match) ||\n"
 			    "%s			 check_match(&key->l4port_dst,\n"
@@ -1306,72 +1318,79 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 			GEN(""
 			    "%s	case MATCH_IP_ANY_TOS:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV4 | key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->ipv4_tos,\n"
 			    "%s				    sizeof(key->ipv4_tos), match) ||\n"
 			    "%s			 check_match(&key->ipv6_tclass,\n"
 			    "%s				    sizeof(key->ipv6_tclass), match));\n"
 			    "%s		break;\n"
 			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
+			    indent, indent);
 		if (filter_has_matchtype(filter, KEFIR_MATCH_TYPE_IP_ANY_TTL))
 			GEN(""
 			    "%s	case MATCH_IP_ANY_TTL:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV4 | key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->ipv4_ttl,\n"
 			    "%s				    sizeof(key->ipv4_ttl), match) ||\n"
 			    "%s			 check_match(&key->ipv6_ttl,\n"
 			    "%s				    sizeof(key->ipv6_ttl), match));\n"
 			    "%s		break;\n"
 			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
+			    indent, indent);
 		if (filter_has_matchtype(filter,
 					 KEFIR_MATCH_TYPE_IP_ANY_L4PROTO))
 			GEN(""
 			    "%s	case MATCH_IP_ANY_L4PROTO:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV4 | key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->l4proto,\n"
 			    "%s				    sizeof(key->l4proto), match));\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter,
 					 KEFIR_MATCH_TYPE_IP_ANY_L4DATA))
 			GEN(""
 			    "%s	case MATCH_IP_ANY_L4DATA:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV4 | key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->l4data,\n"
 			    "%s				    sizeof(key->l4data), match));\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter,
 					 KEFIR_MATCH_TYPE_IP_ANY_L4PORT_SRC))
 			GEN(""
 			    "%s	case MATCH_IP_ANY_L4PORT_SRC:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV4 | key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->l4port_src,\n"
 			    "%s				    sizeof(key->l4port_src), match));\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter,
 					 KEFIR_MATCH_TYPE_IP_ANY_L4PORT_DST))
 			GEN(""
 			    "%s	case MATCH_IP_ANY_L4PORT_DST:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV4 | key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->l4port_dst,\n"
 			    "%s				    sizeof(key->l4port_dst), match));\n"
 			    "%s		break;\n"
-			    "", indent, indent, indent, indent, indent);
+			    "", indent, indent, indent, indent, indent, indent);
 		if (filter_has_matchtype(filter,
 					 KEFIR_MATCH_TYPE_IP_ANY_L4PORT_ANY))
 			GEN(""
 			    "%s	case MATCH_IP_ANY_L4PORT_ANY:\n"
 			    "%s		does_match = does_match &&\n"
+			    "%s			(key->ethertype == ETH_P_IPV4 | key->ethertype == ETH_P_IPV6) &&\n"
 			    "%s			(check_match(&key->l4port_src,\n"
 			    "%s				    sizeof(key->l4port_src), match) ||\n"
 			    "%s			 check_match(&key->l4port_dst,\n"
 			    "%s				    sizeof(key->l4port_dst), match));\n"
 			    "%s		break;\n"
 			    "", indent, indent, indent, indent, indent, indent,
-			    indent);
+			    indent, indent);
 
 		/* VLAN */
 
@@ -1512,7 +1531,6 @@ make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 	    "	void *data = (void *)(long)ctx->data;\n"
 	    "	struct filter_key key = {0};\n"
 	    "	struct ethhdr *eth = data;\n"
-	    "	__u16 eth_proto;\n"
 	    "	uint8_t nh_off;\n"
 	    "");
 
@@ -1530,7 +1548,7 @@ make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 	/* Default action: let packet pass. TODO: Provide a way to change it? */
 	GEN(""
 	    "\n"
-	    "	if (extract_key(data, data_end, &key, &eth_proto))\n"
+	    "	if (extract_key(data, data_end, &key))\n"
 	    "		return RET_PASS;\n"
 	    "\n"
 	    "");
@@ -1542,7 +1560,7 @@ make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 			GEN(""
 			    "	for (i = 0; i < %zd; i++) {\n"
 			    "		trace_printk(\"check rule %%d\\n\", i++);\n"
-			    "		tmp = check_nth_rule(&key, i, &eth_proto, &res);\n"
+			    "		tmp = check_nth_rule(&key, i, &res);\n"
 			    "		trace_printk(\"> match?: %%d\\n\", tmp);\n"
 			    "		if (tmp) {\n"
 			    "			trace_printk(\"> action: %%d\\n\", res);\n"
@@ -1555,7 +1573,7 @@ make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 			for (i = 0; i < nb_rules; i++)
 				GEN(""
 				    "	trace_printk(\"check rule %%d\\n\", i++);\n"
-				    "	tmp = check_nth_rule(&key, %zd, &eth_proto, &res);\n"
+				    "	tmp = check_nth_rule(&key, %zd, &res);\n"
 				    "	trace_printk(\"> match?: %%d\\n\", tmp);\n"
 				    "	if (tmp) {\n"
 				    "		trace_printk(\"> action: %%d\\n\", res);\n"
@@ -1568,14 +1586,14 @@ make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 		if (use_loops) {
 			GEN(""
 			    "	for (i = 0; i < %zd; i++)\n"
-			    "		if (check_nth_rule(&key, i, &eth_proto, &res))\n"
+			    "		if (check_nth_rule(&key, i, &res))\n"
 			    "			return res;\n"
 			    "\n"
 			    "", nb_rules);
 		} else {
 			for (i = 0; i < nb_rules; i++)
 				GEN(""
-				    "	if (check_nth_rule(&key, %zd, &eth_proto, &res))\n"
+				    "	if (check_nth_rule(&key, %zd, &res))\n"
 				    "		return res;\n"
 				    "\n"
 				    "", i);
