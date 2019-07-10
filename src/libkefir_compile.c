@@ -339,6 +339,7 @@ int compile_fill_map(const struct kefir_cprog *cprog,
 	}
 	if (!bpf_obj) {
 		err_fail("BPF object is NULL, cannot fill BPF map");
+		return -1;
 	}
 
 	rule_map = bpf_object__find_map_by_name(bpf_obj, "rules");
