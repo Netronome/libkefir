@@ -447,7 +447,7 @@ int dump_fillmap_cmd(const struct kefir_cprog *cprog,
 		return -1;
 	}
 	if (!buf) {
-		err_fail("buffer pointer is NULL, cannot dump map udpate cmds");
+		err_fail("buffer pointer is NULL, cannot dump map update cmds");
 		return -1;
 	}
 	if (!buf_len) {

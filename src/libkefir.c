@@ -621,7 +621,7 @@ kefir_filter_attach_attr(const struct kefir_filter *filter,
 	time_t cur_time = time(NULL);
 	struct kefir_cprog *cprog;
 
-	if (cur_time == (time_t) -1) {
+	if (cur_time == (time_t)-1) {
 		snprintf(tmpfile, sizeof(tmpfile),
 			 "/tmp/kefir_filter_0000000000.c");
 		errno = 0;
