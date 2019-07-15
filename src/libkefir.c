@@ -34,7 +34,7 @@ DEFINE_ERR_FUNCTIONS("core")
  * Rule crafting
  */
 
-size_t kefir_bytes_for_type(enum kefir_match_type type)
+unsigned int kefir_bytes_for_type(enum kefir_match_type type)
 {
 	return (format_size[type_format[type]] + 7) / 8;
 }
@@ -235,7 +235,7 @@ struct kefir_filter *kefir_filter_clone(const struct kefir_filter *filter)
 	return copy;
 }
 
-size_t kefir_filter_size(const struct kefir_filter *filter)
+unsigned int kefir_filter_size(const struct kefir_filter *filter)
 {
 	if (!filter)
 		return 0;
@@ -276,7 +276,7 @@ static void update_from_mask(struct kefir_rule *rule)
 }
 
 int kefir_filter_add_rule(struct kefir_filter *filter, struct kefir_rule *rule,
-			  ssize_t index)
+			  int index)
 {
 	struct list *rule_list;
 	ssize_t filter_len;
@@ -312,8 +312,8 @@ int kefir_filter_add_rule(struct kefir_filter *filter, struct kefir_rule *rule,
 }
 
 int kefir_rule_load(struct kefir_filter *filter, enum kefir_rule_type rule_type,
-		    const char * const *user_rule, size_t rule_size,
-		    ssize_t index)
+		    const char * const *user_rule, unsigned int rule_size,
+		    int index)
 {
 	struct kefir_rule *rule;
 
@@ -342,7 +342,7 @@ int kefir_rule_load(struct kefir_filter *filter, enum kefir_rule_type rule_type,
 
 int kefir_rule_load_l(struct kefir_filter *filter,
 		      enum kefir_rule_type rule_type, const char *user_rule,
-		      ssize_t index)
+		      int index)
 {
 	size_t rule_size = 1, i = 0;
 	const char **rule_words;
@@ -412,7 +412,7 @@ free_rule_cpy:
  * rule to keep the order in which it was added, so we could instead match on
  * this user id in the future.
  */
-int kefir_rule_delete_by_id(struct kefir_filter *filter, ssize_t index)
+int kefir_rule_delete_by_id(struct kefir_filter *filter, int index)
 {
 	if (!filter) {
 		err_fail("filter object is NULL, cannot delete rule");
@@ -427,7 +427,7 @@ int kefir_rule_delete_by_id(struct kefir_filter *filter, ssize_t index)
 
 void kefir_filter_dump(const struct kefir_filter *filter)
 {
-	size_t buf_len;
+	unsigned int buf_len;
 	char *buf;
 
 	if (dump_filter_to_buf(filter, &buf, &buf_len, ""))
@@ -466,8 +466,8 @@ kefir_filter_convert_to_cprog(const struct kefir_filter *filter,
 
 void kefir_cprog_to_stdout(const struct kefir_cprog *cprog)
 {
+	unsigned int buf_len;
 	char *buf = NULL;
-	size_t buf_len;
 
 	if (proggen_cprog_to_buf(cprog, &buf, &buf_len))
 		return;
@@ -477,7 +477,7 @@ void kefir_cprog_to_stdout(const struct kefir_cprog *cprog)
 }
 
 int kefir_cprog_to_buf(const struct kefir_cprog *cprog, char **buf,
-		       size_t *buf_len)
+		       unsigned int *buf_len)
 {
 	return proggen_cprog_to_buf(cprog, buf, buf_len);
 }
@@ -485,8 +485,9 @@ int kefir_cprog_to_buf(const struct kefir_cprog *cprog, char **buf,
 int kefir_cprog_to_file(const struct kefir_cprog *cprog, const char *filename)
 {
 	char *buf = NULL;
-	size_t len, res;
+	unsigned int len;
 	int ret = -1;
+	size_t res;
 	FILE *file;
 
 	if (!filename) {
@@ -590,7 +591,7 @@ int kefir_cprog_fill_map(const struct kefir_cprog *cprog,
 
 int kefir_cprog_map_update_cmd(const struct kefir_cprog *cprog,
 			       const struct bpf_object *bpf_obj, char **buf,
-			       size_t *buf_len)
+			       unsigned int *buf_len)
 {
 	return dump_fillmap_cmd(cprog, bpf_obj, buf, buf_len);
 }

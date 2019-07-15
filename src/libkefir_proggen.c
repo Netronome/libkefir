@@ -151,7 +151,8 @@ static bool need_helper(const struct kefir_cprog *prog, size_t helper_id)
 }
 
 static int
-make_helpers_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
+make_helpers_decl(const struct kefir_cprog *prog, char **buf,
+		  unsigned int *buf_len)
 {
 	size_t i;
 
@@ -164,7 +165,8 @@ make_helpers_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-make_retval_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
+make_retval_decl(const struct kefir_cprog *prog, char **buf,
+		 unsigned int *buf_len)
 {
 	GEN("%s", cprog_return_values[prog->options.target]);
 	return 0;
@@ -254,7 +256,8 @@ static unsigned int filter_diff_matchtypes(const struct kefir_filter *filter)
 }
 
 static int
-make_key_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
+make_key_decl(const struct kefir_cprog *prog, char **buf,
+	      unsigned int *buf_len)
 {
 	const struct kefir_filter *filter = prog->filter;
 
@@ -362,7 +365,7 @@ make_key_decl(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 
 static int
 make_rule_table_decl(const struct kefir_cprog *prog, char **buf,
-		     size_t *buf_len)
+		     unsigned int *buf_len)
 {
 	const struct kefir_filter *filter = prog->filter;
 
@@ -579,7 +582,7 @@ make_rule_table_decl(const struct kefir_cprog *prog, char **buf,
 
 static int
 cprog_func_process_l4(const struct kefir_cprog *prog, char **buf,
-		      size_t *buf_len)
+		      unsigned int *buf_len)
 {
 	const struct kefir_filter *filter = prog->filter;
 
@@ -638,7 +641,7 @@ cprog_func_process_l4(const struct kefir_cprog *prog, char **buf,
 
 static int
 cprog_func_process_ipv4(const struct kefir_cprog *prog, char **buf,
-			size_t *buf_len)
+			unsigned int *buf_len)
 {
 	if (!(prog->options.flags & OPT_FLAGS_NEED_IPV4))
 		return 0;
@@ -694,7 +697,7 @@ cprog_func_process_ipv4(const struct kefir_cprog *prog, char **buf,
 
 static int
 cprog_func_process_ipv6(const struct kefir_cprog *prog, char **buf,
-			size_t *buf_len)
+			unsigned int *buf_len)
 {
 	if (!(prog->options.flags & OPT_FLAGS_NEED_IPV6))
 		return 0;
@@ -761,7 +764,7 @@ cprog_func_process_ipv6(const struct kefir_cprog *prog, char **buf,
 
 static int
 cprog_func_process_ether(const struct kefir_cprog *prog, char **buf,
-			 size_t *buf_len)
+			 unsigned int *buf_len)
 {
 	if (!(prog->options.flags & OPT_FLAGS_NEED_ETHER))
 		return 0;
@@ -794,7 +797,7 @@ cprog_func_process_ether(const struct kefir_cprog *prog, char **buf,
 
 static int
 cprog_func_extract_key(const struct kefir_cprog *prog, char **buf,
-		       size_t *buf_len)
+		       unsigned int *buf_len)
 {
 	bool need_ether = prog->options.flags & OPT_FLAGS_NEED_ETHER;
 	bool need_ipv4 = prog->options.flags & OPT_FLAGS_NEED_IPV4;
@@ -905,7 +908,7 @@ cprog_func_extract_key(const struct kefir_cprog *prog, char **buf,
 
 static int
 cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
-		       size_t *buf_len)
+		       unsigned int *buf_len)
 {
 	bool use_masks = prog->options.flags & OPT_FLAGS_USE_MASKS;
 	bool only_equal = filter_all_comp_equal(prog->filter);
@@ -1540,7 +1543,8 @@ cprog_func_check_rules(const struct kefir_cprog *prog, char **buf,
 }
 
 static int
-make_cprog_main(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
+make_cprog_main(const struct kefir_cprog *prog, char **buf,
+		unsigned int *buf_len)
 {
 	bool use_printk = prog->options.flags & OPT_FLAGS_USE_PRINTK;
 	bool use_loops = !(prog->options.flags & OPT_FLAGS_NO_LOOPS);
@@ -1822,7 +1826,8 @@ proggen_make_cprog_from_filter(const struct kefir_filter *filter,
 }
 
 static int
-make_license(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
+make_license(const struct kefir_cprog *prog, char **buf,
+	     unsigned int *buf_len)
 {
 	GEN("char _license[] __attribute__((section(\"license\"), used)) = \"%s\";\n",
 	    prog->options.license ? prog->options.license : "Dual BSD/GPL");
@@ -1830,9 +1835,10 @@ make_license(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 }
 
 static int
-cprog_comment(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
+cprog_comment(const struct kefir_cprog *prog, char **buf,
+	      unsigned int *buf_len)
 {
-	size_t rules_buf_len;
+	unsigned int rules_buf_len;
 	char *rules_buf;
 
 	dump_filter_to_buf(prog->filter, &rules_buf, &rules_buf_len, " * ");
@@ -1851,7 +1857,7 @@ cprog_comment(const struct kefir_cprog *prog, char **buf, size_t *buf_len)
 
 /* On success, caller is responsible for freeing buffer */
 int proggen_cprog_to_buf(const struct kefir_cprog *prog, char **buf,
-			 size_t *buf_len)
+			 unsigned int *buf_len)
 {
 	bool allocated = false;
 

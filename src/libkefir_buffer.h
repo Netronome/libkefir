@@ -3,4 +3,4 @@
 
 #include <stddef.h>
 
-int buf_append(char **buf, size_t *buf_len, const char *fmt, ...);
+int buf_append(char **buf, unsigned int *buf_len, const char *fmt, ...);

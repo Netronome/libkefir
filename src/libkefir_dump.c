@@ -246,23 +246,22 @@ static const char *match_type_str(enum kefir_match_type match_type)
 /*
  * Variadic list should contain:
  *     char **buf_ptr
- *     size_t *buf_len
+ *     unsigned int *buf_len
  *     const char *prefix
  *     unsigned int *rule_nb
  */
 static int dump_rule(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
+	unsigned int *rule_nb, *buf_len;
 	size_t strval_len = 128;
 	char strval[strval_len];
-	unsigned int *rule_nb;
 	const char *prefix;
-	size_t *buf_len;
 	char **buf_ptr;
 	size_t i;
 
 	buf_ptr = va_arg(ap, char **);
-	buf_len = va_arg(ap, size_t *);
+	buf_len = va_arg(ap, unsigned int *);
 	prefix = va_arg(ap, const char *);
 	rule_nb = va_arg(ap, unsigned int *);
 
@@ -303,7 +302,7 @@ static int dump_rule(void *rule_ptr, va_list ap)
 }
 
 int dump_filter_to_buf(const struct kefir_filter *filter, char **buf,
-		       size_t *buf_len, const char *prefix)
+		       unsigned int *buf_len, const char *prefix)
 {
 	unsigned int count = 0;
 

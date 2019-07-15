@@ -18,7 +18,7 @@ int compile_fill_map(const struct kefir_cprog *cprog,
 		     const struct bpf_object *bpf_obj);
 int dump_fillmap_cmd(const struct kefir_cprog *cprog,
 		     const struct bpf_object *bpf_obj, char **buf,
-		     size_t *buf_len);
+		     unsigned int *buf_len);
 int compile_attach_program(const struct kefir_cprog *cprog,
 			   const struct bpf_object *bpf_obj, int prog_fd,
 			   const struct kefir_load_attr *attr);

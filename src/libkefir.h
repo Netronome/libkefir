@@ -5,9 +5,7 @@
 #define LIBKEFIR_H
 
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
-#include <sys/types.h>
 
 #include <linux/const.h>
 #include <net/ethernet.h>
@@ -151,7 +149,7 @@ struct kefir_rule {
  * @return length (in bytes) of the value for the given type
  */
 LIBKEFIR_API
-size_t kefir_bytes_for_type(enum kefir_match_type type);
+unsigned int kefir_bytes_for_type(enum kefir_match_type type);
 
 /**
  * Fill and possibly create a match object.
@@ -238,7 +236,7 @@ struct kefir_filter *kefir_filter_clone(const struct kefir_filter *filter);
  * @return the number of rules in that filter
  */
 LIBKEFIR_API
-size_t kefir_filter_size(const struct kefir_filter *filter);
+unsigned int kefir_filter_size(const struct kefir_filter *filter);
 
 /**
  * Add a rule to a filter.
@@ -253,7 +251,7 @@ size_t kefir_filter_size(const struct kefir_filter *filter);
 LIBKEFIR_API
 int kefir_filter_add_rule(struct kefir_filter *filter,
 			  struct kefir_rule *rule,
-			  ssize_t index);
+			  int index);
 
 /**
  * Create a rule from an expression and add it to a filter.
@@ -270,8 +268,8 @@ LIBKEFIR_API
 int kefir_rule_load(struct kefir_filter *filter,
 		    enum kefir_rule_type rule_type,
 		    const char * const *user_rule,
-		    size_t rule_size,
-		    ssize_t index);
+		    unsigned int rule_size,
+		    int index);
 
 /**
  * Create a rule from an expression and add it to a filter.
@@ -287,7 +285,7 @@ LIBKEFIR_API
 int kefir_rule_load_l(struct kefir_filter *filter,
 		      enum kefir_rule_type rule_type,
 		      const char *user_rule,
-		      ssize_t index);
+		      int index);
 
 /**
  * Delete a rule at given index from a filter.
@@ -297,7 +295,7 @@ int kefir_rule_load_l(struct kefir_filter *filter,
  */
 LIBKEFIR_API
 int kefir_rule_delete_by_id(struct kefir_filter *filter,
-			    ssize_t index);
+			    int index);
 
 /** Dump all rules of a filter to the console.
  * OUTPUT IS NOT STABLE, USE FOR DEBUG ONLY!
@@ -421,7 +419,7 @@ void kefir_cprog_to_stdout(const struct kefir_cprog *cprog);
 LIBKEFIR_API
 int kefir_cprog_to_buf(const struct kefir_cprog *cprog,
 		       char **buf,
-		       size_t *buf_len);
+		       unsigned int *buf_len);
 
 /**
  * Save a C program to a file on the disk.
@@ -560,7 +558,7 @@ LIBKEFIR_API
 int kefir_cprog_map_update_cmd(const struct kefir_cprog *cprog,
 			       const struct bpf_object *bpf_obj,
 			       char **buf,
-			       size_t *buf_len);
+			       unsigned int *buf_len);
 
 /**
  * All-in-one shortcut function to turn a filter into a cprog object, convert

@@ -363,7 +363,7 @@ int compile_fill_map(const struct kefir_cprog *cprog,
 /*
  * Variadic list should contain:
  *     char **buf
- *     size_t *buf_len
+ *     unsigned int *buf_len
  *     int *index
  *     unsigned int nb_matches
  *     uint64_t flags
@@ -372,15 +372,15 @@ int compile_fill_map(const struct kefir_cprog *cprog,
 static int dump_rule_command(void *rule_ptr, va_list ap)
 {
 	struct kefir_rule *rule = (struct kefir_rule *)rule_ptr;
-	unsigned int nb_matches, map_id;
-	size_t i, *buf_len;
+	unsigned int nb_matches, map_id, *buf_len;
 	uint64_t flags;
 	bool use_masks;
 	int *index;
 	char **buf;
+	size_t i;
 
 	buf = va_arg(ap, char **);
-	buf_len = va_arg(ap, size_t *);
+	buf_len = va_arg(ap, unsigned int *);
 	index = va_arg(ap, int *);
 	nb_matches = va_arg(ap, unsigned int);
 	flags = va_arg(ap, uint64_t);
@@ -435,7 +435,7 @@ static int dump_rule_command(void *rule_ptr, va_list ap)
 
 int dump_fillmap_cmd(const struct kefir_cprog *cprog,
 		     const struct bpf_object *bpf_obj, char **buf,
-		     size_t *buf_len)
+		     unsigned int *buf_len)
 {
 	struct bpf_map_info info = {0};
 	uint32_t len = sizeof(info);
