@@ -4,6 +4,7 @@
 #ifndef LIBKEFIR_H
 #define LIBKEFIR_H
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -599,19 +600,17 @@ kefir_filter_attach_attr(const struct kefir_filter *filter,
  */
 
 /**
- * Return a pointer to the error messages produced by the library.
- * @return pointer to a buffer containing all error messages produced by the
- *         library
+ * Change the printing function used for error messages.
+ * @fn: function used to print the messages, taking a prefix (used by library
+ *      components to tell what part of the library the error comes from), a
+ *      format string (a la printf), and a list of arguments
+ * @return an integer returned by the printing function (0 for the default
+ *         function)
  */
 LIBKEFIR_API
-const char *kefir_strerror(void);
-
-/**
- * Reset the error string. This is useful to get rid of libbpf warnings that
- * may get incrementally appended to the string.
- */
-LIBKEFIR_API
-void kefir_strerror_reset(void);
+void kefir_set_print(int (*fn)(const char *prefix,
+			       const char *format,
+			       va_list ap));
 
 #ifdef __cplusplus
 } /* extern "C" */

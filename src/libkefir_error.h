@@ -4,8 +4,27 @@
 #ifndef LIBKEFIR_ERROR_H
 #define LIBKEFIR_ERROR_H
 
+#include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "libkefir_internals.h"
+
+__printf(2, 0)
+static int default_print(const char *prefix, const char *format, va_list ap)
+{
+	if (prefix)
+		fprintf(stderr, "%s", prefix);
+	vfprintf(stderr, format, ap);
+	if (format[strlen(format) - 1] != '\n')
+		fprintf(stderr, "%c", '\n');
+
+	return 0;
+}
+
+static int
+(*__kefir_print)(const char *prefix,
+		 const char *format,
+		 va_list ap) = default_print;
 
 #define __DO_ERR_FUNC(COMPONENT, NAME, CONTEXT)				\
 	__attribute__((unused)) __printf(1, 2)	\
@@ -14,22 +33,12 @@
 		va_list ap;						\
 									\
 		va_start(ap, format);					\
-		error_vset_str(COMPONENT " " CONTEXT ": ", format, ap);	\
+		__kefir_print(COMPONENT " " CONTEXT ": ", format, ap);	\
 		va_end(ap);						\
 	}
 
 #define DEFINE_ERR_FUNCTIONS(COMPONENT)					\
-	__DO_ERR_FUNC(COMPONENT, fail, "failed")		\
+	__DO_ERR_FUNC(COMPONENT, fail, "failed")			\
 	__DO_ERR_FUNC(COMPONENT, bug, "bug")
-
-#define KEFIR_ERROR_STR_SIZE 2048
-
-char kefir_error_str[KEFIR_ERROR_STR_SIZE];
-
-void error_set_str(const char *prefix, const char *format, ...);
-void error_vset_str(const char *prefix, const char *format, va_list ap);
-
-void error_append_str(const char *prefix, const char *format, ...);
-void error_vappend_str(const char *prefix, const char *format, va_list ap);
 
 #endif /* LIBKEFIR_ERROR_H */

@@ -655,3 +655,13 @@ destroy_cprog:
 
 	return obj;
 }
+
+/*
+ * Other
+ */
+
+void kefir_set_print(int (*fn)(const char *prefix, const char *format,
+			       va_list ap))
+{
+	__kefir_print = fn;
+}

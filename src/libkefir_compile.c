@@ -72,8 +72,7 @@ libbpf_output_to_buf(enum libbpf_print_level level, const char *format,
 	if (level == LIBBPF_DEBUG)
 		return 0;
 
-	error_vappend_str("attach fail: ", format, ap);
-	return 0;
+	return __kefir_print("attach fail: ", format, ap);
 }
 
 int compile_cfile_to_bpf(const char *c_file, const char *opt_object_file,
