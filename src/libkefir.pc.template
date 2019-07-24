@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: BSD-2-Clause
+
+prefix=@PREFIX@
+libdir=@LIBDIR@
+includedir=${prefix}/include
+
+Name: libkefir
+Description: Network filtering rules to BPF program conversion library
+URL: https://github.com/Netronome/libkefir
+Version: @VERSION@
+Libs: -L${libdir} -lkefir
+Requires: libbpf
+Cflags: -I${includedir}
