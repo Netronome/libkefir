@@ -29,7 +29,8 @@ Filters can also be saved as JSON files for later utilisation.
 
 ## Documentation
 
-The library and its usage are documented under [doc/](doc/).
+Documentation for the library's concepts and usage is available on
+[Read the Docs](https://libkefir.readthedocs.io/en/latest/) ([source](doc/)).
 
 ## Requirements
 
