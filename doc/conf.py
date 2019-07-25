@@ -83,7 +83,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'classic'
+# html_theme = 'classic'
 # Alternative default themes:
 # agogo alabaster basic bizstyle classic default epub haiku nature nonav
 # pyramid scrolls sphinxdoc traditional
