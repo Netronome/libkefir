@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'libkefir'
-copyright = '2018, Netronome Systems, Inc.'
+copyright = '2019, Netronome Systems, Inc.'
 author = 'Netronome Systems, Inc.'
 
 # The version info for the project you're documenting, acts as replacement for
