@@ -86,8 +86,10 @@ int main(int argc, char **argv)
 	if (!rule)
 		goto destroy_filter;
 
-	if (kefir_filter_add_rule(filter, rule, 0))
-		goto destroy_rule;
+	if (kefir_filter_add_rule(filter, rule, 0)) {
+		free(rule);
+		goto destroy_filter;
+	}
 
 	/* Dump filter */
 
@@ -97,7 +99,7 @@ int main(int argc, char **argv)
 
 	bpf_obj = kefir_filter_attach(filter, opts.ifindex);
 	if (!bpf_obj)
-		goto destroy_rule;
+		goto destroy_filter;
 
 	err = 0;
 
@@ -105,8 +107,6 @@ int main(int argc, char **argv)
 
 	kefir_bpfobj_destroy(bpf_obj);
 
-destroy_rule:
-	free(rule);
 destroy_filter:
 	kefir_filter_destroy(filter);
 
