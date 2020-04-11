@@ -44,16 +44,16 @@ $(HDR_DIR)/kefir/libkefir.h:
 $(addsuffix .o,$(EXAMPLES)): $(HDR_DIR)/kefir/libkefir.h
 
 simple_filter: simple_filter.o cl_options.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ -lelf -lz
 
 simple_filter_steps: simple_filter_steps.o cl_options.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ -lelf -lz
 
 tcflower2json: tcflower2json.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ -lelf -lz
 
 json2c: json2c.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ -lelf -lz
 
 ## Build with shared library (.so) instead of static one (.a)
 ## Requires installing the libraries first
