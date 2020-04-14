@@ -63,7 +63,7 @@ json2c: json2c.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
 #LDFLAGS ?= -L$(LIBKEFIR_DIR)/build -L$(LIBBPF_DIR)
 #LIBS += -lkefir -lbpf
 #simple_filter_test: simple_filter_test.c cl_options.c
-#	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $LIBS)
+#	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
 $(LIBBPF_OBJECT): $(LIBKEFIR_OBJECT)
 
