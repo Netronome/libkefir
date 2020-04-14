@@ -35,6 +35,8 @@ EXTRA_WARNINGS += -Wno-switch-enum
 CFLAGS ?= -g -Wall -Wextra -Wpedantic $(EXTRA_WARNINGS)
 CFLAGS += -I$(HDR_DIR)
 
+LIBS = -lelf -lz
+
 all: $(EXAMPLES)
 
 $(HDR_DIR)/kefir/libkefir.h:
@@ -44,23 +46,24 @@ $(HDR_DIR)/kefir/libkefir.h:
 $(addsuffix .o,$(EXAMPLES)): $(HDR_DIR)/kefir/libkefir.h
 
 simple_filter: simple_filter.o cl_options.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 simple_filter_steps: simple_filter_steps.o cl_options.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 tcflower2json: tcflower2json.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 json2c: json2c.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 ## Build with shared library (.so) instead of static one (.a)
 ## Requires installing the libraries first
 ##
 #LDFLAGS ?= -L$(LIBKEFIR_DIR)/build -L$(LIBBPF_DIR)
+#LIBS += -lkefir -lbpf
 #simple_filter_test: simple_filter_test.c cl_options.c
-#	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lkefir -lbpf -lelf
+#	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
 $(LIBBPF_OBJECT): $(LIBKEFIR_OBJECT)
 

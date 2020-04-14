@@ -15,6 +15,8 @@ OBJECTS := $(patsubst %.c,%.o,$(OBJECTS))
 CFLAGS ?= -g -Wall -Wextra -Wpedantic
 CFLAGS += -I$(HDR_DIR)
 
+LIBS = -lelf -lz
+
 default: tester
 
 $(HDR_DIR)/kefir/libkefir.h:
@@ -28,7 +30,7 @@ $(HDR_DIR)/bpf/libbpf.h:
 $(OBJECTS): $(HDR_DIR)/bpf/libbpf.h $(HDR_DIR)/kefir/libkefir.h
 
 tester: $(OBJECTS) $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
-	$(CC) $(CFLAGS) -o $@ $^ -lelf
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(LIBBPF_OBJECT): $(LIBKEFIR_OBJECT)
 
