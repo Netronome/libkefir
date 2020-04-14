@@ -60,9 +60,10 @@ json2c: json2c.o $(LIBKEFIR_OBJECT) $(LIBBPF_OBJECT)
 ## Build with shared library (.so) instead of static one (.a)
 ## Requires installing the libraries first
 ##
-#LDFLAGS ?= -L$(LIBKEFIR_DIR)/build -L$(LIBBPF_DIR)
-#simple_filter_test: simple_filter_test.c cl_options.c
-#	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lkefir -lbpf -lelf -lz
+LDFLAGS ?= -L$(LIBKEFIR_DIR)/build -L$(LIBBPF_DIR)
+LIBS += -lkefir -lbpf
+simple_filter_test: simple_filter_test.c cl_options.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $LIBS)
 
 $(LIBBPF_OBJECT): $(LIBKEFIR_OBJECT)
 
